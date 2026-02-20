@@ -1,9 +1,9 @@
 {
-    "name": "vm-backup-and-restore",
-    "package_name": "unraid-vm-backup-and-restore",
+    "name": "flash-backup",
+    "package_name": "unraid-flash-backup",
     "author": "jcofer555",
     "icon": "icon.png",
-    "support": "https://forums.unraid.net/topic/197218-vm-backup-restore-for-unraid/",
+    "support": "https://forums.unraid.net/topic/197218-flash-backup-for-unraid/",
     "min": "7.1.0",
-    "launch": "Settings/vm-backup-and-restore"
+    "launch": "Settings/flash-backup"
 }
