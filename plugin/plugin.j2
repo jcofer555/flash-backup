@@ -44,8 +44,6 @@ CRON_FILE="/boot/config/plugins/flash-backup/flash-backup.cron"
 
 # Install the package
 upgradepkg --install-new "$PACKAGE_TXZ"
-upgradepkg --install-new "/boot/config/plugins/{{ name }}/jdupes-1.30.0-x86_64-2_slackdce.txz"
-upgradepkg --install-new "/boot/config/plugins/{{ name }}/libjodycode-4.0.1-x86_64-2_slackdce.txz"
 
 # Ordered config keys (new cron-only model)
 ordered_keys=(
