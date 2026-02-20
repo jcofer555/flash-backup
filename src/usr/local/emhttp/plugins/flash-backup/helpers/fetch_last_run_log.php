@@ -3,7 +3,7 @@ $logPath = '/tmp/flash-backup/flash-backup.log';
 header('Content-Type: text/plain');
 
 if (!file_exists($logPath)) {
-    echo "Backup & restore log not found";
+    echo "Flash backup log not found";
     exit;
 }
 

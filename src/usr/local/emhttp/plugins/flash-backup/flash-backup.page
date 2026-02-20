@@ -645,7 +645,7 @@ if (is_file($plg)) {
     <form id="flash-backup-settings">
 
       <div class="status-row"><span title="Shows which part of the backup process is currently running"
-          class="flash-backuptip status-label">Status:</span><span id="status-text">No Backup Running</span>
+          class="flash-backuptip status-label">Status:</span><span id="status-text">Local Backup Not Running</span>
       </div>
       <br>
 
@@ -653,13 +653,13 @@ if (is_file($plg)) {
       <div class="form-pair">
         <label>
           <span class="flash-backuptip"
-            title="Choose destination for backup. Each VM will be saved to a subdirectory with the name the same as the VM">
+            title="Choose destination for backup">
             Backup Destination:
           </span>
         </label>
 
         <span class="flash-backuptip"
-          title="Choose destination for backup. Each VM will be saved to a subdirectory with the name the same as the VM">
+          title="Choose destination for backup">
           <input type="text" id="backup_destination" name="BACKUP_DESTINATION"
             data-picker-title="Select Backup Destination" placeholder="Click here" readonly style="cursor:pointer;"
             value="<?php echo htmlspecialchars($settings['BACKUP_DESTINATION'] ?? ''); ?>">
@@ -669,12 +669,12 @@ if (is_file($plg)) {
       <!-- BACKUPS TO KEEP -->
       <div class="form-pair">
         <label for="backups_to_keep">
-          <span title="Choose the amount of backups to keep for each of the VMs selected" class="flash-backuptip">
+          <span title="Choose the amount of backups to keep" class="flash-backuptip">
             Backups To Keep:
           </span>
         </label>
 
-        <span title="Choose the amount of backups to keep for each of the VMs selected" class="flash-backuptip">
+        <span title="Choose the amount of backups to keep" class="flash-backuptip">
           <select id="backups_to_keep" class="short-input" name="BACKUPS_TO_KEEP">
             <?php
         $current = $settings['BACKUPS_TO_KEEP'] ?? 0;
@@ -731,12 +731,12 @@ if (is_file($plg)) {
       <!-- NOTIFICATIONS -->
       <div class="form-pair">
         <label for="notifications">
-          <span class="flash-backuptip" title="Send Unraid system notifications when VM backup starts and finishes">
+          <span class="flash-backuptip" title="Send Unraid system notifications when flash backup starts and finishes">
             Notifications:
           </span>
         </label>
 
-        <span class="flash-backuptip" title="Send Unraid system notifications when VM backup starts and finishes">
+        <span class="flash-backuptip" title="Send Unraid system notifications when flash backup starts and finishes">
           <select id="notifications" class="short-input" name="NOTIFICATIONS">
             <option value="1" <?=((int)($settings['NOTIFICATIONS'] ?? 0)===1) ? 'selected' : '' ?>>
               Yes
@@ -988,9 +988,9 @@ if (is_file($plg)) {
         Backup or restore in progress!
       </div>
 
-      <!-- Backup and Schedule It Button-->
+      <!-- Backup Button-->
       <div class="backup-actions">
-        <span title="Run backup of selected VM(s)" class="flash-backuptip">
+        <span title="Run backup of flash drive" class="flash-backuptip">
           <button type="button" id="backupbtn">Backup Now</button>
         </span>
       </div>
@@ -1136,7 +1136,7 @@ if (is_file($plg)) {
         document.getElementById('status-text').textContent = data.status;
       })
       .catch(() => {
-        document.getElementById('status-text').textContent = 'No Backup Running';
+        document.getElementById('status-text').textContent = 'Local Backup Not Running';
       });
   }
 

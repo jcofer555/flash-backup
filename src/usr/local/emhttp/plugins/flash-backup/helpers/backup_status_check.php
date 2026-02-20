@@ -3,7 +3,7 @@ header('Content-Type: application/json');
 
 $status_file = '/tmp/flash-backup/backup_status.txt';
 
-$status = 'No Backup Running';
+$status = 'Local Backup Not Running';
 
 if (file_exists($status_file)) {
     $raw = trim(file_get_contents($status_file));
@@ -12,7 +12,7 @@ if (file_exists($status_file)) {
     }
 }
 
-$running = ($status !== 'No Backup Running');
+$running = ($status !== 'Local Backup Not Running');
 
 echo json_encode([
     'status' => $status,
