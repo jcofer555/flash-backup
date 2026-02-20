@@ -47,19 +47,11 @@ upgradepkg --install-new "$PACKAGE_TXZ"
 
 # Ordered config keys (new cron-only model)
 ordered_keys=(
-    "DRY_RUN"
-    "AUTOSTART"
+	"MINIMAL_BACKUP"
 	"BACKUP_DESTINATION"
-    "CRON_MODE"
-    "MINUTES_FREQUENCY"
-    "HOURLY_FREQUENCY"
-    "DAILY_TIME"
-    "WEEKLY_DAY"
-    "WEEKLY_TIME"
-    "MONTHLY_DAY"
-    "MONTHLY_TIME"
-    "CUSTOM_CRON"
-    "CRON_EXPRESSION"
+	"BACKUPS_TO_KEEP"
+	"BACKUP_OWNER"
+    "DRY_RUN"
     "NOTIFICATIONS"
 )
 
@@ -88,7 +80,7 @@ fi
 mv "$TMP_CFG" "$USER_CFG"
 
 # ==========================================================
-#  LOAD SETTINGS & SETUP CRON
+#  LOAD SETTINGS
 # ==========================================================
 SETTINGS="/boot/config/plugins/flash-backup/settings.cfg"
 if [ -f "$SETTINGS" ]; then
@@ -97,22 +89,6 @@ fi
 
 # Remove older txz packages (keep only the current one)
 find /boot/config/plugins/{{ name }}/ -maxdepth 1 -type f -name "{{ package_name }}-*.txz" ! -name "{{ package_name }}-{{ env['PLUGIN_VERSION'] }}-noarch-1.txz" -delete
-
-# ==========================================================
-#  HANDLE AUTOSTART + CRON GENERATION (NEW CRON-ONLY MODEL)
-# ==========================================================
-CRON_CMD="/usr/local/emhttp/plugins/flash-backup/helpers/flash-backup.sh &> /dev/null 2>&1"
-
-if [ "$AUTOSTART" == "no" ]; then
-    rm -f "$CRON_FILE"
-else
-    if [ -n "$CRON_EXPRESSION" ]; then
-        echo "${CRON_EXPRESSION} ${CRON_CMD}" > "$CRON_FILE"
-    else
-        rm -f "$CRON_FILE"
-    fi
-    update_cron
-fi
 
 echo ""
 echo "----------------------------------------------------"
