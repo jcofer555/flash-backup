@@ -4,7 +4,7 @@
 <PLUGIN 
   name="flash-backup"
   author="jcofer555"
-  version="2026.02.20.05"
+  version="2026.02.20.06"
   launch="Settings/flash-backup"
   pluginURL="https://raw.githubusercontent.com/jcofer555/flash-backup/main/plugin/flash-backup.plg"
   support="https://forums.unraid.net/topic/197218-flash-backup-for-unraid/"
@@ -16,7 +16,7 @@
 <CHANGES>
 <![CDATA[
 
-### 2026.02.20.05
+### 2026.02.20.06
 
 - 1
 
@@ -25,9 +25,9 @@ For older releases, see https://github.com/jcofer555/flash-backup/releases
 ]]>
 </CHANGES>
 
-<FILE Name="/boot/config/plugins/flash-backup/unraid-flash-backup-2026.02.20.05-noarch-1.txz">
-<URL>https://github.com/jcofer555/flash-backup/releases/download/2026.02.20.05/unraid-flash-backup-2026.02.20.05-noarch-1.txz</URL>
-<SHA256>98b78bb5a1f2cb0c5384e773cfb7e3128e70f988458bb73ee81ffc5c11d3c3ab</SHA256>
+<FILE Name="/boot/config/plugins/flash-backup/unraid-flash-backup-2026.02.20.06-noarch-1.txz">
+<URL>https://github.com/jcofer555/flash-backup/releases/download/2026.02.20.06/unraid-flash-backup-2026.02.20.06-noarch-1.txz</URL>
+<SHA256>4744f8b07903e83119a8c2301dadba9fd94108873c4ea0261720201d9cd031b3</SHA256>
 </FILE>
 
 <!-- ==========================================================
@@ -40,7 +40,7 @@ For older releases, see https://github.com/jcofer555/flash-backup/releases
 #  INSTALL / UPGRADE LOGIC
 # ==========================================================
 
-PACKAGE_TXZ="/boot/config/plugins/flash-backup/unraid-flash-backup-2026.02.20.05-noarch-1.txz"
+PACKAGE_TXZ="/boot/config/plugins/flash-backup/unraid-flash-backup-2026.02.20.06-noarch-1.txz"
 USER_CFG="/boot/config/plugins/flash-backup/settings.cfg"
 DEFAULT_CFG="/usr/local/emhttp/plugins/flash-backup/helpers/default_settings.cfg"
 TMP_CFG="/tmp/flash-backup_settings.tmp"
@@ -51,19 +51,11 @@ upgradepkg --install-new "$PACKAGE_TXZ"
 
 # Ordered config keys (new cron-only model)
 ordered_keys=(
-    "DRY_RUN"
-    "AUTOSTART"
+	"MINIMAL_BACKUP"
 	"BACKUP_DESTINATION"
-    "CRON_MODE"
-    "MINUTES_FREQUENCY"
-    "HOURLY_FREQUENCY"
-    "DAILY_TIME"
-    "WEEKLY_DAY"
-    "WEEKLY_TIME"
-    "MONTHLY_DAY"
-    "MONTHLY_TIME"
-    "CUSTOM_CRON"
-    "CRON_EXPRESSION"
+	"BACKUPS_TO_KEEP"
+	"BACKUP_OWNER"
+    "DRY_RUN"
     "NOTIFICATIONS"
 )
 
@@ -92,7 +84,7 @@ fi
 mv "$TMP_CFG" "$USER_CFG"
 
 # ==========================================================
-#  LOAD SETTINGS & SETUP CRON
+#  LOAD SETTINGS
 # ==========================================================
 SETTINGS="/boot/config/plugins/flash-backup/settings.cfg"
 if [ -f "$SETTINGS" ]; then
@@ -100,28 +92,12 @@ if [ -f "$SETTINGS" ]; then
 fi
 
 # Remove older txz packages (keep only the current one)
-find /boot/config/plugins/flash-backup/ -maxdepth 1 -type f -name "unraid-flash-backup-*.txz" ! -name "unraid-flash-backup-2026.02.20.05-noarch-1.txz" -delete
-
-# ==========================================================
-#  HANDLE AUTOSTART + CRON GENERATION (NEW CRON-ONLY MODEL)
-# ==========================================================
-CRON_CMD="/usr/local/emhttp/plugins/flash-backup/helpers/flash-backup.sh &> /dev/null 2>&1"
-
-if [ "$AUTOSTART" == "no" ]; then
-    rm -f "$CRON_FILE"
-else
-    if [ -n "$CRON_EXPRESSION" ]; then
-        echo "${CRON_EXPRESSION} ${CRON_CMD}" > "$CRON_FILE"
-    else
-        rm -f "$CRON_FILE"
-    fi
-    update_cron
-fi
+find /boot/config/plugins/flash-backup/ -maxdepth 1 -type f -name "unraid-flash-backup-*.txz" ! -name "unraid-flash-backup-2026.02.20.06-noarch-1.txz" -delete
 
 echo ""
 echo "----------------------------------------------------"
 echo " flash-backup has been installed."
-echo " Version: 2026.02.20.05"
+echo " Version: 2026.02.20.06"
 echo "----------------------------------------------------"
 echo ""
 
