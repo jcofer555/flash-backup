@@ -1,0 +1,392 @@
+#!/bin/bash
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+# ------------------------------------------------------------------------------
+# Load schedule-specific variables (exported by run_schedule.php)
+# ------------------------------------------------------------------------------
+if [[ -n "${SCHEDULE_ID:-}" ]]; then
+    echo "Running scheduled backup: $SCHEDULE_ID"
+
+    # Override defaults with schedule-provided values
+    DRY_RUN="${DRY_RUN:-1}"
+    VMS_TO_BACKUP="${VMS_TO_BACKUP:-}"
+    BACKUPS_TO_KEEP="${BACKUPS_TO_KEEP:-0}"
+    BACKUP_DESTINATION="${BACKUP_DESTINATION:-/mnt/user/vm_backups}"
+    BACKUP_OWNER="${BACKUP_OWNER:-root}"
+    NOTIFICATIONS="${NOTIFICATIONS:-0}"
+fi
+
+SCRIPT_START_EPOCH=$(date +%s)
+
+format_duration() {
+    local total=$1
+    local h=$(( total / 3600 ))
+    local m=$(( (total % 3600) / 60 ))
+    local s=$(( total % 60 ))
+
+    local out=""
+    (( h > 0 )) && out+="${h}h "
+    (( m > 0 )) && out+="${m}m "
+    out+="${s}s"
+
+    echo "$out"
+}
+
+classify_path() {
+    local p="$1"
+
+    if [[ "$p" == /mnt/user || "$p" == /mnt/user/* ]]; then
+        echo "USER"
+        return
+    fi
+
+    if [[ "$p" == /mnt/user0 || "$p" == /mnt/user0/* ]]; then
+        echo "USER0"
+        return
+    fi
+
+    echo "OTHER"
+}
+
+validate_mount_compatibility() {
+    local src="$1"
+    local dst="$2"
+
+    local src_class dst_class
+    src_class=$(classify_path "$src")
+    dst_class=$(classify_path "$dst")
+
+    if [[ "$src_class" != "$dst_class" ]]; then
+        echo "[ERROR] Vdisk $src is using mount type ($src_class) and backup destination ($dst_class)"
+        echo "[ERROR] They must be on the same mount type i.e both fields using user or both user0 or none using either user or user0"
+        set_status "Mount-type mismatch for $src"
+        return 1
+    fi
+
+    return 0
+}
+
+LOG_DIR="/tmp/vm-backup-and-restore"
+LAST_RUN_FILE="$LOG_DIR/vm-backup-and-restore.log"
+ROTATE_DIR="$LOG_DIR/archived_logs"
+mkdir -p "$ROTATE_DIR"
+
+# --- STATUS FILE ADDED ---
+STATUS_FILE="$LOG_DIR/backup_status.txt"
+set_status() {
+    echo "$1" > "$STATUS_FILE"
+}
+set_status "Started backup session"
+# --------------------------
+
+if [[ -f "$LAST_RUN_FILE" ]]; then
+    size_bytes=$(stat -c%s "$LAST_RUN_FILE")
+    max_bytes=$((10 * 1024 * 1024))
+
+    if (( size_bytes >= max_bytes )); then
+        ts="$(date +%Y%m%d_%H%M%S)"
+        rotated="$ROTATE_DIR/vm-backup-and-restore_$ts.log"
+        mv "$LAST_RUN_FILE" "$rotated"
+    fi
+fi
+
+mapfile -t rotated_logs < <(ls -1t "$ROTATE_DIR"/vm-backup-and-restore_*.log 2>/dev/null)
+
+if (( ${#rotated_logs[@]} > 10 )); then
+    for (( i=10; i<${#rotated_logs[@]}; i++ )); do
+        rm -f "${rotated_logs[$i]}"
+    done
+fi
+
+exec > >(tee -a "$LAST_RUN_FILE") 2>&1
+
+echo "--------------------------------------------------------------------------------------------------"
+echo "Backup session started - $(date '+%Y-%m-%d %H:%M:%S')"
+
+# ------------------------------------------------------------------------------
+# DRY RUN SUPPORT
+# ------------------------------------------------------------------------------
+DRY_RUN="${DRY_RUN:-1}"
+
+is_dry_run() {
+    [[ "$DRY_RUN" == "0" ]]
+}
+
+run_cmd() {
+    if is_dry_run; then
+        printf '[DRY-RUN] '
+        printf '%q ' "$@"
+        echo
+    else
+        "$@"
+    fi
+}
+
+# ------------------------------------------------------------------------------
+# Notifications
+# ------------------------------------------------------------------------------
+notify_unraid() {
+    local title="$1"
+    local message="$2"
+
+    if [[ "${NOTIFICATIONS:-0}" == "1" ]]; then
+        /usr/local/emhttp/webGui/scripts/notify \
+            -e "unRAID Status" \
+            -s "$title" \
+            -d "$message" \
+            -i "normal"
+    fi
+}
+
+timestamp="$(date +"%d-%m-%Y %H:%M")"
+notify_unraid "unRAID VM Backup script" "Backup started"
+
+sleep 5
+
+# ------------------------------------------------------------------------------
+# Config-derived variables
+# ------------------------------------------------------------------------------
+BACKUPS_TO_KEEP="${BACKUPS_TO_KEEP:-0}"
+backup_owner="${BACKUP_OWNER:-nobody}"
+backup_location="${BACKUP_DESTINATION:-/mnt/user/vm_backups}"
+export backup_location
+
+# ------------------------------------------------------------------------------
+# Space-safe VM parsing
+# ------------------------------------------------------------------------------
+readarray -td ',' VM_ARRAY <<< "${VMS_TO_BACKUP:-},"
+
+CLEAN_VMS=()
+for vm in "${VM_ARRAY[@]}"; do
+    vm="${vm#"${vm%%[![:space:]]*}"}"
+    vm="${vm%"${vm##*[![:space:]]}"}"
+    [[ -n "$vm" ]] && CLEAN_VMS+=("$vm")
+done
+
+if ((${#CLEAN_VMS[@]} > 0)); then
+    comma_list=$(IFS=', '; printf '%s' "${CLEAN_VMS[*]}")
+    echo "Backing up VM(s) - $comma_list"
+else
+    echo "No VMs configured for backup"
+fi
+
+declare -a vms_stopped_by_script=()
+
+# ------------------------------------------------------------------------------
+# Cleanup trap
+# ------------------------------------------------------------------------------
+cleanup() {
+    LOCK_FILE="/tmp/vm-backup-and-restore/lock.txt"
+    rm -f "$LOCK_FILE"
+
+    SCRIPT_END_EPOCH=$(date +%s)
+    SCRIPT_DURATION=$(( SCRIPT_END_EPOCH - SCRIPT_START_EPOCH ))
+    SCRIPT_DURATION_HUMAN="$(format_duration "$SCRIPT_DURATION")"
+
+    # --- STATUS UPDATE ---
+    set_status "Backup complete – Duration: $SCRIPT_DURATION_HUMAN"
+    # ---------------------
+
+    if is_dry_run; then
+        echo "Skipping VM restarts because dry run is enabled"
+        echo "Backup duration: $SCRIPT_DURATION_HUMAN"
+        echo "Backup session finished - $(date '+%Y-%m-%d %H:%M:%S')"
+
+        notify_unraid "unRAID VM Backup script" \
+        "Backup finished - Duration: $SCRIPT_DURATION_HUMAN"
+
+        rm -f "$STATUS_FILE"
+        return
+    fi
+
+    if ((${#vms_stopped_by_script[@]} > 0)); then
+        :
+        for vm in "${vms_stopped_by_script[@]}"; do
+            echo "Starting VM $vm"
+            virsh start "$vm" >/dev/null 2>&1 || echo "WARNING: Failed to start VM $vm"
+        done
+    else
+        echo "No VMs were stopped this session"
+    fi
+
+    echo "Backup duration: $SCRIPT_DURATION_HUMAN"
+    echo "Backup session finished - $(date '+%Y-%m-%d %H:%M:%S')"
+
+    notify_unraid "unRAID VM Backup script" \
+    "Backup finished - Duration: $SCRIPT_DURATION_HUMAN"
+
+    rm -f "$STATUS_FILE"
+}
+
+trap cleanup EXIT SIGTERM SIGINT SIGHUP SIGQUIT
+
+# ------------------------------------------------------------------------------
+# Backup loop
+# ------------------------------------------------------------------------------
+RUN_TS="$(date +%Y%m%d_%H%M)"
+run_cmd mkdir -p "$backup_location"
+
+for vm in "${CLEAN_VMS[@]}"; do
+    [[ -z "$vm" ]] && continue
+
+    echo "Started backup for $vm"
+    set_status "Backing up $vm"
+
+    vm_xml_path="/etc/libvirt/qemu/$vm.xml"
+
+    if [[ ! -f "$vm_xml_path" ]]; then
+        echo "ERROR: XML not found for $vm"
+        continue
+    fi
+
+    vm_state_before="$(virsh domstate "$vm" 2>/dev/null || echo "unknown")"
+
+    if [[ "$vm_state_before" == "running" ]]; then
+        echo "Stopping $vm"
+        set_status "Stopping $vm"
+        vms_stopped_by_script+=("$vm")
+
+        run_cmd virsh shutdown "$vm" >/dev/null 2>&1 || echo "WARNING: Failed to send shutdown to $vm"
+
+        if ! is_dry_run; then
+            timeout=60
+            while [[ "$(virsh domstate "$vm" 2>/dev/null)" != "shut off" && $timeout -gt 0 ]]; do
+                sleep 2
+                ((timeout-=2))
+            done
+
+            if [[ $timeout -le 0 ]]; then
+                run_cmd virsh destroy "$vm" >/dev/null 2>&1 || echo "WARNING: Failed to force power off $vm"
+            else
+                echo "$vm is now stopped"
+            fi
+        fi
+    fi
+
+    vm_backup_folder="$backup_location/$vm"
+    run_cmd mkdir -p "$vm_backup_folder"
+
+    mapfile -t vdisks < <(
+        xmllint --xpath "//domain/devices/disk[@device='disk']/source/@file" "$vm_xml_path" 2>/dev/null \
+            | sed -E 's/ file=\"/\n/g' \
+            | sed -E 's/\"//g' \
+            | sed '/^$/d'
+    )
+
+    # Validate each vdisk path against backup destination
+    for vdisk in "${vdisks[@]}"; do
+        if ! validate_mount_compatibility "$vdisk" "$backup_location"; then
+            echo "[ERROR] Skipping $vm due to incompatible mount types"
+
+            # --- REMOVE ONLY FILES CREATED IN THIS RUN ---
+            if [[ -d "$vm_backup_folder" ]]; then
+
+                shopt -s nullglob
+                run_files=( "$vm_backup_folder/${RUN_TS}_"* )
+                shopt -u nullglob
+
+                if (( ${#run_files[@]} > 0 )); then
+                    :
+                    for f in "${run_files[@]}"; do
+                        :
+                        rm -f "$f"
+                    done
+                else
+                    :
+                fi
+
+                if [[ -z "$(ls -A "$vm_backup_folder")" ]]; then
+                    :
+                    rmdir "$vm_backup_folder"
+                else
+                    :
+                fi
+            fi
+            continue 2   # skip entire VM loop
+        fi
+    done
+
+    if ((${#vdisks[@]} == 0)); then
+        echo "No vdisk entries found in XML for $vm"
+    else
+        echo "Backing up vdisks"
+        set_status "Backing up vdisks for $vm"
+        for vdisk in "${vdisks[@]}"; do
+            if [[ ! -f "$vdisk" ]]; then
+                echo "  WARNING: vdisk path does not exist $vdisk"
+                continue
+            fi
+            base="$(basename "$vdisk")"
+            dest="$vm_backup_folder/${RUN_TS}_$base"
+            if ! is_dry_run; then
+                echo "$vdisk -> $dest"
+            fi
+            run_cmd rsync -aHAX --sparse "$vdisk" "$dest"
+        done
+    fi
+
+    xml_dest="$vm_backup_folder/${RUN_TS}_${vm}.xml"
+    set_status "Backing up XML for $vm"
+    run_cmd rsync -a "$vm_xml_path" "$xml_dest"
+    echo "Backed up XML $vm_xml_path -> $xml_dest"
+
+    nvram_path="$(xmllint --xpath 'string(/domain/os/nvram)' "$vm_xml_path" 2>/dev/null || echo "")"
+
+    if [[ -n "$nvram_path" && -f "$nvram_path" ]]; then
+        nvram_base="$(basename "$nvram_path")"
+        nvram_dest="$vm_backup_folder/${RUN_TS}_$nvram_base"
+        set_status "Backing up NVRAM for $vm"
+        run_cmd rsync -a "$nvram_path" "$nvram_dest"
+        echo "Backed up NVRAM $nvram_path -> $nvram_dest"
+    else
+        echo "No valid NVRAM found for $vm"
+    fi
+
+    run_cmd chown -R "$backup_owner:users" "$vm_backup_folder" || echo "WARNING: Changing owner failed for $vm_backup_folder"
+    echo "Changed owner of $vm_backup_folder for $vm to $backup_owner:users"
+
+    echo "Finished backup for $vm"
+    set_status "Finished backup for $vm"
+
+# ------------------------------------------------------------------------------
+# Retention cleanup per VM
+# ------------------------------------------------------------------------------
+if [[ "$BACKUPS_TO_KEEP" =~ ^[0-9]+$ ]]; then
+
+    if (( BACKUPS_TO_KEEP == 0 )); then
+    :
+    else
+    :
+        mapfile -t backup_sets < <(
+            ls -1 "$vm_backup_folder" 2>/dev/null \
+            | sed -E 's/^([0-9]{8}_[0-9]{4}).*/\1/' \
+            | sort -u -r
+        )
+
+        total_sets=${#backup_sets[@]}
+
+        if (( total_sets > BACKUPS_TO_KEEP )); then
+            echo "Removing old backups keeping $BACKUPS_TO_KEEP"
+            set_status "Removing old backups for $vm"
+
+            for (( i=BACKUPS_TO_KEEP; i<total_sets; i++ )); do
+                old_ts="${backup_sets[$i]}"
+
+                if is_dry_run; then
+                    echo "[DRY-RUN] Would remove files with timestamp $old_ts"
+                else
+                    rm -f "$vm_backup_folder"/"${old_ts}"_*
+                fi
+            done
+        else
+            echo "No old backups need removed"
+        fi
+    fi
+
+else
+    echo "WARNING: BACKUPS_TO_KEEP is invalid skipping retention"
+fi
+
+done
+
+exit 0

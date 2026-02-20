@@ -1,0 +1,164 @@
+<?xml version='1.0' standalone='yes'?>
+<!DOCTYPE PLUGIN>
+
+<PLUGIN 
+  name="vm-backup-and-restore"
+  author="jcofer555"
+  version="2026.02.20.05"
+  launch="Settings/vm-backup-and-restore"
+  pluginURL="https://raw.githubusercontent.com/jcofer555/vm-backup-and-restore/main/plugin/vm-backup-and-restore.plg"
+  support="https://forums.unraid.net/topic/197218-vm-backup-restore-for-unraid/"
+  min="7.1.0"
+  
+  icon="icon.png"
+>
+
+<CHANGES>
+<![CDATA[
+
+### 2026.02.20.05
+
+- Put guards in the UI and enforcement of the guards in the backend to disallow transferring from disk to user, user to disk, disk to user0, and user0 to disk to prevent loss of data
+
+### 2026.02.20.03
+
+- Fix to disallow backing up to a share root
+
+### 2026.02.18.02
+
+- Fix when deleting schedules
+
+
+For older releases, see https://github.com/jcofer555/vm-backup-and-restore/releases
+]]>
+</CHANGES>
+
+<FILE Name="/boot/config/plugins/vm-backup-and-restore/unraid-vm-backup-and-restore-2026.02.20.05-noarch-1.txz">
+<URL>https://github.com/jcofer555/vm-backup-and-restore/releases/download/2026.02.20.05/unraid-vm-backup-and-restore-2026.02.20.05-noarch-1.txz</URL>
+<SHA256>671076a905e8d42752275bd99981c73e49150f1c128107fd7e00aa831cfe3d05</SHA256>
+</FILE>
+
+<!-- ==========================================================
+     INSTALL SCRIPT
+========================================================== -->
+<FILE Run="/bin/bash">
+<INLINE>
+<![CDATA[
+# ==========================================================
+#  INSTALL / UPGRADE LOGIC
+# ==========================================================
+
+SCHEDULES_CFG="/boot/config/plugins/vm-backup-and-restore/schedules.cfg"
+
+if [ ! -s "$SCHEDULES_CFG" ]; then
+  mkdir -p "$(dirname "$SCHEDULES_CFG")"
+  echo "; VM Backup & Restore schedules" > "$SCHEDULES_CFG"
+fi
+
+PACKAGE_TXZ="/boot/config/plugins/vm-backup-and-restore/unraid-vm-backup-and-restore-2026.02.20.05-noarch-1.txz"
+USER_CFG="/boot/config/plugins/VM-Backup-And-Restore/settings.cfg"
+RESTORE_USER_CFG="/boot/config/plugins/VM-Backup-And-Restore/settings_restore.cfg"
+DEFAULT_CFG="/usr/local/emhttp/plugins/vm-backup-and-restore/helpers/default_settings.cfg"
+RESTORE_DEFAULT_CFG="/usr/local/emhttp/plugins/vm-backup-and-restore/helpers/default_settings_restore.cfg"
+TMP_CFG="/tmp/vm-backup-and-restore_settings.tmp"
+RESTORE_TMP_CFG="/tmp/vm-backup-and-restore_settings_restore.tmp"
+
+# Install the package
+upgradepkg --install-new "$PACKAGE_TXZ"
+
+# Ordered config keys
+ordered_keys=(
+    "VMS_TO_BACKUP"
+    "BACKUP_DESTINATION"
+    "BACKUPS_TO_KEEP"
+    "BACKUP_OWNER"
+    "DRY_RUN"
+    "NOTIFICATIONS"
+)
+
+# ==========================================================
+#  CONFIG MANAGEMENT
+# ==========================================================
+if [ ! -f "$USER_CFG" ]; then
+    cp "$DEFAULT_CFG" "$USER_CFG"
+else
+    # Add missing keys from default
+    while IFS='=' read -r key val; do
+        [[ -z "$key" || "$key" =~ ^[[:space:]]*# ]] && continue
+        if ! grep -q -E "^[[:space:]]*${key}[[:space:]]*=" "$USER_CFG"; then
+            echo "$key=$val" >> "$USER_CFG"
+        fi
+    done < "$DEFAULT_CFG"
+fi
+
+# Rebuild ordered version (only known keys, drop extra lines)
+{
+    for key in "${ordered_keys[@]}"; do
+        grep -E "^[[:space:]]*${key}[[:space:]]*=" "$USER_CFG"
+    done
+} > "$TMP_CFG"
+
+mv "$TMP_CFG" "$USER_CFG"
+
+# Ordered config keys
+restore_ordered_keys=(
+    "LOCATION_OF_BACKUPS"
+    "VMS_TO_RESTORE"
+    "VERSIONS"
+    "RESTORE_DESTINATION"
+    "DRY_RUN_RESTORE"
+    "NOTIFICATIONS_RESTORE"
+)
+
+# ==========================================================
+#  CONFIG MANAGEMENT
+# ==========================================================
+if [ ! -f "$RESTORE_USER_CFG" ]; then
+    cp "$RESTORE_DEFAULT_CFG" "$RESTORE_USER_CFG"
+else
+    # Add missing keys from default
+    while IFS='=' read -r key val; do
+        [[ -z "$key" || "$key" =~ ^[[:space:]]*# ]] && continue
+        if ! grep -q -E "^[[:space:]]*${key}[[:space:]]*=" "$RESTORE_USER_CFG"; then
+            echo "$key=$val" >> "$RESTORE_USER_CFG"
+        fi
+    done < "$RESTORE_DEFAULT_CFG"
+fi
+
+# Rebuild ordered version (only known keys, drop extra lines)
+{
+    for key in "${restore_ordered_keys[@]}"; do
+        grep -E "^[[:space:]]*${key}[[:space:]]*=" "$RESTORE_USER_CFG"
+    done
+} > "$RESTORE_TMP_CFG"
+
+mv "$RESTORE_TMP_CFG" "$RESTORE_USER_CFG"
+
+# Remove older txz packages (keep only the current one)
+find /boot/config/plugins/vm-backup-and-restore/ -maxdepth 1 -type f -name "unraid-vm-backup-and-restore-*.txz" ! -name "unraid-vm-backup-and-restore-2026.02.20.05-noarch-1.txz" -delete
+
+echo ""
+echo "----------------------------------------------------"
+echo " vm-backup-and-restore has been installed."
+echo " Version: 2026.02.20.05"
+echo "----------------------------------------------------"
+echo ""
+
+]]>
+</INLINE>
+</FILE>
+
+<!-- ==========================================================
+     REMOVE SCRIPT
+========================================================== -->
+<FILE Run="/bin/bash" Method="remove">
+<INLINE>
+<![CDATA[
+removepkg unraid-vm-backup-and-restore
+rm -rf /usr/local/emhttp/plugins/vm-backup-and-restore
+rm -rf /boot/config/plugins/vm-backup-and-restore
+]]>
+</INLINE>
+</FILE>
+
+</PLUGIN>
