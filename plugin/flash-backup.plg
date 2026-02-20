@@ -1,0 +1,147 @@
+<?xml version='1.0' standalone='yes'?>
+<!DOCTYPE PLUGIN>
+
+<PLUGIN 
+  name="flash-backup"
+  author="jcofer555"
+  version="2026.02.20.01"
+  launch="Settings/flash-backup"
+  pluginURL="https://raw.githubusercontent.com/jcofer555/flash-backup/main/plugin/flash-backup.plg"
+  support="https://forums.unraid.net/topic/197218-flash-backup-for-unraid/"
+  min="7.1.0"
+  
+  icon="icon.png"
+>
+
+<CHANGES>
+<![CDATA[
+
+### 2026.02.20.01
+
+- 1
+
+
+For older releases, see https://github.com/jcofer555/flash-backup/releases
+]]>
+</CHANGES>
+
+<FILE Name="/boot/config/plugins/flash-backup/unraid-flash-backup-2026.02.20.01-noarch-1.txz">
+<URL>https://github.com/jcofer555/flash-backup/releases/download/2026.02.20.01/unraid-flash-backup-2026.02.20.01-noarch-1.txz</URL>
+<SHA256>4c63a3ce9348b5c56afb615417faa6cc5e1e7c717f834e0f9efaabbb517c7a15</SHA256>
+</FILE>
+
+<!-- ==========================================================
+     INSTALL SCRIPT
+========================================================== -->
+<FILE Run="/bin/bash">
+<INLINE>
+<![CDATA[
+# ==========================================================
+#  INSTALL / UPGRADE LOGIC
+# ==========================================================
+
+PACKAGE_TXZ="/boot/config/plugins/flash-backup/unraid-flash-backup-2026.02.20.01-noarch-1.txz"
+USER_CFG="/boot/config/plugins/flash-backup/settings.cfg"
+DEFAULT_CFG="/usr/local/emhttp/plugins/flash-backup/helpers/default_settings.cfg"
+TMP_CFG="/tmp/flash-backup_settings.tmp"
+CRON_FILE="/boot/config/plugins/flash-backup/flash-backup.cron"
+
+# Install the package
+upgradepkg --install-new "$PACKAGE_TXZ"
+upgradepkg --install-new "/boot/config/plugins/flash-backup/jdupes-1.30.0-x86_64-2_slackdce.txz"
+upgradepkg --install-new "/boot/config/plugins/flash-backup/libjodycode-4.0.1-x86_64-2_slackdce.txz"
+
+# Ordered config keys (new cron-only model)
+ordered_keys=(
+    "DRY_RUN"
+    "AUTOSTART"
+	"BACKUP_DESTINATION"
+    "CRON_MODE"
+    "MINUTES_FREQUENCY"
+    "HOURLY_FREQUENCY"
+    "DAILY_TIME"
+    "WEEKLY_DAY"
+    "WEEKLY_TIME"
+    "MONTHLY_DAY"
+    "MONTHLY_TIME"
+    "CUSTOM_CRON"
+    "CRON_EXPRESSION"
+    "NOTIFICATIONS"
+)
+
+# ==========================================================
+#  CONFIG MANAGEMENT
+# ==========================================================
+if [ ! -f "$USER_CFG" ]; then
+    cp "$DEFAULT_CFG" "$USER_CFG"
+else
+    # Add missing keys from default
+    while IFS='=' read -r key val; do
+        [[ -z "$key" || "$key" =~ ^[[:space:]]*# ]] && continue
+        if ! grep -q -E "^[[:space:]]*${key}[[:space:]]*=" "$USER_CFG"; then
+            echo "$key=$val" >> "$USER_CFG"
+        fi
+    done < "$DEFAULT_CFG"
+fi
+
+# Rebuild ordered version (only known keys, drop extra lines)
+{
+    for key in "${ordered_keys[@]}"; do
+        grep -E "^[[:space:]]*${key}[[:space:]]*=" "$USER_CFG"
+    done
+} > "$TMP_CFG"
+
+mv "$TMP_CFG" "$USER_CFG"
+
+# ==========================================================
+#  LOAD SETTINGS & SETUP CRON
+# ==========================================================
+SETTINGS="/boot/config/plugins/flash-backup/settings.cfg"
+if [ -f "$SETTINGS" ]; then
+    source "$SETTINGS"
+fi
+
+# Remove older txz packages (keep only the current one)
+find /boot/config/plugins/flash-backup/ -maxdepth 1 -type f -name "unraid-flash-backup-*.txz" ! -name "unraid-flash-backup-2026.02.20.01-noarch-1.txz" -delete
+
+# ==========================================================
+#  HANDLE AUTOSTART + CRON GENERATION (NEW CRON-ONLY MODEL)
+# ==========================================================
+CRON_CMD="/usr/local/emhttp/plugins/flash-backup/helpers/flash-backup.sh &> /dev/null 2>&1"
+
+if [ "$AUTOSTART" == "no" ]; then
+    rm -f "$CRON_FILE"
+else
+    if [ -n "$CRON_EXPRESSION" ]; then
+        echo "${CRON_EXPRESSION} ${CRON_CMD}" > "$CRON_FILE"
+    else
+        rm -f "$CRON_FILE"
+    fi
+    update_cron
+fi
+
+echo ""
+echo "----------------------------------------------------"
+echo " flash-backup has been installed."
+echo " Version: 2026.02.20.01"
+echo "----------------------------------------------------"
+echo ""
+
+]]>
+</INLINE>
+</FILE>
+
+<!-- ==========================================================
+     REMOVE SCRIPT
+========================================================== -->
+<FILE Run="/bin/bash" Method="remove">
+<INLINE>
+<![CDATA[
+removepkg unraid-flash-backup
+rm -rf /usr/local/emhttp/plugins/flash-backup
+rm -rf /boot/config/plugins/flash-backup
+]]>
+</INLINE>
+</FILE>
+
+</PLUGIN>
