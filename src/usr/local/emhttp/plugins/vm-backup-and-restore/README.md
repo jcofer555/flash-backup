@@ -1,3 +1,3 @@
-**VM Backup & Restore**
+**Flash Backup**
 
-A utility to backup a VM's vdisk, nvram, and xml and restore when needed.
+A utility to backup the unRAID flash drive
