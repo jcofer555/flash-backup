@@ -37,15 +37,18 @@ For older releases, see https://github.com/{{ env['GITHUB_REPOSITORY'] }}/releas
 # ==========================================================
 
 PACKAGE_TXZ="/boot/config/plugins/{{ name }}/{{ package_name }}-{{ env['PLUGIN_VERSION'] }}-noarch-1.txz"
-USER_CFG="/boot/config/plugins/flash-backup/settings.cfg"
-DEFAULT_CFG="/usr/local/emhttp/plugins/flash-backup/helpers/default_settings.cfg"
+USER_CFG="/boot/config/plugins/{{ name }}/settings.cfg"
+REMOTE_USER_CFG="/boot/config/plugins/{{ name }}/settings_remote.cfg"
+DEFAULT_CFG="/usr/local/emhttp/plugins/{{ name }}/helpers/default_settings.cfg"
+REMOTE_DEFAULT_CFG="/usr/local/emhttp/plugins/{{ name }}/helpers/default_settings_remote.cfg"
 TMP_CFG="/tmp/flash-backup_settings.tmp"
+REMOTE_TMP_CFG="/tmp/flash-backup_settings_remote.tmp"
 CRON_FILE="/boot/config/plugins/flash-backup/flash-backup.cron"
 
 # Install the package
 upgradepkg --install-new "$PACKAGE_TXZ"
 
-# Ordered config keys (new cron-only model)
+# Ordered config keys
 ordered_keys=(
 	"MINIMAL_BACKUP"
 	"BACKUP_DESTINATION"
@@ -79,13 +82,40 @@ fi
 
 mv "$TMP_CFG" "$USER_CFG"
 
+# Ordered config keys
+remote_ordered_keys=(
+    "MINIMAL_BACKUP_REMOTE"
+    "RCLONE_MODE"
+    "BACKUP_DESTINATION"
+    "RCLONE_CONFIG"
+    "BACKUPS_TO_KEEP_REMOTE"
+    "DRY_RUN_REMOTE"
+	"NOTIFICATIONS_REMOTE"
+)
+
 # ==========================================================
-#  LOAD SETTINGS
+#  CONFIG MANAGEMENT
 # ==========================================================
-SETTINGS="/boot/config/plugins/flash-backup/settings.cfg"
-if [ -f "$SETTINGS" ]; then
-    source "$SETTINGS"
+if [ ! -f "$REMOTE_USER_CFG" ]; then
+    cp "$REMOTE_DEFAULT_CFG" "$REMOTE_USER_CFG"
+else
+    # Add missing keys from default
+    while IFS='=' read -r key val; do
+        [[ -z "$key" || "$key" =~ ^[[:space:]]*# ]] && continue
+        if ! grep -q -E "^[[:space:]]*${key}[[:space:]]*=" "$REMOTE_USER_CFG"; then
+            echo "$key=$val" >> "$REMOTE_USER_CFG"
+        fi
+    done < "$REMOTE_DEFAULT_CFG"
 fi
+
+# Rebuild ordered version (only known keys, drop extra lines)
+{
+    for key in "${remote_ordered_keys[@]}"; do
+        grep -E "^[[:space:]]*${key}[[:space:]]*=" "$REMOTE_USER_CFG"
+    done
+} > "$REMOTE_TMP_CFG"
+
+mv "$REMOTE_TMP_CFG" "$REMOTE_USER_CFG"
 
 # Remove older txz packages (keep only the current one)
 find /boot/config/plugins/{{ name }}/ -maxdepth 1 -type f -name "{{ package_name }}-*.txz" ! -name "{{ package_name }}-{{ env['PLUGIN_VERSION'] }}-noarch-1.txz" -delete
