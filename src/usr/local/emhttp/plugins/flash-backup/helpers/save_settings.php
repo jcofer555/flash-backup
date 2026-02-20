@@ -4,7 +4,7 @@ header('Content-Type: application/json');
 $cmd = '/usr/local/emhttp/plugins/flash-backup/helpers/save_settings.sh';
 
 // --- Grab raw values ---
-$vms_to_backup      = $_GET['VMS_TO_BACKUP'] ?? '';
+$minimal_backup      = $_GET['MINIMAL_BACKUP'] ?? '';
 $backup_destination = $_GET['BACKUP_DESTINATION'] ?? '';
 $backups_to_keep    = $_GET['BACKUPS_TO_KEEP'] ?? '';
 $backup_owner       = $_GET['BACKUP_OWNER'] ?? '';
@@ -13,7 +13,7 @@ $notifications      = $_GET['NOTIFICATIONS'] ?? '';
 
 // --- Build args array ---
 $args = [
-    $vms_to_backup,
+    $minimal_backup,
     $backup_destination,
     $backups_to_keep,
     $backup_owner,

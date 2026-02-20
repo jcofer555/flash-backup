@@ -10,12 +10,12 @@ $cfgPath = '/boot/config/plugins/flash-backup/settings.cfg';
 
 // Define all default keys and their order
 $defaults = [
-    'VMS_TO_BACKUP' => '',
+    'MINIMAL_BACKUP' => 'no',
     'BACKUP_DESTINATION' => '',
     'BACKUPS_TO_KEEP' => '0',
     'BACKUP_OWNER' => 'nobody',
-    'DRY_RUN' => '1',
-    'NOTIFICATIONS' => '0'
+    'DRY_RUN' => 'no',
+    'NOTIFICATIONS' => 'no'
 ];
 
 // Load existing config if present
@@ -40,6 +40,7 @@ $settings = $existing;
 ?>
 
 <?php
+/*
 $restoreCfgPath = '/boot/config/plugins/flash-backup/settings_restore.cfg';
 
 // Define all default keys and their order for restore
@@ -85,6 +86,7 @@ $saved_vm_list = $vm_list_settings['VMS_TO_RESTORE'] ?? '';
 if (!is_array($saved_vm_list)) {
     $saved_vm_list = array_filter(array_map('trim', explode(',', $saved_vm_list)));
 }
+*/
 ?>
 
 <?php
@@ -134,8 +136,7 @@ if (file_exists("/etc/unraid-version")) {
 
 <style>
   :root {
-    --primary-blue: #e6231c;
-    --status-green: #2ECC40;
+    --primary-blue: #2ECC40;
   }
 
   .flash-backup-wrapper {
@@ -146,11 +147,10 @@ if (file_exists("/etc/unraid-version")) {
   }
 
   /* === Each Panel (auto-sizing) === */
-  #flash-backup-settings,
   #vm-third-section {
     background: #111;
     border-radius: 12px;
-    box-shadow: 0 0 12px rgba(255, 0, 0, .3);
+    box-shadow: 0 0 12px rgba(46, 204, 64, .3);
     color: #f0f8ff;
     padding: 20px;
     flex: 1 1 auto;
@@ -178,30 +178,20 @@ if (file_exists("/etc/unraid-version")) {
   }
 
   #flash-backup-settings {
-    padding-top: 0px !important;
-    /* reduce from default 20px */
-  }
-
-  #last-run-container {
-    padding-top: 10px !important;
-    /* reduce from default 20px */
-  }
-
-  #last-run-container h3 {
-    margin-top: 0 !important;
-    /* remove any top margin */
-    margin-bottom: 10px;
-    /* keep small spacing below title */
-  }
-
-  /* fine-tune widths */
-  #flash-backup-settings {
-    flex-basis: 25%;
-  }
-
-  #last-run-container {
-    flex-basis: 22%;
-  }
+  background: #111;
+  border-radius: 12px;
+  box-shadow: 0 0 12px rgba(46, 204, 64, .3);
+  color: #f0f8ff;
+  padding: 16px !important; /* final value wins */
+  flex: 1 1 auto;
+  height: auto;
+  max-height: none;
+  overflow: visible;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+  flex-basis: 25%;
+}
 
   .unraid-71 #flash-backup-settings {
     min-height: 77vh;
@@ -229,15 +219,8 @@ if (file_exists("/etc/unraid-version")) {
     margin: 0;
   }
 
-  #flash-backup-settings,
-  #last-run-container {
+  #flash-backup-settings {
     flex: 1 1 100%;
-  }
-
-  .form-row {
-    flex-direction: column;
-    gap: 15px;
-    margin-bottom: 20px;
   }
 
   label {
@@ -272,38 +255,11 @@ if (file_exists("/etc/unraid-version")) {
     padding: 8px 15px;
   }
 
-  .checkbox-row {
-    align-items: center;
-    display: grid;
-    gap: 0 0px;
-    grid-template-columns: repeat(2, 1fr);
-    margin-top: 10px;
-  }
-
-  .checkbox-row label {
-    align-items: center;
-    cursor: pointer;
-    display: flex;
-    font-size: 15px;
-    gap: 0px;
-    line-height: 1.4;
-  }
-
-  .checkbox-row input[type="checkbox"] {
-    accent-color: var(--primary-blue);
-    transform: scale(1.2);
-  }
-
   input[type="checkbox"] {
     accent-color: var(--primary-blue);
     cursor: pointer;
     height: 16px;
     width: 16px;
-  }
-
-  .form-check input {
-    margin-right: 8px;
-    vertical-align: middle;
   }
 
   .restore-status-row,
@@ -322,27 +278,6 @@ if (file_exists("/etc/unraid-version")) {
 
   #version-text {
     color: #fff;
-  }
-
-  .tooltip {
-    display: inline-block;
-    position: relative;
-  }
-
-  .tooltip:hover::after {
-    background: #333;
-    border-radius: 4px;
-    bottom: 125%;
-    color: #fff;
-    content: attr(data-tooltip);
-    font-size: 12px;
-    left: 0;
-    opacity: .9;
-    padding: 6px 10px;
-    position: absolute;
-    text-transform: none;
-    white-space: nowrap;
-    z-index: 10;
   }
 
   .form-pair {
@@ -391,10 +326,6 @@ if (file_exists("/etc/unraid-version")) {
     flex: 0 0 auto;
   }
 
-  #pool.short-input {
-    flex: 0 0 auto;
-  }
-
   @keyframes shake {
 
     0%,
@@ -421,13 +352,6 @@ if (file_exists("/etc/unraid-version")) {
 
   .skipped-line {
     color: #ffd700;
-  }
-
-  #vm-third-section h3 {
-    color: white;
-    font-size: 18px;
-    margin-bottom: 0px;
-    margin-top: 0;
   }
 
   #last-run-log {
@@ -464,14 +388,6 @@ if (file_exists("/etc/unraid-version")) {
     margin: 0;
     right: 0;
     position: absolute;
-  }
-
-  .footer>div {
-    gap: 6px !important;
-  }
-
-  .footer button {
-    margin: 0 !important;
   }
 
   *,
@@ -512,147 +428,6 @@ if (file_exists("/etc/unraid-version")) {
     border-radius: 4px;
   }
 
-  .form-check {
-    display: flex;
-    align-items: center;
-    gap: 0px;
-    /* same spacing as other checkboxes */
-    cursor: pointer;
-    color: var(--primary-blue);
-  }
-
-  .form-check input[type="checkbox"] {
-    width: 16px;
-    height: 16px;
-    transform: scale(1.1);
-    /* same enlargement as others */
-    accent-color: var(--primary-blue);
-    cursor: pointer;
-  }
-
-  .form-check label {
-    margin: 0;
-    line-height: 1.4;
-    font-size: 14px;
-    font-weight: bold;
-    color: var(--primary-blue);
-    cursor: pointer;
-  }
-
-  .vm-multiselect {
-    position: relative;
-    width: 200px;
-    border: 1px solid #b30000;
-    padding: 6px;
-    background: #111;
-    cursor: pointer;
-    color: #111;
-    transition: width .2s;
-    white-space: nowrap;
-    border-radius: 4px;
-    transition: border-color .15s, box-shadow .15s;
-  }
-
-  .vm-multiselect.active {
-    border-color: #b30000;
-  }
-
-  .vm-dropdown-label-restore,
-  .vm-dropdown-label {
-    color: #fff;
-    user-select: none;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .vm-dropdown-list-restore,
-  .vm-dropdown-list {
-    padding: 6px;
-    display: none;
-    position: absolute;
-    top: 100%;
-    left: 0;
-    width: 100%;
-    max-width: 100%;
-    max-height: 200px;
-    overflow-y: auto;
-    border: 1px solid #b30000;
-    background: #111;
-    color: #fff;
-    z-index: 10;
-    font-family: 'Segoe UI', sans-serif;
-  }
-
-  .vm-dropdown-list-restore div,
-  .vm-dropdown-list div {
-    padding: 4px 0;
-    text-align: left;
-    line-height: 1.5;
-    height: 28px;
-    display: flex;
-    align-items: center;
-    color: white;
-  }
-
-  .vm-dropdown-list-restore label,
-  .vm-dropdown-list label {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    color: #fff;
-    padding-left: 0px;
-  }
-
-  .vm-dropdown-list-restore input[type="checkbox"],
-  .vm-dropdown-list input[type="checkbox"] {
-    align-items: left;
-    appearance: none;
-    width: 16px;
-    height: 16px;
-    border: 1px solid #ccc;
-    background: #222;
-    cursor: pointer;
-    position: relative;
-    accent-color: #ff4444;
-  }
-
-  .vm-dropdown-list-restore input[type="checkbox"]:checked::after,
-  .vm-dropdown-list input[type="checkbox"]:checked::after {
-    content: '✔';
-    position: absolute;
-    top: -2px;
-    left: 2px;
-    font-size: 14px;
-    color: #fff;
-  }
-
-  .vm-dropdown-list-restore div:hover,
-  .vm-dropdown-list div:hover {
-    background: #111;
-  }
-
-  .checkbox-row label.flash-backuptip {
-    display: inline-flex;
-    /* shrink to content */
-    align-items: center;
-    width: auto;
-    /* prevent stretching */
-    cursor: pointer;
-  }
-
-  .checkbox-row input[type="checkbox"] {
-    margin-right: 6px;
-  }
-
-  #flash-backup-layout {
-    display: grid;
-    gap: 20px;
-    align-items: start;
-    margin-top: 0;
-    padding-top: 0;
-  }
-
   .vm-modal {
     display: none;
     position: fixed;
@@ -668,9 +443,9 @@ if (file_exists("/etc/unraid-version")) {
     width: 600px;
     margin: 8% auto;
     background: #000;
-    border: 2px solid #b30000;
+    border: 2px solid #2ECC40;
     border-radius: 8px;
-    color: red;
+    color: #2ECC40;
     padding: 15px;
   }
 
@@ -684,7 +459,7 @@ if (file_exists("/etc/unraid-version")) {
   .vm-folder-list {
     max-height: 300px;
     overflow-y: auto;
-    border: 1px solid #b30000;
+    border: 1px solid #2ECC40;
     padding: 5px;
   }
 
@@ -704,7 +479,7 @@ if (file_exists("/etc/unraid-version")) {
   .vm-breadcrumb {
     margin-bottom: 10px;
     font-size: 13px;
-    color: #ff4444;
+    color: #2ECC40;
   }
 
   .vm-modal-footer {
@@ -717,9 +492,8 @@ if (file_exists("/etc/unraid-version")) {
   }
 
   #backup_destination,
-  #location_of_backups,
-  #restore_destination {
-    border: 1px solid #b30000 !important;
+  #location_of_backups {
+    border: 1px solid #2ECC40 !important;
     background-color: #111 !important;
     color: #fff !important;
     padding-left: 6px;
@@ -740,28 +514,28 @@ if (file_exists("/etc/unraid-version")) {
   }
 
   input.invalid {
-    border-color: #b30000;
+    border-color: #2ECC40;
     color: red;
   }
 
-  /* Main 3-panel layout */
   #flash-backup-layout {
-    display: grid;
-    grid-template-columns: minmax(320px, 1fr) minmax(320px, 1fr) minmax(420px, 1.6fr);
-    gap: 20px;
-    width: 100%;
-    align-items: stretch;
-    /* equal height panels */
-  }
+  /* Layout */
+  display: grid;
+  grid-template-columns: minmax(320px, 1fr) minmax(320px, 1fr) minmax(420px, 1.6fr);
+  gap: 20px;
+  width: 100%;
+  margin-top: 0;
+  padding-top: 0;
+  align-items: stretch;
 
-  #flash-backup-layout {
-    --plugin-bg: #1e1e1e;
-    --plugin-panel: #111;
-    --plugin-border: #b30000;
-    --plugin-text: #e6e6e6;
-    --plugin-muted: #b0b0b0;
-    --plugin-accent: #b30000;
-  }
+  /* Theme variables */
+  --plugin-bg: #1e1e1e;
+  --plugin-panel: #111;
+  --plugin-border: #2ECC40;
+  --plugin-text: #e6e6e6;
+  --plugin-muted: #b0b0b0;
+  --plugin-accent: #2ECC40;
+}
 
   #flash-backup-layout select,
   #flash-backup-layout input[type="text"],
@@ -801,7 +575,7 @@ if (file_exists("/etc/unraid-version")) {
   #flash-backup-layout input:disabled {
     background-color: #111;
     color: var(--plugin-muted);
-    border-color: #b30000;
+    border-color: #2ECC40;
     cursor: not-allowed;
   }
 
@@ -843,13 +617,6 @@ if (file_exists("/etc/unraid-version")) {
     color: yellow;
   }
 
-  .backup-actions {
-    display: flex;
-    gap: 10px;
-    /* space between buttons */
-    align-items: center;
-  }
-
   #popupMessage {
     display: none;
     background: yellow;
@@ -858,18 +625,6 @@ if (file_exists("/etc/unraid-version")) {
     border-radius: 4px;
     margin-top: 8px;
     font-weight: bold;
-  }
-
-  #vm-dropdown-restore.disabled {
-    pointer-events: none;
-    opacity: 0.5;
-    cursor: default;
-  }
-
-  #vm-dropdown.disabled {
-    pointer-events: none;
-    opacity: 0.5;
-    cursor: default;
   }
 </style>
 
@@ -914,14 +669,12 @@ if (is_file($plg)) {
       <!-- BACKUPS TO KEEP -->
       <div class="form-pair">
         <label for="backups_to_keep">
-          <span title="Choose the amount of backups to keep for each of the VMs selected"
-            class="flash-backuptip">
+          <span title="Choose the amount of backups to keep for each of the VMs selected" class="flash-backuptip">
             Backups To Keep:
           </span>
         </label>
 
-        <span title="Choose the amount of backups to keep for each of the VMs selected"
-          class="flash-backuptip">
+        <span title="Choose the amount of backups to keep for each of the VMs selected" class="flash-backuptip">
           <select id="backups_to_keep" class="short-input" name="BACKUPS_TO_KEEP">
             <?php
         $current = $settings['BACKUPS_TO_KEEP'] ?? 0;
@@ -978,14 +731,12 @@ if (is_file($plg)) {
       <!-- NOTIFICATIONS -->
       <div class="form-pair">
         <label for="notifications">
-          <span class="flash-backuptip"
-            title="Send Unraid system notifications when VM backup starts and finishes">
+          <span class="flash-backuptip" title="Send Unraid system notifications when VM backup starts and finishes">
             Notifications:
           </span>
         </label>
 
-        <span class="flash-backuptip"
-          title="Send Unraid system notifications when VM backup starts and finishes">
+        <span class="flash-backuptip" title="Send Unraid system notifications when VM backup starts and finishes">
           <select id="notifications" class="short-input" name="NOTIFICATIONS">
             <option value="1" <?=((int)($settings['NOTIFICATIONS'] ?? 0)===1) ? 'selected' : '' ?>>
               Yes
@@ -996,7 +747,6 @@ if (is_file($plg)) {
           </select>
         </span>
       </div>
-
 
       <!-- Scheduling Selection -->
       <div class="form-pair" id="cron-expression-row">
@@ -1293,14 +1043,12 @@ if (is_file($plg)) {
       <!-- NOTIFICATIONS -->
       <div class="form-pair">
         <label for="notifications_restore">
-          <span class="flash-backuptip"
-            title="Send Unraid system notifications when VM restore starts and finishes">
+          <span class="flash-backuptip" title="Send Unraid system notifications when VM restore starts and finishes">
             Notifications:
           </span>
         </label>
 
-        <span class="flash-backuptip"
-          title="Send Unraid system notifications when VM restore starts and finishes">
+        <span class="flash-backuptip" title="Send Unraid system notifications when VM restore starts and finishes">
           <select id="notifications_restore" class="short-input" name="NOTIFICATIONS_RESTORE">
             <option value="1" <?=((int)($restoreSettings['NOTIFICATIONS_RESTORE'] ?? 0)===1) ? 'selected' : '' ?>
               >
@@ -1332,11 +1080,11 @@ if (is_file($plg)) {
     <form id="vm-third-section-form">
 
       <div class="log-header-row">
-        <span title="Clear the backup & restore log" class="flash-backuptip">
+        <span title="Clear the flash backup log" class="flash-backuptip">
           <button type="button" id="clear-last-run-log">Clear Log</button>
         </span>
       </div>
-      <pre id="last-run-log">Backup & restore log not found</pre>
+      <pre id="last-run-log">Flash backup log not found</pre>
   </div>
 
   </form>
@@ -1380,19 +1128,6 @@ if (is_file($plg)) {
       }
     });
   });
-
-  let scheduleUILocked = false;
-  let rebuildToken = 0;
-
-  function lockScheduleUI() {
-    scheduleUILocked = true;
-    $(".schedule-action-btn").prop("disabled", true);
-  }
-
-  function unlockScheduleUI() {
-    scheduleUILocked = false;
-    $(".schedule-action-btn").prop("disabled", false);
-  }
 
   function updateBackupStatus() {
     fetch('/plugins/flash-backup/helpers/backup_status_check.php')
@@ -1531,8 +1266,8 @@ if (is_file($plg)) {
   function loadLastRunLog() {
     fetch('/plugins/flash-backup/helpers/fetch_last_run_log.php')
       .then(res => res.text())
-      .then(data => { document.getElementById('last-run-log').textContent = data || 'Backup & restore log not found'; })
-      .catch(() => { document.getElementById('last-run-log').textContent = 'Error loading backup & restore log.'; });
+      .then(data => { document.getElementById('last-run-log').textContent = data || 'Flash backup log not found'; })
+      .catch(() => { document.getElementById('last-run-log').textContent = 'Error loading flash backup log'; });
   }
   loadLastRunLog();
   setInterval(loadLastRunLog, 5000);
@@ -1542,7 +1277,7 @@ if (is_file($plg)) {
 
   if (clearLastRunBtn) {
     clearLastRunBtn.addEventListener("click", function () {
-      if (confirm("Are you sure you want to clear the backup & restore Log?")) {
+      if (confirm("Are you sure you want to clear the flash backup Log?")) {
         fetch("/plugins/flash-backup/helpers/clear_log.php", {
           method: "POST",
           headers: {
@@ -1602,9 +1337,7 @@ if (is_file($plg)) {
     $('.flash-backuptip').trigger('mouseleave');
   }
 
-  $('.vm-dropdown-label, .vm-dropdown-list, select, .custom-dropdown').on('click', function () {
-    closeTooltips();
-  });
+$('select').on('click', closeTooltips);
 </script>
 
 <script>
@@ -1766,9 +1499,7 @@ if (is_file($plg)) {
   }
 
   // When your dropdown opens, close tooltips
-  $('.vm-dropdown-label, .vm-dropdown-list, select, .custom-dropdown').on('click', function () {
-    closeTooltips();
-  });
+$('select').on('click', closeTooltips);
 
   let backupRequestInProgress = false;
 
@@ -1787,7 +1518,6 @@ if (is_file($plg)) {
       return;
     }
 
-    const vms = $('#vm-hidden-backup').val();
     const dest = $('#backup_destination').val().trim();
 
     if (!vms) {
@@ -1805,35 +1535,6 @@ if (is_file($plg)) {
     // -------------------------------
     const vmList = vms.split(',').map(v => v.trim()).filter(Boolean);
     const destClass = backupclassifyPath(dest);
-
-    try {
-      const data = await fetchVdiskPaths(vmList);
-
-      for (const vm of vmList) {
-        const disks = data[vm];
-
-        if (!Array.isArray(disks)) {
-          alert(`Could not read vdisk paths for ${vm}`);
-          return;
-        }
-
-        for (const disk of disks) {
-          const diskClass = backupclassifyPath(disk);
-
-          if (diskClass !== destClass) {
-            alert(
-              `${vm}'s vdisk ${disk} is using mount type (${diskClass}) and backup destination (${destClass})\n\n` +
-              'They must be on the same mount type i.e both fields using user or both user0 or none using either user or user0'
-            );
-            return;
-          }
-        }
-      }
-    } catch (err) {
-      alert('Error validating vdisk paths');
-      console.error(err);
-      return;
-    }
 
     // If we reach here → UI validation passed
     // -------------------------------
@@ -1929,10 +1630,6 @@ if (is_file($plg)) {
     }
   }
 
-  $('#cancelEditBtn').on('click', function () {
-    location.reload();
-  });
-
   function showPopup(message) {
     const popup = $('#popupMessage');
 
@@ -2019,9 +1716,7 @@ if (is_file($plg)) {
   }
 
   // When your dropdown opens, close tooltips
-  $('.vm-dropdown-label, .vm-dropdown-list, select, .custom-dropdown').on('click', function () {
-    closeTooltips();
-  });
+$('select').on('click', closeTooltips);
 
   function classifyPath(p) {
     if (p.startsWith('/mnt/user/')) return 'USER';
@@ -2311,16 +2006,5 @@ if (is_file($plg)) {
     if (!selectedFolder || !activeInputFieldId) return;
 
     resolveAndApplyPath(selectedFolder, activeInputFieldId);
-  });
-
-  $(document).ready(function () {
-    const $field = $('#restore_destination');
-    if ($field.length === 0) return;
-
-    const initialPath = $field.val();
-
-    if (initialPath.startsWith('/mnt/user/')) {
-      resolveAndApplyPath(initialPath, 'restore_destination');
-    }
   });
 </script>
