@@ -40,17 +40,17 @@ $settings = $existing;
 ?>
 
 <?php
-/*
-$restoreCfgPath = '/boot/config/plugins/flash-backup/settings_restore.cfg';
+$restoreCfgPath = '/boot/config/plugins/flash-backup/settings_remote.cfg';
 
 // Define all default keys and their order for restore
 $restoreDefaults = [
-    'LOCATION_OF_BACKUPS' => '',
-    'VMS_TO_RESTORE' => '',
-    'VERSIONS' => '',
-    'RESTORE_DESTINATION' => '/mnt/user/domains',
-    'DRY_RUN_RESTORE' => 'false',
-    'NOTIFICATIONS_RESTORE' => '0'
+    'MINIMAL_BACKUP_REMOTE' => 'no',
+    'RCLONE_MODE' => 'mount',
+    'BACKUP_DESTINATION' => '',
+    'RCLONE_CONFIG' => '',
+    'BACKUPS_TO_KEEP_REMOTE' => '0',
+    'DRY_RUN_REMOTE' => 'no',
+    'NOTIFICATIONS_REMOTE' => 'no'
 ];
 
 // Load existing restore config if present
@@ -86,7 +86,6 @@ $saved_vm_list = $vm_list_settings['VMS_TO_RESTORE'] ?? '';
 if (!is_array($saved_vm_list)) {
     $saved_vm_list = array_filter(array_map('trim', explode(',', $saved_vm_list)));
 }
-*/
 ?>
 
 <?php
@@ -1782,7 +1781,7 @@ $('select').on('click', closeTooltips);
 
     // Save settings first
     $.get(
-      '/plugins/flash-backup/helpers/save_settings_restore.php?' + params
+      '/plugins/flash-backup/helpers/save_settings_remote.php?' + params
     )
       .done(function (res) {
         if (res && res.status === 'ok') {
@@ -1801,7 +1800,7 @@ $('select').on('click', closeTooltips);
   });
 
   function startRestore() {
-    $.get('/plugins/flash-backup/helpers/restore.php', {
+    $.get('/plugins/flash-backup/helpers/backup_remote.php', {
       csrf_token: csrfToken
     })
       .done(function (res) {
