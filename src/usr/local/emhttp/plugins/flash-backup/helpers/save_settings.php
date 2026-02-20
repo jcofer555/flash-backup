@@ -1,7 +1,7 @@
 <?php
 header('Content-Type: application/json');
 
-$cmd = '/usr/local/emhttp/plugins/vm-backup-and-restore/helpers/save_settings.sh';
+$cmd = '/usr/local/emhttp/plugins/flash-backup/helpers/save_settings.sh';
 
 // --- Grab raw values ---
 $vms_to_backup      = $_GET['VMS_TO_BACKUP'] ?? '';
@@ -10,14 +10,6 @@ $backups_to_keep    = $_GET['BACKUPS_TO_KEEP'] ?? '';
 $backup_owner       = $_GET['BACKUP_OWNER'] ?? '';
 $dry_run            = $_GET['DRY_RUN'] ?? '';
 $notifications      = $_GET['NOTIFICATIONS'] ?? '';
-
-// --- Normalize paths ---
-if ($backup_destination !== '') {
-    $resolved = realpath($backup_destination);
-    if ($resolved !== false) {
-        $backup_destination = $resolved;
-    }
-}
 
 // --- Build args array ---
 $args = [

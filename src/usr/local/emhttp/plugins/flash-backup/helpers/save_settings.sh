@@ -1,6 +1,6 @@
 #!/bin/bash
 
-CONFIG="/boot/config/plugins/vm-backup-and-restore/settings.cfg"
+CONFIG="/boot/config/plugins/flash-backup/settings.cfg"
 TMP="${CONFIG}.tmp"
 
 mkdir -p "$(dirname "$CONFIG")"

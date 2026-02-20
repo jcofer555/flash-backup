@@ -6,7 +6,7 @@ Tag="icon.png"
 Markdown="false"
 ---
 <?php
-$cfgPath = '/boot/config/plugins/vm-backup-and-restore/settings.cfg';
+$cfgPath = '/boot/config/plugins/flash-backup/settings.cfg';
 
 // Define all default keys and their order
 $defaults = [
@@ -40,7 +40,7 @@ $settings = $existing;
 ?>
 
 <?php
-$restoreCfgPath = '/boot/config/plugins/vm-backup-and-restore/settings_restore.cfg';
+$restoreCfgPath = '/boot/config/plugins/flash-backup/settings_restore.cfg';
 
 // Define all default keys and their order for restore
 $restoreDefaults = [
@@ -138,7 +138,7 @@ if (file_exists("/etc/unraid-version")) {
     --status-green: #2ECC40;
   }
 
-  .vm-backup-and-restore-wrapper {
+  .flash-backup-wrapper {
     display: flex;
     flex-direction: column;
     width: 100%;
@@ -146,7 +146,7 @@ if (file_exists("/etc/unraid-version")) {
   }
 
   /* === Each Panel (auto-sizing) === */
-  #vm-backup-and-restore-settings,
+  #flash-backup-settings,
   #vm-third-section {
     background: #111;
     border-radius: 12px;
@@ -177,7 +177,7 @@ if (file_exists("/etc/unraid-version")) {
     padding-top: 0;
   }
 
-  #vm-backup-and-restore-settings {
+  #flash-backup-settings {
     padding-top: 0px !important;
     /* reduce from default 20px */
   }
@@ -195,7 +195,7 @@ if (file_exists("/etc/unraid-version")) {
   }
 
   /* fine-tune widths */
-  #vm-backup-and-restore-settings {
+  #flash-backup-settings {
     flex-basis: 25%;
   }
 
@@ -203,7 +203,7 @@ if (file_exists("/etc/unraid-version")) {
     flex-basis: 22%;
   }
 
-  .unraid-71 #vm-backup-and-restore-settings {
+  .unraid-71 #flash-backup-settings {
     min-height: 77vh;
     max-height: 77vh;
     overflow-y: auto;
@@ -216,7 +216,7 @@ if (file_exists("/etc/unraid-version")) {
     margin: 0;
   }
 
-  .unraid-72 #vm-backup-and-restore-settings {
+  .unraid-72 #flash-backup-settings {
     min-height: 76vh;
     max-height: 76vh;
     overflow-y: auto;
@@ -229,7 +229,7 @@ if (file_exists("/etc/unraid-version")) {
     margin: 0;
   }
 
-  #vm-backup-and-restore-settings,
+  #flash-backup-settings,
   #last-run-container {
     flex: 1 1 100%;
   }
@@ -255,11 +255,11 @@ if (file_exists("/etc/unraid-version")) {
     padding: 8px;
   }
 
-  .unraid-71 .vm-backup-and-restore-wrapper {
+  .unraid-71 .flash-backup-wrapper {
     margin-top: -31px !important;
   }
 
-  .unraid-72 .vm-backup-and-restore-wrapper {
+  .unraid-72 .flash-backup-wrapper {
     margin-top: -20px !important;
   }
 
@@ -415,7 +415,7 @@ if (file_exists("/etc/unraid-version")) {
     }
   }
 
-  #vm-backup-and-restore-settings.shake {
+  #flash-backup-settings.shake {
     animation: shake .3s;
   }
 
@@ -632,7 +632,7 @@ if (file_exists("/etc/unraid-version")) {
     background: #111;
   }
 
-  .checkbox-row label.vm-backup-and-restoretip {
+  .checkbox-row label.flash-backuptip {
     display: inline-flex;
     /* shrink to content */
     align-items: center;
@@ -645,7 +645,7 @@ if (file_exists("/etc/unraid-version")) {
     margin-right: 6px;
   }
 
-  #vm-backup-and-restore-layout {
+  #flash-backup-layout {
     display: grid;
     gap: 20px;
     align-items: start;
@@ -745,7 +745,7 @@ if (file_exists("/etc/unraid-version")) {
   }
 
   /* Main 3-panel layout */
-  #vm-backup-and-restore-layout {
+  #flash-backup-layout {
     display: grid;
     grid-template-columns: minmax(320px, 1fr) minmax(320px, 1fr) minmax(420px, 1.6fr);
     gap: 20px;
@@ -754,7 +754,7 @@ if (file_exists("/etc/unraid-version")) {
     /* equal height panels */
   }
 
-  #vm-backup-and-restore-layout {
+  #flash-backup-layout {
     --plugin-bg: #1e1e1e;
     --plugin-panel: #111;
     --plugin-border: #b30000;
@@ -763,9 +763,9 @@ if (file_exists("/etc/unraid-version")) {
     --plugin-accent: #b30000;
   }
 
-  #vm-backup-and-restore-layout select,
-  #vm-backup-and-restore-layout input[type="text"],
-  #vm-backup-and-restore-layout input[type="number"] {
+  #flash-backup-layout select,
+  #flash-backup-layout input[type="text"],
+  #flash-backup-layout input[type="number"] {
     background-color: var(--plugin-panel);
     color: var(--plugin-text);
     border: 1px solid var(--plugin-border);
@@ -773,32 +773,32 @@ if (file_exists("/etc/unraid-version")) {
     padding: 6px 8px;
   }
 
-  #vm-backup-and-restore-layout label {
+  #flash-backup-layout label {
     color: var(--primary-blue);
   }
 
-  #vm-backup-and-restore-layout input[type="checkbox"] {
+  #flash-backup-layout input[type="checkbox"] {
     accent-color: var(--plugin-accent);
   }
 
-  #vm-backup-and-restore-layout select option {
+  #flash-backup-layout select option {
     background-color: var(--plugin-panel);
     color: var(--plugin-text);
   }
 
-  #vm-backup-and-restore-layout select:hover,
-  #vm-backup-and-restore-layout input:hover {
+  #flash-backup-layout select:hover,
+  #flash-backup-layout input:hover {
     border-color: var(--plugin-accent);
   }
 
-  #vm-backup-and-restore-layout select option:hover,
-  #vm-backup-and-restore-layout select option:focus {
+  #flash-backup-layout select option:hover,
+  #flash-backup-layout select option:focus {
     background-color: #e6231c;
     color: #ffffff;
   }
 
-  #vm-backup-and-restore-layout select:disabled,
-  #vm-backup-and-restore-layout input:disabled {
+  #flash-backup-layout select:disabled,
+  #flash-backup-layout input:disabled {
     background-color: #111;
     color: var(--plugin-muted);
     border-color: #b30000;
@@ -806,30 +806,30 @@ if (file_exists("/etc/unraid-version")) {
   }
 
   @media (max-width: 1200px) {
-    #vm-backup-and-restore-layout {
+    #flash-backup-layout {
       grid-template-columns: repeat(2, 1fr);
     }
   }
 
   @media (max-width: 800px) {
-    #vm-backup-and-restore-layout {
+    #flash-backup-layout {
       grid-template-columns: 1fr;
     }
   }
 
   @media (max-width: 1100px) {
-    #vm-backup-and-restore-layout {
+    #flash-backup-layout {
       grid-template-columns: 1fr;
     }
   }
 
-  #vm-backup-and-restore-settings h2,
-  #vm-backup-and-restore-settings h3 {
+  #flash-backup-settings h2,
+  #flash-backup-settings h3 {
     margin-top: 0;
     margin-bottom: 12px;
   }
 
-  #vm-backup-and-restore-settings {
+  #flash-backup-settings {
     padding-top: 16px !important;
   }
 
@@ -874,7 +874,7 @@ if (file_exists("/etc/unraid-version")) {
 </style>
 
 <?php
-$plg = "/boot/config/plugins/vm-backup-and-restore.plg";
+$plg = "/boot/config/plugins/flash-backup.plg";
 $version = "unknown";
 
 if (is_file($plg)) {
@@ -885,44 +885,25 @@ if (is_file($plg)) {
 }
 ?>
 
-<div id="vm-backup-and-restore-layout">
-  <div class="vm-backup-and-restore-wrapper">
-    <form id="vm-backup-and-restore-settings">
+<div id="flash-backup-layout">
+  <div class="flash-backup-wrapper">
+    <form id="flash-backup-settings">
 
       <div class="status-row"><span title="Shows which part of the backup process is currently running"
-          class="vm-backup-and-restoretip status-label">Status:</span><span id="status-text">No Backup Running</span>
+          class="flash-backuptip status-label">Status:</span><span id="status-text">No Backup Running</span>
       </div>
       <br>
-
-      <!-- VM -->
-      <div class="form-pair">
-        <label>
-          <span class="vm-backup-and-restoretip" title="Choose which VM(s) to backup">
-            VM(s) To Backup:
-          </span>
-        </label>
-
-        <div id="vm-dropdown" class="vm-multiselect vm-backup-and-restoretip" title="Choose which VM(s) to backup"
-          data-selected="<?php echo htmlspecialchars($settings['VMS_TO_BACKUP'] ?? '') ?>">
-          <div class="vm-dropdown-label">Select VM(s)</div>
-          <div class="vm-dropdown-list"></div>
-        </div>
-
-        <!-- Hidden field that JS reads on page load -->
-        <input type="hidden" id="vm-hidden-backup" name="VMS_TO_BACKUP"
-          value="<?php echo htmlspecialchars($settings['VMS_TO_BACKUP'] ?? '') ?>">
-      </div>
 
       <!-- DESTINATION -->
       <div class="form-pair">
         <label>
-          <span class="vm-backup-and-restoretip"
+          <span class="flash-backuptip"
             title="Choose destination for backup. Each VM will be saved to a subdirectory with the name the same as the VM">
             Backup Destination:
           </span>
         </label>
 
-        <span class="vm-backup-and-restoretip"
+        <span class="flash-backuptip"
           title="Choose destination for backup. Each VM will be saved to a subdirectory with the name the same as the VM">
           <input type="text" id="backup_destination" name="BACKUP_DESTINATION"
             data-picker-title="Select Backup Destination" placeholder="Click here" readonly style="cursor:pointer;"
@@ -934,13 +915,13 @@ if (is_file($plg)) {
       <div class="form-pair">
         <label for="backups_to_keep">
           <span title="Choose the amount of backups to keep for each of the VMs selected"
-            class="vm-backup-and-restoretip">
+            class="flash-backuptip">
             Backups To Keep:
           </span>
         </label>
 
         <span title="Choose the amount of backups to keep for each of the VMs selected"
-          class="vm-backup-and-restoretip">
+          class="flash-backuptip">
           <select id="backups_to_keep" class="short-input" name="BACKUPS_TO_KEEP">
             <?php
         $current = $settings['BACKUPS_TO_KEEP'] ?? 0;
@@ -964,13 +945,13 @@ if (is_file($plg)) {
       <!-- BACKUP OWNER -->
       <div class="form-pair">
         <label>
-          <span class="vm-backup-and-restoretip"
+          <span class="flash-backuptip"
             title="Choose the owner for the backup if you wanted it owned by one of your created users">
             Backup Owner:
           </span>
         </label>
 
-        <span class="vm-backup-and-restoretip"
+        <span class="flash-backuptip"
           title="Choose the owner for the backup if you wanted it owned by one of your created users">
           <select id="backup_owner" name="BACKUP_OWNER"
             data-selected="<?php echo htmlspecialchars($settings['BACKUP_OWNER'] ?? 'nobody'); ?>">
@@ -981,12 +962,12 @@ if (is_file($plg)) {
       <!-- DRY RUN -->
       <div class="form-pair">
         <label for="dry_run">
-          <span class="vm-backup-and-restoretip" title="Enable to simulate a backup">
+          <span class="flash-backuptip" title="Enable to simulate a backup">
             Dry Run:
           </span>
         </label>
 
-        <span class="vm-backup-and-restoretip" title="Enable to simulate a backup">
+        <span class="flash-backuptip" title="Enable to simulate a backup">
           <select id="dry_run" class="short-input" name="DRY_RUN">
             <option value="0" <?=((string)($settings['DRY_RUN'] ?? '1' )==='0' ) ? 'selected' : '' ?>>Yes</option>
             <option value="1" <?=((string)($settings['DRY_RUN'] ?? '1' )==='1' ) ? 'selected' : '' ?>>No</option>
@@ -997,13 +978,13 @@ if (is_file($plg)) {
       <!-- NOTIFICATIONS -->
       <div class="form-pair">
         <label for="notifications">
-          <span class="vm-backup-and-restoretip"
+          <span class="flash-backuptip"
             title="Send Unraid system notifications when VM backup starts and finishes">
             Notifications:
           </span>
         </label>
 
-        <span class="vm-backup-and-restoretip"
+        <span class="flash-backuptip"
           title="Send Unraid system notifications when VM backup starts and finishes">
           <select id="notifications" class="short-input" name="NOTIFICATIONS">
             <option value="1" <?=((int)($settings['NOTIFICATIONS'] ?? 0)===1) ? 'selected' : '' ?>>
@@ -1020,12 +1001,12 @@ if (is_file($plg)) {
       <!-- Scheduling Selection -->
       <div class="form-pair" id="cron-expression-row">
         <label for="cron_mode">
-          <span class="vm-backup-and-restoretip" title="Select scheduling selection">
+          <span class="flash-backuptip" title="Select scheduling selection">
             Scheduling:
           </span>
         </label>
         <div class="input-wrapper">
-          <span class="vm-backup-and-restoretip" title="Select scheduling selection">
+          <span class="flash-backuptip" title="Select scheduling selection">
             <select id="cron_mode" name="CRON_MODE" class="short-input">
               <option value="minutes" <?php echo (($settings['CRON_MODE'] ?? '' )==='minutes' ) ? 'selected' : '' ; ?>
                 >Minutes</option>
@@ -1048,12 +1029,12 @@ if (is_file($plg)) {
       <div id="minutes-options" style="display:none; margin-top:10px;">
         <div class="form-pair">
           <label for="minutes_frequency">
-            <span class="vm-backup-and-restoretip" title="Select minute frequency">
+            <span class="flash-backuptip" title="Select minute frequency">
               Select Frequency:
             </span>
           </label>
           <div class="input-wrapper">
-            <span class="vm-backup-and-restoretip" title="Select minute frequency">
+            <span class="flash-backuptip" title="Select minute frequency">
 
               <?php
           // --- Normalize MINUTES_FREQUENCY before rendering ---
@@ -1084,12 +1065,12 @@ if (is_file($plg)) {
       <div id="hourly-options" style="display:none; margin-top:10px;">
         <div class="form-pair">
           <label for="hourly_frequency">
-            <span class="vm-backup-and-restoretip" title="Select hourly frequency">
+            <span class="flash-backuptip" title="Select hourly frequency">
               Select Frequency:
             </span>
           </label>
           <div class="input-wrapper">
-            <span class="vm-backup-and-restoretip" title="Select hourly frequency">
+            <span class="flash-backuptip" title="Select hourly frequency">
               <select id="hourly_frequency" name="HOURLY_FREQUENCY" class="short-input">
                 <?php
           for ($i = 1; $i <= 23; $i++) {
@@ -1107,12 +1088,12 @@ if (is_file($plg)) {
       <div id="daily-options" style="display:none; margin-top:10px;">
         <div class="form-pair">
           <label for="daily_time">
-            <span class="vm-backup-and-restoretip" title="Select the time of day for daily execution">
+            <span class="flash-backuptip" title="Select the time of day for daily execution">
               Time Of Day:
             </span>
           </label>
           <div class="input-wrapper">
-            <span class="vm-backup-and-restoretip" title="Select the time of day for daily execution">
+            <span class="flash-backuptip" title="Select the time of day for daily execution">
               <select id="daily_time" name="DAILY_TIME" class="short-input">
                 <?php for ($h = 0; $h < 24; $h++): 
             $time = str_pad($h, 2, "0", STR_PAD_LEFT) . ":00"; ?>
@@ -1131,12 +1112,12 @@ if (is_file($plg)) {
       <div id="weekly-options" style="display:none; margin-top:10px;">
         <div class="form-pair">
           <label for="weekly_day">
-            <span class="vm-backup-and-restoretip" title="Select day of the week">
+            <span class="flash-backuptip" title="Select day of the week">
               Day Of Week:
             </span>
           </label>
           <div class="input-wrapper">
-            <span class="vm-backup-and-restoretip" title="Select day of the week">
+            <span class="flash-backuptip" title="Select day of the week">
               <select id="weekly_day" name="WEEKLY_DAY" class="short-input">
                 <?php 
             $days = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
@@ -1153,12 +1134,12 @@ if (is_file($plg)) {
 
         <div class="form-pair">
           <label for="weekly_time">
-            <span class="vm-backup-and-restoretip" title="Select time of day for weekly execution">
+            <span class="flash-backuptip" title="Select time of day for weekly execution">
               Time Of Day:
             </span>
           </label>
           <div class="input-wrapper">
-            <span class="vm-backup-and-restoretip" title="Select time of day for weekly execution">
+            <span class="flash-backuptip" title="Select time of day for weekly execution">
               <select id="weekly_time" name="WEEKLY_TIME" class="short-input">
                 <?php for ($h = 0; $h < 24; $h++): 
             $time = str_pad($h, 2, "0", STR_PAD_LEFT) . ":00"; ?>
@@ -1177,12 +1158,12 @@ if (is_file($plg)) {
       <div id="monthly-options" style="display:none; margin-top:10px;">
         <div class="form-pair">
           <label for="monthly_day">
-            <span class="vm-backup-and-restoretip" title="Select day of the month">
+            <span class="flash-backuptip" title="Select day of the month">
               Day Of Month:
             </span>
           </label>
           <div class="input-wrapper">
-            <span class="vm-backup-and-restoretip" title="Select day of the month">
+            <span class="flash-backuptip" title="Select day of the month">
               <select id="monthly_day" name="MONTHLY_DAY" class="short-input">
                 <?php for ($d = 1; $d <= 31; $d++): 
             $day = str_pad($d, 2, "0", STR_PAD_LEFT); ?>
@@ -1198,12 +1179,12 @@ if (is_file($plg)) {
 
         <div class="form-pair">
           <label for="monthly_time">
-            <span class="vm-backup-and-restoretip" title="Select time of day for monthly execution">
+            <span class="flash-backuptip" title="Select time of day for monthly execution">
               Time Of Day:
             </span>
           </label>
           <div class="input-wrapper">
-            <span class="vm-backup-and-restoretip" title="Select time of day for monthly execution">
+            <span class="flash-backuptip" title="Select time of day for monthly execution">
               <select id="monthly_time" name="MONTHLY_TIME" class="short-input">
                 <?php for ($h = 0; $h < 24; $h++): 
             $time = str_pad($h, 2, "0", STR_PAD_LEFT) . ":00"; ?>
@@ -1222,13 +1203,13 @@ if (is_file($plg)) {
       <div id="custom-options" style="display:none; margin-top:10px;">
         <div class="form-pair">
           <label for="custom_cron">
-            <span class="vm-backup-and-restoretip"
+            <span class="flash-backuptip"
               title="Enter a valid cron expression 5 fields with spaces between each for example */2 * * * * visit https://crontab.guru for help">
               Cron Expression:
             </span>
           </label>
           <div class="input-wrapper">
-            <span class="vm-backup-and-restoretip"
+            <span class="flash-backuptip"
               title="Enter a valid cron expression 5 fields with spaces between each for example */2 * * * * visit https://crontab.guru for help">
               <input type="text" id="custom_cron" name="CUSTOM_CRON" class="short-input" placeholder="*/2 * * * *"
                 value="<?php echo htmlspecialchars($settings['CUSTOM_CRON'] ?? ''); ?>">
@@ -1259,80 +1240,31 @@ if (is_file($plg)) {
 
       <!-- Backup and Schedule It Button-->
       <div class="backup-actions">
-        <span title="Run backup of selected VM(s)" class="vm-backup-and-restoretip">
+        <span title="Run backup of selected VM(s)" class="flash-backuptip">
           <button type="button" id="backupbtn">Backup Now</button>
         </span>
-
-        <span title="Create/update a backup schedule using the settings shown in the fields above"
-          class="vm-backup-and-restoretip">
-          <button type="button" id="schedule-backup" class="button schedule-button">Schedule It</button>
-        </span>
-        <span title="Cancel editing of schedule" class="vm-backup-and-restoretip">
-          <button type="button" id="cancelEditBtn" style="display:none;">Cancel</button>
-        </span>
       </div>
-
-      <div id="popupMessage"></div>
 
     </form>
   </div>
 
-  <div class="vm-backup-and-restore-wrapper">
-    <form id="vm-backup-and-restore-settings">
+  <div class="flash-backup-wrapper">
+    <form id="flash-backup-settings">
 
       <div class="restore-status-row"><span title="Shows which part of the restore process is currently running"
-          class="vm-backup-and-restoretip restore-status-label">Status:</span><span id="restore-status-text">No Restore
+          class="flash-backuptip restore-status-label">Status:</span><span id="restore-status-text">No Restore
           Running</span></div>
       <br>
-
-      <!-- LOCATION -->
-      <div class="form-pair">
-        <label>
-          <span class="vm-backup-and-restoretip" title="Choose location where backups are located">
-            Location Of Backups:
-          </span>
-        </label>
-
-        <span class="vm-backup-and-restoretip" title="Choose location where backups are located">
-          <input type="text" id="location_of_backups" name="LOCATION_OF_BACKUPS"
-            data-picker-title="Select Location Of Backups" placeholder="Click here" readonly style="cursor:pointer;"
-            value="<?php echo htmlspecialchars($restoreSettings['LOCATION_OF_BACKUPS'] ?? ''); ?>">
-        </span>
-      </div>
-
-      <!-- VM RESTORE -->
-      <div class="form-pair">
-        <label>
-          <span class="vm-backup-and-restoretip" title="Choose which VM(s) to restore">
-            VM(s) To Restore:
-          </span>
-        </label>
-
-        <div id="vm-dropdown-restore" class="vm-multiselect vm-backup-and-restoretip"
-          title="Choose which VM(s) to restore"
-          data-selected="<?php echo htmlspecialchars($restoreSettings['VMS_TO_RESTORE'] ?? '') ?>">
-
-          <div class="vm-dropdown-label-restore">Select VM(s)</div>
-          <div class="vm-dropdown-list-restore"></div>
-        </div>
-
-        <!-- Hidden field that JS reads on page load -->
-        <input type="hidden" id="vm-hidden-restore" name="VMS_TO_RESTORE"
-          value="<?php echo htmlspecialchars($restoreSettings['VMS_TO_RESTORE'] ?? '') ?>">
-      </div>
-
-      <!-- VERSION FIELDS -->
-      <div id="version-fields-container"></div>
 
       <!-- RESTORE DESTINATION -->
       <div class="form-pair">
         <label>
-          <span class="vm-backup-and-restoretip" title="Choose destination to restore VM(s)">
+          <span class="flash-backuptip" title="Choose destination to restore VM(s)">
             Restore Destination:
           </span>
         </label>
 
-        <span class="vm-backup-and-restoretip" title="Choose destination to restore VM(s)">
+        <span class="flash-backuptip" title="Choose destination to restore VM(s)">
           <input type="text" id="restore_destination" name="RESTORE_DESTINATION"
             data-picker-title="Select Restore Destination" placeholder="Click here" readonly style="cursor:pointer;"
             value="<?php echo htmlspecialchars($restoreSettings['RESTORE_DESTINATION'] ?? ''); ?>">
@@ -1342,12 +1274,12 @@ if (is_file($plg)) {
       <!-- DRY RUN -->
       <div class="form-pair">
         <label for="dry_run_restore">
-          <span class="vm-backup-and-restoretip" title="Enable to simulate a restore">
+          <span class="flash-backuptip" title="Enable to simulate a restore">
             Dry Run:
           </span>
         </label>
 
-        <span class="vm-backup-and-restoretip" title="Enable to simulate a restore">
+        <span class="flash-backuptip" title="Enable to simulate a restore">
           <select id="dry_run_restore" class="short-input" name="DRY_RUN_RESTORE">
             <?php
         $val = (string)($restoreSettings['DRY_RUN_RESTORE'] ?? 'true');
@@ -1361,13 +1293,13 @@ if (is_file($plg)) {
       <!-- NOTIFICATIONS -->
       <div class="form-pair">
         <label for="notifications_restore">
-          <span class="vm-backup-and-restoretip"
+          <span class="flash-backuptip"
             title="Send Unraid system notifications when VM restore starts and finishes">
             Notifications:
           </span>
         </label>
 
-        <span class="vm-backup-and-restoretip"
+        <span class="flash-backuptip"
           title="Send Unraid system notifications when VM restore starts and finishes">
           <select id="notifications_restore" class="short-input" name="NOTIFICATIONS_RESTORE">
             <option value="1" <?=((int)($restoreSettings['NOTIFICATIONS_RESTORE'] ?? 0)===1) ? 'selected' : '' ?>
@@ -1388,7 +1320,7 @@ if (is_file($plg)) {
 
       <!-- Restore Button-->
       <div class="form-group">
-        <span title="Run restore of selected VM(s)" class="vm-backup-and-restoretip">
+        <span title="Run restore of selected VM(s)" class="flash-backuptip">
           <button type="button" id="restorebtn">Restore</button>
         </span>
       </div>
@@ -1400,7 +1332,7 @@ if (is_file($plg)) {
     <form id="vm-third-section-form">
 
       <div class="log-header-row">
-        <span title="Clear the backup & restore log" class="vm-backup-and-restoretip">
+        <span title="Clear the backup & restore log" class="flash-backuptip">
           <button type="button" id="clear-last-run-log">Clear Log</button>
         </span>
       </div>
@@ -1409,9 +1341,6 @@ if (is_file($plg)) {
 
   </form>
 </div>
-
-<h3>📅 Scheduled Backup Jobs</h3>
-<div id="schedule-list"></div>
 
 </div>
 
@@ -1434,7 +1363,7 @@ if (is_file($plg)) {
 
 <script>
   $(function () {
-    $(document).on('mouseenter', '.vm-backup-and-restoretip', function () {
+    $(document).on('mouseenter', '.flash-backuptip', function () {
       const $el = $(this);
 
       if (!$el.hasClass('tooltipstered')) {
@@ -1455,23 +1384,6 @@ if (is_file($plg)) {
   let scheduleUILocked = false;
   let rebuildToken = 0;
 
-  function validateBackupPrereqs() {
-    const vms = $('#vm-hidden-backup').val()?.trim();
-    const dest = $('#backup_destination').val()?.trim();
-
-    if (!vms) {
-      alert("Please select at least one VM for the schedule");
-      return false;
-    }
-
-    if (!dest) {
-      alert("Please select a backup destination for the schedule");
-      return false;
-    }
-
-    return true;
-  }
-
   function lockScheduleUI() {
     scheduleUILocked = true;
     $(".schedule-action-btn").prop("disabled", true);
@@ -1483,7 +1395,7 @@ if (is_file($plg)) {
   }
 
   function updateBackupStatus() {
-    fetch('/plugins/vm-backup-and-restore/helpers/backup_status_check.php')
+    fetch('/plugins/flash-backup/helpers/backup_status_check.php')
       .then(res => res.json())
       .then(data => {
         document.getElementById('status-text').textContent = data.status;
@@ -1497,7 +1409,7 @@ if (is_file($plg)) {
   setInterval(updateBackupStatus, 1000);
 
   function updateRestoreStatus() {
-    fetch('/plugins/vm-backup-and-restore/helpers/restore_status_check.php')
+    fetch('/plugins/flash-backup/helpers/restore_status_check.php')
       .then(res => res.json())
       .then(data => {
         document.getElementById('restore-status-text').textContent = data.status;
@@ -1617,7 +1529,7 @@ if (is_file($plg)) {
   })();
 
   function loadLastRunLog() {
-    fetch('/plugins/vm-backup-and-restore/helpers/fetch_last_run_log.php')
+    fetch('/plugins/flash-backup/helpers/fetch_last_run_log.php')
       .then(res => res.text())
       .then(data => { document.getElementById('last-run-log').textContent = data || 'Backup & restore log not found'; })
       .catch(() => { document.getElementById('last-run-log').textContent = 'Error loading backup & restore log.'; });
@@ -1631,7 +1543,7 @@ if (is_file($plg)) {
   if (clearLastRunBtn) {
     clearLastRunBtn.addEventListener("click", function () {
       if (confirm("Are you sure you want to clear the backup & restore Log?")) {
-        fetch("/plugins/vm-backup-and-restore/helpers/clear_log.php", {
+        fetch("/plugins/flash-backup/helpers/clear_log.php", {
           method: "POST",
           headers: {
             "Content-Type": "application/x-www-form-urlencoded",
@@ -1667,7 +1579,7 @@ if (is_file($plg)) {
     const select = $('#backup_owner');
     const selected = select.data('selected') || 'nobody';
 
-    $.getJSON('/plugins/vm-backup-and-restore/helpers/list_users_group100.php', function (data) {
+    $.getJSON('/plugins/flash-backup/helpers/list_users_group100.php', function (data) {
       select.empty();
 
       data.users.forEach(user => {
@@ -1685,340 +1597,13 @@ if (is_file($plg)) {
     });
   });
 
-  $(document).ready(function () {
-    /* -----------------------------------------
-       ELEMENTS (BACKUP ONLY)
-       ----------------------------------------- */
-    const dropdownBackup = $('#vm-dropdown');
-    const labelBackup = dropdownBackup.find('.vm-dropdown-label');
-    const listBackup = dropdownBackup.find('.vm-dropdown-list');
-
-    /* -----------------------------------------
-       OPEN / CLOSE BEHAVIOR
-       ----------------------------------------- */
-    labelBackup.on('click', function (e) {
-      if (dropdownBackup.hasClass('disabled')) return;
-
-      e.stopPropagation();
-      listBackup.toggle();
-      dropdownBackup.toggleClass('active', listBackup.is(':visible'));
-    });
-
-    $(document).on('click', function (e) {
-      if (!$(e.target).closest('#vm-dropdown').length) {
-        listBackup.hide();
-        dropdownBackup.removeClass('active');
-      }
-    });
-
-    /* -----------------------------------------
-       UPDATE LABEL + HIDDEN FIELD
-       ----------------------------------------- */
-    function updateBackupLabel() {
-      const checked = listBackup.find('input:checked').map(function () {
-        return $(this).val();
-      }).get();
-
-      labelBackup.text(checked.length ? checked.join(', ') : 'Select VM(s)');
-
-      let hidden = $('#vm-hidden-backup');
-      if (!hidden.length) {
-        hidden = $('<input>', {
-          type: 'hidden',
-          id: 'vm-hidden-backup',
-          name: 'VMS_TO_BACKUP'
-        }).appendTo(dropdownBackup.parent());
-      }
-
-      hidden.val(checked.join(','));
-    }
-
-    /* -----------------------------------------
-       LOAD BACKUP VM LIST
-       ----------------------------------------- */
-    window.loadBackupVMs = function () {
-
-      // Reset state every time
-      dropdownBackup.removeClass('disabled');
-      listBackup.hide();
-
-      const selectedBackup =
-        (dropdownBackup.attr('data-selected') || '')
-          .split(',')
-          .map(s => s.trim())
-          .filter(Boolean);
-
-      $.getJSON('/plugins/vm-backup-and-restore/helpers/list_vms.php', function (data) {
-        listBackup.empty();
-
-        if (!data.vms || data.vms.length === 0) {
-          listBackup.append('<div class="vm-dropdown-item no-vms">No VMs found</div>');
-          labelBackup.text('No VMs available');
-          dropdownBackup.addClass('disabled');
-          ensureHiddenFieldBackup('');
-          return;
-        }
-
-        data.vms.forEach(vm => {
-          const id = 'vmchk-' + vm.replace(/\s+/g, '_');
-
-          const item = $(`
-        <div>
-          <label>
-            <input type="checkbox" value="${vm}" id="${id}">
-            ${vm}
-          </label>
-        </div>
-      `);
-
-          if (selectedBackup.includes(vm)) {
-            item.find('input').prop('checked', true);
-          }
-
-          listBackup.append(item);
-        });
-
-        updateBackupLabel();
-      });
-    };
-
-    /* -----------------------------------------
-       INITIAL LOAD (EMPTY SELECTION)
-       ----------------------------------------- */
-    loadBackupVMs();
-
-    function ensureHiddenFieldBackup(value) {
-      let hidden = $('#vm-hidden-backup');
-      if (!hidden.length) {
-        hidden = $('<input>', {
-          type: 'hidden',
-          id: 'vm-hidden-backup',
-          name: 'VMS_TO_BACKUP'
-        }).appendTo(dropdownBackup.parent());
-      }
-      hidden.val(value);
-    }
-
-    listBackup.on('change', 'input[type=checkbox]', updateBackupLabel);
-
-  });
-
   // Force-close any Dynamix tooltip when dropdown opens
   function closeTooltips() {
-    $('.vm-backup-and-restoretip').trigger('mouseleave');
+    $('.flash-backuptip').trigger('mouseleave');
   }
 
   $('.vm-dropdown-label, .vm-dropdown-list, select, .custom-dropdown').on('click', function () {
     closeTooltips();
-  });
-
-  const versionSelections = {};
-
-  /* =========================================
-     VERSION FIELDS (RESTORE)
-  ========================================= */
-  function rebuildVersionFields() {
-    const container = $('#version-fields-container');
-    container.empty();
-
-    const restorePath = $('#location_of_backups').val();
-    if (!restorePath) return;
-
-    const raw = $('#vm-hidden-restore').val() || '';
-    const selected = raw.split(',').map(s => s.trim()).filter(Boolean);
-
-    if (selected.length === 0) return;
-
-    // Create a unique token for THIS rebuild
-    const token = ++rebuildToken;
-
-    selected.forEach(vm => {
-      $.getJSON(
-        '/plugins/vm-backup-and-restore/helpers/get_vm_versions.php',
-        { vm, restore_path: restorePath },
-        function (versions) {
-
-          // If a newer rebuild started, ignore this callback
-          if (token !== rebuildToken) return;
-
-          if (!versions || versions.length === 0) return;
-
-          const wrapper = $(`
-          <div class="form-pair version-field">
-            <label>
-              <span class="vm-backup-and-restoretip" title="Choose which version of ${vm} to restore">
-                Version for ${vm}:
-              </span>
-            </label>
-            <span class="vm-backup-and-restoretip" title="Choose which version of ${vm} to restore">
-              <select name="VERSION_${vm}" class="version-select" data-vm="${vm}"></select>
-            </span>
-          </div>
-        `);
-
-          const select = wrapper.find('select');
-
-          versions.forEach((v, idx) => {
-            let label = v.display;
-            if (idx === 0) label += ' (LATEST)';
-            if (versions.length > 1 && idx === versions.length - 1) label += ' (OLDEST)';
-            select.append(`<option value="${v.raw}">${label}</option>`);
-          });
-
-          container.append(wrapper);
-        }
-      );
-    });
-  }
-
-  /* =========================================
-     LIVE REBUILD TRIGGERS
-  ========================================= */
-
-  $(document).ready(function () {
-    // Initial load (if values already exist)
-    rebuildVersionFields();
-  });
-
-  $(document).ready(function () {
-    const dropdown = $('#vm-dropdown-restore');
-    const list = dropdown.find('.vm-dropdown-list-restore');
-    const label = dropdown.find('.vm-dropdown-label-restore');
-
-    // Saved selections (comma-separated)
-    const selectedRaw = dropdown.data('selected') || '';
-    const selected = selectedRaw.split(',').map(s => s.trim()).filter(s => s !== '');
-
-    // Toggle dropdown
-    dropdown.on('click', function (e) {
-      e.stopPropagation();
-      list.toggle();
-      dropdown.toggleClass('active', list.is(':visible'));
-    });
-
-    // Close when clicking outside
-    $(document).on('click', function () {
-      list.hide();
-      dropdown.removeClass('active');
-    });
-
-    // Prevent checkbox clicks from closing the dropdown
-    list.on('click', 'input[type=checkbox]', function (e) {
-      e.stopPropagation();
-    });
-
-    // Prevent label clicks from closing the dropdown
-    list.on('click', 'label', function (e) {
-      e.stopPropagation();
-    });
-
-    // Load restore folders
-    function loadRestoreFolders() {
-      const restorePath = $('#location_of_backups').val();
-      list.empty();
-      label.text('No backups at this location');
-
-      if (!restorePath) {
-        ensureHiddenFieldRestore('');
-
-        // Treat blank path like "no backups"
-        dropdown.removeClass('active');
-        list.hide();
-        dropdown.addClass('disabled');
-        label.text('No backups at this location');
-
-        return;
-      }
-
-      $.getJSON('/plugins/vm-backup-and-restore/helpers/list_restore_folders.php',
-        { restore_path: restorePath },
-        function (data) {
-
-          list.empty();
-
-          if (!data.folders || data.folders.length === 0) {
-            ensureHiddenFieldRestore('');
-
-            // Hide the list so it cannot open
-            list.hide();
-
-            // Disable dropdown interaction
-            dropdown.addClass('disabled');
-
-            return;
-          }
-
-          dropdown.removeClass('disabled');
-
-          // We have folders — rebuild list
-          data.folders.forEach(folder => {
-            const id = 'vmrestore-' + folder.replace(/\s+/g, '_');
-
-            const item = $(`
-          <div>
-            <label>
-              <input type="checkbox" value="${folder}" id="${id}">
-              ${folder}
-            </label>
-          </div>
-        `);
-
-            // Re-check saved selections from settings_restore.cfg
-            if (selected.includes(folder)) {
-              item.find('input').prop('checked', true);
-            }
-
-            list.append(item);
-          });
-
-          // Update label + hidden field based on actual checkboxes
-          updateRestoreLabel();
-          rebuildVersionFields();
-        }
-      );
-    }
-
-    // Update label & hidden field
-    function updateRestoreLabel() {
-      const checked = list.find('input:checked').map(function () {
-        return $(this).val();
-      }).get();
-
-      if (checked.length === 0) {
-        label.text('Select VM(s)');
-      } else {
-        label.text(checked.join(', '));
-      }
-
-      ensureHiddenFieldRestore(checked.join(','));
-    }
-
-    function ensureHiddenFieldRestore(value) {
-      let hidden = $('#vm-hidden-restore');
-      if (!hidden.length) {
-        hidden = $('<input>', {
-          type: 'hidden',
-          id: 'vm-hidden-restore',
-          name: 'VMS_TO_RESTORE'
-        }).appendTo(dropdown.parent());
-      }
-      hidden.val(value);
-    }
-
-    // Listen for checkbox changes
-    list.on('change', 'input[type=checkbox]', function () {
-      updateRestoreLabel();
-      rebuildVersionFields();
-    });
-
-    // Load folders on restore path change
-    $('#location_of_backups').on('input blur change', function () {
-      loadRestoreFolders();
-      rebuildVersionFields();
-    });
-
-    // Initial load if location_of_backups already has a value
-    loadRestoreFolders();
   });
 </script>
 
@@ -2162,7 +1747,7 @@ if (is_file($plg)) {
   }
 
   function pollBackupStatus() {
-    $.getJSON('/plugins/vm-backup-and-restore/helpers/backup_status.php', function (res) {
+    $.getJSON('/plugins/flash-backup/helpers/backup_status.php', function (res) {
       backupRunning = res.running === true;
       updateBackupButtonState();
       updateBackupUI(res.running);
@@ -2177,7 +1762,7 @@ if (is_file($plg)) {
 
   // Force-close any Dynamix tooltip
   function closeTooltips() {
-    $('.vm-backup-and-restoretip').trigger('mouseleave');
+    $('.flash-backuptip').trigger('mouseleave');
   }
 
   // When your dropdown opens, close tooltips
@@ -2186,15 +1771,6 @@ if (is_file($plg)) {
   });
 
   let backupRequestInProgress = false;
-
-  async function fetchVdiskPaths(vmList) {
-    return $.ajax({
-      url: '/plugins/vm-backup-and-restore/helpers/get_vdisk_paths.php',
-      method: 'POST',
-      data: { vms: vmList },
-      dataType: 'json'
-    });
-  }
 
   function backupclassifyPath(p) {
     if (p.startsWith('/mnt/user/')) return 'USER';
@@ -2274,7 +1850,7 @@ if (is_file($plg)) {
       csrf_token: csrfToken
     });
 
-    $.get('/plugins/vm-backup-and-restore/helpers/save_settings.php?' + params)
+    $.get('/plugins/flash-backup/helpers/save_settings.php?' + params)
       .done(function (res) {
 
         if (res && res.status === 'ok') {
@@ -2294,7 +1870,7 @@ if (is_file($plg)) {
   });
 
   function startBackup() {
-    $.get('/plugins/vm-backup-and-restore/helpers/backup.php', {
+    $.get('/plugins/flash-backup/helpers/backup.php', {
       csrf_token: csrfToken
     })
       .done(function (res) {
@@ -2307,21 +1883,6 @@ if (is_file($plg)) {
       .fail(function () {
         alert('Error starting backup');
       });
-  }
-
-  // --- Global variable to track editing ---
-  window.editingScheduleId = null;
-
-  // --- Load schedule list ---
-  function loadSchedules() {
-    return $.get(
-      '/plugins/vm-backup-and-restore/helpers/schedule_list.php',
-      function (html) {
-        $('#schedule-list').html(html);
-      }
-    ).always(() => {
-      unlockScheduleUI();
-    });
   }
 
   // --- Build cron string from UI selections ---
@@ -2368,118 +1929,6 @@ if (is_file($plg)) {
     }
   }
 
-  // --- Create or update schedule ---
-  function scheduleJob(type) {
-
-    if (!validateBackupPrereqs()) {
-      return; // block saving schedule
-    }
-
-    if (scheduleUILocked) return;   // prevent double‑clicks during reload
-    lockScheduleUI();               // freeze all schedule action buttons
-
-    const cron = buildCronFromUI();
-    if (!cron.valid) {
-      unlockScheduleUI();
-      alert("Invalid cron expression");
-      return;
-    }
-
-    // Gather all input/select values as settings
-    const settings = {};
-    $('input[name], select[name]').each(function () {
-      settings[this.name] = $(this).val();
-    });
-
-    const url = window.editingScheduleId
-      ? 'schedule_update.php'
-      : 'schedule_create.php';
-
-    $.ajax({
-      type: 'POST',
-      url: `/plugins/vm-backup-and-restore/helpers/${url}`,
-      data: {
-        id: window.editingScheduleId,
-        type: type,
-        cron: cron.expression,
-        settings: settings
-      },
-      success: function (response) {
-        resetScheduleUI();
-
-        // Clear editing ID
-        window.editingScheduleId = null;
-
-        loadSchedules();
-
-        showPopup("Schedule saved!");
-      },
-      error: function (xhr) {
-        unlockScheduleUI();
-
-        if (xhr.status === 409) {
-          alert('Duplicate schedule detected during create!');
-        } else {
-          alert('Error creating/updating schedule: ' + xhr.responseText);
-        }
-      }
-    });
-  }
-
-  // --- Edit a schedule ---
-  function editSchedule(id) {
-    if (scheduleUILocked) return;   // prevent double‑clicks during reload
-    lockScheduleUI();               // freeze all schedule action buttons
-
-    $.getJSON('/plugins/vm-backup-and-restore/helpers/schedule_load.php', { id }, function (s) {
-      const settings = s.SETTINGS || {};
-
-      // Apply schedule type first
-      if (s.TYPE) {
-        $('[name="type"]').val(s.TYPE).trigger('change');
-      }
-
-      // Apply all settings to form fields
-      for (const k in settings) {
-        const el = $('[name="' + k + '"]');
-        if (!el.length) continue;
-
-        if (el.is(':checkbox')) {
-          el.prop('checked', settings[k] == 1 || settings[k] === true);
-        } else if (el.is(':radio')) {
-          $('[name="' + k + '"][value="' + settings[k] + '"]').prop('checked', true);
-        } else {
-          el.val(settings[k]).trigger('change');
-        }
-
-        // VM dropdown special handling
-        if (k === 'VMS_TO_BACKUP') {
-          $('#vm-dropdown').attr('data-selected', settings[k]);
-        }
-      }
-
-      // Cron mode detection
-      $('#cron_mode')
-        .val(detectCronMode(s.CRON))
-        .trigger('change');
-
-      // Store ID globally
-      window.editingScheduleId = id;
-
-      // Rebuild VM dropdown with updated selected value
-      $('#vm-dropdown').attr('data-selected', settings['VMS_TO_BACKUP'] || '');
-      loadBackupVMs();
-
-      // Switch Schedule It → Edit
-      $('#schedule-backup').text('Edit');
-
-      // Show Cancel button
-      $('#cancelEditBtn').show();
-
-      unlockScheduleUI();
-    });
-  }
-
   $('#cancelEditBtn').on('click', function () {
     location.reload();
   });
@@ -2497,102 +1946,6 @@ if (is_file($plg)) {
     }, 3000);
   }
 
-  function resetScheduleUI() {
-    // Revert Edit → Schedule It
-    $('#schedule-backup').text('Schedule It');
-
-    // Hide Cancel button
-    $('#cancelEditBtn').hide();
-
-    // Remove any popup message immediately
-    $('#popupMessage').stop(true, true).hide().text('');
-  }
-
-  // --- Delete a schedule ---
-  function deleteSchedule(id) {
-    if (scheduleUILocked) return;   // prevent double‑clicks during reload
-
-    if (!confirm("Delete this schedule?")) return;
-
-    lockScheduleUI();               // freeze all schedule action buttons
-
-    $.post(
-      '/plugins/vm-backup-and-restore/helpers/schedule_delete.php',
-      { id: id }
-    ).always(() => {
-      loadSchedules();
-    });
-  }
-
-  // --- Run backup manually ---
-  function runScheduleBackup(id, btn) {
-    if (scheduleUILocked) return;
-
-    if (!confirm("Are you sure you want to run this backup now?")) return;
-
-    lockScheduleUI();
-
-    // Disable clicked button and change tooltip
-    btn.disabled = true;
-    const originalText = btn.textContent;
-    const originalTitle = btn.getAttribute('title');
-
-    btn.textContent = "Running";
-
-    $.post('/plugins/vm-backup-and-restore/helpers/run_schedule.php', { id })
-      .done(function (res) {
-        if (!res.started) {
-          alert("Failed to start backup");
-          btn.disabled = false;
-          btn.textContent = originalText;
-          btn.setAttribute('title', originalTitle);
-          unlockScheduleUI();
-          return;
-        }
-
-        // Poll lock
-        const poll = setInterval(function () {
-          $.getJSON('/plugins/vm-backup-and-restore/helpers/check_lock.php', function (res) {
-            if (!res.locked) {
-              clearInterval(poll);
-
-              btn.disabled = false;
-              btn.textContent = originalText;
-
-              unlockScheduleUI();
-            }
-          });
-        }, 1000);
-      })
-      .fail(function (xhr, status, err) {
-        alert("Failed to start backup: " + (xhr.responseJSON?.error || err));
-        btn.disabled = false;
-        btn.textContent = originalText;
-        btn.setAttribute('title', originalTitle);
-        unlockScheduleUI();
-      });
-  }
-
-  // --- Toggle enable/disable ---
-  function toggleSchedule(id, isEnabled) {
-    if (scheduleUILocked) return;   // prevent double‑clicks during reload
-
-    const msg = isEnabled
-      ? "Disable this schedule?"
-      : "Enable this schedule?";
-
-    if (!confirm(msg)) return;
-
-    lockScheduleUI();               // freeze all schedule action buttons
-
-    $.post(
-      '/plugins/vm-backup-and-restore/helpers/schedule_toggle.php',
-      { id: id }
-    ).always(() => {
-      loadSchedules();
-    });
-  }
-
   // --- Detect cron mode based on expression ---
   function detectCronMode(cron) {
     if (!cron) return 'minutes';
@@ -2603,39 +1956,6 @@ if (is_file($plg)) {
     if (/^0 \d+ \d+ \* \*$/.test(cron)) return 'monthly';
     return 'custom';
   }
-
-  // --- Initialize VM BACKUP multiselect ---
-  function initVmBackupDropdown() {
-    const selected = ($('#vm-hidden-backup').val() || '').split(',');
-
-    $('.vm-dropdown-list input[type=checkbox]').each(function () {
-      if (selected.includes($(this).val())) {
-        $(this).prop('checked', true);
-      }
-    });
-
-    updateVmBackupLabel();
-  }
-
-  function updateVmBackupLabel() {
-    const selected = $('.vm-dropdown-list input:checked')
-      .map(function () { return $(this).val(); })
-      .get();
-
-    $('#vm-hidden-backup').val(selected.join(','));
-
-    $('.vm-dropdown-label').text(
-      selected.length ? selected.join(', ') : 'Select VM(s)'
-    );
-  }
-
-  // --- Button click handlers ---
-  $(document).ready(function () {
-    loadSchedules();
-
-    $(document).on('click', '#schedule-backup', function () { scheduleJob('backup'); });
-    $(document).on('click', '#schedule-restore', function () { scheduleJob('restore'); });
-  });
 </script>
 
 <script>
@@ -2682,7 +2002,7 @@ if (is_file($plg)) {
   }
 
   function pollRestoreStatus() {
-    $.getJSON('/plugins/vm-backup-and-restore/helpers/restore_status.php', function (res) {
+    $.getJSON('/plugins/flash-backup/helpers/restore_status.php', function (res) {
       updateRestoreUI(res.running);
     });
   }
@@ -2695,29 +2015,13 @@ if (is_file($plg)) {
 
   // Force-close any Dynamix tooltip
   function closeTooltips() {
-    $('.vm-backup-and-restoretip').trigger('mouseleave');
+    $('.flash-backuptip').trigger('mouseleave');
   }
 
   // When your dropdown opens, close tooltips
   $('.vm-dropdown-label, .vm-dropdown-list, select, .custom-dropdown').on('click', function () {
     closeTooltips();
   });
-
-  // Collect per-VM version selections
-  function collectRestoreVersions() {
-    const versions = {};
-
-    $('#version-fields-container select.version-select').each(function () {
-      const vm = $(this).data('vm');
-      const val = $(this).val();
-
-      if (vm && val) {
-        versions[vm] = val;
-      }
-    });
-
-    return versions;
-  }
 
   function classifyPath(p) {
     if (p.startsWith('/mnt/user/')) return 'USER';
@@ -2783,7 +2087,7 @@ if (is_file($plg)) {
 
     // Save settings first
     $.get(
-      '/plugins/vm-backup-and-restore/helpers/save_settings_restore.php?' + params
+      '/plugins/flash-backup/helpers/save_settings_restore.php?' + params
     )
       .done(function (res) {
         if (res && res.status === 'ok') {
@@ -2802,7 +2106,7 @@ if (is_file($plg)) {
   });
 
   function startRestore() {
-    $.get('/plugins/vm-backup-and-restore/helpers/restore.php', {
+    $.get('/plugins/flash-backup/helpers/restore.php', {
       csrf_token: csrfToken
     })
       .done(function (res) {
@@ -2818,7 +2122,7 @@ if (is_file($plg)) {
   }
 
   if (typeof caPluginUpdateCheck === "function") {
-    caPluginUpdateCheck("vm-backup-and-restore.plg", { name: "vm-backup-and-restore" });
+    caPluginUpdateCheck("flash-backup.plg", { name: "flash-backup" });
   }
 
 </script>
@@ -2833,7 +2137,7 @@ if (is_file($plg)) {
       csrf_token: csrf_token
     });
 
-    fetch('/plugins/vm-backup-and-restore/helpers/resolve_path.php', {
+    fetch('/plugins/flash-backup/helpers/resolve_path.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: params.toString()
@@ -2862,7 +2166,7 @@ if (is_file($plg)) {
 
   function loadFolders(path) {
 
-    $.getJSON('/plugins/vm-backup-and-restore/helpers/list_folders.php',
+    $.getJSON('/plugins/flash-backup/helpers/list_folders.php',
       {
         path: path,
         field: activeInputFieldId   // send which field is active
@@ -3019,37 +2323,4 @@ if (is_file($plg)) {
       resolveAndApplyPath(initialPath, 'restore_destination');
     }
   });
-</script>
-
-<script>
-  (function () {
-    const CHECK_INTERVAL = 1000;
-
-    function updateRunButtons(locked) {
-      document.querySelectorAll('.run-schedule-btn').forEach(btn => {
-        btn.disabled = locked;
-        if (locked) {
-          btn.classList.add('disabled');
-        } else {
-          btn.classList.remove('disabled');
-        }
-      });
-    }
-
-    async function pollLock() {
-      try {
-        const res = await fetch('/plugins/vm-backup-and-restore/helpers/check_lock.php');
-        const data = await res.json();
-        updateRunButtons(Boolean(data.locked));
-      } catch (e) {
-        console.error('Failed to check lock:', e);
-      }
-    }
-
-    // Initial check
-    pollLock();
-
-    // Poll continuously
-    setInterval(pollLock, CHECK_INTERVAL);
-  })();
 </script>

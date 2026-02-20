@@ -1,5 +1,5 @@
 <?php
-$lock = '/tmp/vm-backup-and-restore/lock.txt';
+$lock = '/tmp/flash-backup/lock.txt';
 
 header('Content-Type: application/json');
 echo json_encode([

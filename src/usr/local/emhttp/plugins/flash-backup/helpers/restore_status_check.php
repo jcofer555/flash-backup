@@ -1,7 +1,7 @@
 <?php
 header('Content-Type: application/json');
 
-$status_file = '/tmp/vm-backup-and-restore/restore_status.txt';
+$status_file = '/tmp/flash-backup/restore_status.txt';
 
 $status = 'No Restore Running';
 
