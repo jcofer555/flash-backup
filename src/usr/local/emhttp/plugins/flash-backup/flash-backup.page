@@ -598,7 +598,6 @@ if (file_exists("/etc/unraid-version")) {
     color: yellow;
   }
 
-  /* ⭐ NEW: Remote scheduler warning styles */
   #cron-warning-fields-remote,
   #cron-warning-slash-remote {
     max-width: 360px;
@@ -616,6 +615,22 @@ if (file_exists("/etc/unraid-version")) {
     border-radius: 4px;
     margin-top: 8px;
     font-weight: bold;
+  }
+
+  .minimal-backup-label {
+    margin-left: 6px;
+    color: var(--primary-blue);
+    font-weight: bold;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    position: relative;
+    top: 3px;
+  }
+
+  .minimal-backup-label input[type="checkbox"] {
+    transform: scale(1.1);
   }
 </style>
 
@@ -724,12 +739,14 @@ if (is_file($plg)) {
       <!-- NOTIFICATIONS -->
       <div class="form-pair">
         <label for="notifications">
-          <span class="flash-drivetip" title="Send unraid system notifications when flash backup to local storage starts and finishes">
+          <span class="flash-drivetip"
+            title="Send unraid system notifications when flash backup to local storage starts and finishes">
             Notifications:
           </span>
         </label>
 
-        <span class="flash-drivetip" title="Send unraid system notifications when flash backup to local storage starts and finishes">
+        <span class="flash-drivetip"
+          title="Send unraid system notifications when flash backup to local storage starts and finishes">
           <select id="notifications" class="short-input" name="NOTIFICATIONS">
             <option value="yes" <?=(($settings['NOTIFICATIONS'] ?? 'no' )==='yes' ) ? 'selected' : '' ?>>
               Yes
@@ -981,6 +998,14 @@ if (is_file($plg)) {
         <span title="Run backup of flash drive to local storage" class="flash-drivetip">
           <button type="button" id="backupbtn">Backup Now</button>
         </span>
+
+        <!-- Minimal Backup Checkbox -->
+        <label class="minimal-backup-label flash-drivetip"
+          title="Enable to have the local backup only include the config and extra folders, and the syslinux.cfg file">
+          <input type="checkbox" id="minimal_backup" name="MINIMAL_BACKUP" value="yes" <?php echo
+            (($settings['MINIMAL_BACKUP'] ?? 'no' )==='yes' ) ? 'checked' : '' ; ?>>
+          Minimal Backup
+        </label>
       </div>
 
     </form>
@@ -1005,7 +1030,8 @@ if (is_file($plg)) {
         </label>
 
         <span class="flash-drivetip" title="Choose which rclone config to use for the remote backup">
-          <input type="text" id="rclone_config_remote" name="RCLONE_CONFIG_REMOTE" placeholder="Click here" readonly style="cursor:pointer;"
+          <input type="text" id="rclone_config_remote" name="RCLONE_CONFIG_REMOTE" placeholder="Click here" readonly
+            style="cursor:pointer;"
             value="<?php echo htmlspecialchars($remotesettings['RCLONE_CONFIG_REMOTE'] ?? ''); ?>">
         </span>
       </div>
@@ -1049,8 +1075,10 @@ if (is_file($plg)) {
 
         <span class="flash-drivetip" title="Enable to simulate the remote backup">
           <select id="dry_run_remote" class="short-input" name="DRY_RUN_REMOTE">
-            <option value="yes" <?=(($remotesettings['DRY_RUN_REMOTE'] ?? 'no' )==='yes' ) ? 'selected' : '' ?>>Yes</option>
-            <option value="no" <?=(($remotesettings['DRY_RUN_REMOTE'] ?? 'no' )==='no' ) ? 'selected' : '' ?>>No</option>
+            <option value="yes" <?=(($remotesettings['DRY_RUN_REMOTE'] ?? 'no' )==='yes' ) ? 'selected' : '' ?>>Yes
+            </option>
+            <option value="no" <?=(($remotesettings['DRY_RUN_REMOTE'] ?? 'no' )==='no' ) ? 'selected' : '' ?>>No
+            </option>
           </select>
         </span>
       </div>
@@ -1058,14 +1086,17 @@ if (is_file($plg)) {
       <!-- NOTIFICATIONS REMOTE -->
       <div class="form-pair">
         <label for="notifications_remote">
-          <span class="flash-drivetip" title="Send unraid system notifications when flash backup to remote storage starts and finishes">
+          <span class="flash-drivetip"
+            title="Send unraid system notifications when flash backup to remote storage starts and finishes">
             Notifications:
           </span>
         </label>
 
-        <span class="flash-drivetip" title="Send unraid system notifications when flash backup to remote storage starts and finishes">
+        <span class="flash-drivetip"
+          title="Send unraid system notifications when flash backup to remote storage starts and finishes">
           <select id="notifications_remote" class="short-input" name="NOTIFICATIONS_REMOTE">
-            <option value="yes" <?=(($remotesettings['NOTIFICATIONS_REMOTE'] ?? 'no' )==='yes' ) ? 'selected' : '' ?>>Yes
+            <option value="yes" <?=(($remotesettings['NOTIFICATIONS_REMOTE'] ?? 'no' )==='yes' ) ? 'selected' : '' ?>
+              >Yes
             </option>
             <option value="no" <?=(($remotesettings['NOTIFICATIONS_REMOTE'] ?? 'no' )==='no' ) ? 'selected' : '' ?>>No
             </option>
@@ -1083,17 +1114,23 @@ if (is_file($plg)) {
         <div class="input-wrapper">
           <span class="flash-drivetip" title="Select scheduling selection">
             <select id="cron_mode_remote" name="CRON_MODE_REMOTE" class="short-input">
-              <option value="minutes" <?=(($remotesettings['CRON_MODE_REMOTE'] ?? '' )==='minutes' ) ? 'selected' : '' ?>
+              <option value="minutes" <?=(($remotesettings['CRON_MODE_REMOTE'] ?? '' )==='minutes' ) ? 'selected' : ''
+                ?>
                 >Minutes</option>
-              <option value="hourly" <?=(($remotesettings['CRON_MODE_REMOTE'] ?? '' )==='hourly' ) ? 'selected' : '' ?>>Hourly
+              <option value="hourly" <?=(($remotesettings['CRON_MODE_REMOTE'] ?? '' )==='hourly' ) ? 'selected' : '' ?>
+                >Hourly
               </option>
-              <option value="daily" <?=(($remotesettings['CRON_MODE_REMOTE'] ?? '' )==='daily' ) ? 'selected' : '' ?>>Daily
+              <option value="daily" <?=(($remotesettings['CRON_MODE_REMOTE'] ?? '' )==='daily' ) ? 'selected' : '' ?>
+                >Daily
               </option>
-              <option value="weekly" <?=(($remotesettings['CRON_MODE_REMOTE'] ?? '' )==='weekly' ) ? 'selected' : '' ?>>Weekly
+              <option value="weekly" <?=(($remotesettings['CRON_MODE_REMOTE'] ?? '' )==='weekly' ) ? 'selected' : '' ?>
+                >Weekly
               </option>
-              <option value="monthly" <?=(($remotesettings['CRON_MODE_REMOTE'] ?? '' )==='monthly' ) ? 'selected' : '' ?>
+              <option value="monthly" <?=(($remotesettings['CRON_MODE_REMOTE'] ?? '' )==='monthly' ) ? 'selected' : ''
+                ?>
                 >Monthly</option>
-              <option value="custom" <?=(($remotesettings['CRON_MODE_REMOTE'] ?? '' )==='custom' ) ? 'selected' : '' ?>>Custom
+              <option value="custom" <?=(($remotesettings['CRON_MODE_REMOTE'] ?? '' )==='custom' ) ? 'selected' : '' ?>
+                >Custom
               </option>
             </select>
           </span>
@@ -1258,8 +1295,8 @@ if (is_file($plg)) {
               <select id="monthly_time_remote" name="MONTHLY_TIME_REMOTE" class="short-input">
                 <?php for ($h = 0; $h < 24; $h++):
                 $time = str_pad($h, 2, "0", STR_PAD_LEFT) . ":00"; ?>
-                <option value="<?php echo $time; ?>" <?php echo (($remotesettings['MONTHLY_TIME_REMOTE'] ?? '' )===$time)
-                  ? 'selected' : '' ; ?>>
+                <option value="<?php echo $time; ?>" <?php echo (($remotesettings['MONTHLY_TIME_REMOTE'] ?? ''
+                  )===$time) ? 'selected' : '' ; ?>>
                   <?php echo $time; ?>
                 </option>
                 <?php endfor; ?>
@@ -1309,11 +1346,19 @@ if (is_file($plg)) {
         Local or Remote backup in progress!
       </div>
 
-      <!-- Remote Backup Button-->
+      <!-- Remote Backup Button -->
       <div class="backup-actions">
         <span title="Run backup of flash drive to remote storage" class="flash-drivetip">
           <button type="button" id="backupbtn_remote">Backup Now</button>
         </span>
+
+        <!-- Minimal Remote Backup Checkbox -->
+        <label class="minimal-backup-label flash-drivetip"
+          title="Enable to have the remote backup only include the config and extra folders, and the syslinux.cfg file">
+          <input type="checkbox" id="minimal_backup_remote" name="MINIMAL_BACKUP_REMOTE" value="yes" <?php echo
+            (($remotesettings['MINIMAL_BACKUP_REMOTE'] ?? 'no' )==='yes' ) ? 'checked' : '' ; ?>>
+          Minimal Backup
+        </label>
       </div>
 
     </form>
@@ -1976,6 +2021,7 @@ if (is_file($plg)) {
     const cronExpr = $('#cron_expression_hidden').val() || '';
 
     const params = $.param({
+      MINIMAL_BACKUP: $('#minimal_backup').is(':checked') ? 'yes' : 'no',
       BACKUP_DESTINATION: dest,
       BACKUPS_TO_KEEP: $('#backups_to_keep').val(),
       BACKUP_OWNER: $('#backup_owner').val(),
@@ -2015,6 +2061,7 @@ if (is_file($plg)) {
     backupRequestInProgressRemote = true;
 
     const params = $.param({
+      MINIMAL_BACKUP_REMOTE: $('#minimal_backup_remote').is(':checked') ? 'yes' : 'no',
       RCLONE_CONFIG_REMOTE: $('#rclone_config_remote').val(),
       BACKUPS_TO_KEEP_REMOTE: $('#backups_to_keep_remote').val(),
       DRY_RUN_REMOTE: $('#dry_run_remote').val(),
