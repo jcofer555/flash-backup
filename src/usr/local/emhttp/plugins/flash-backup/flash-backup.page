@@ -40,44 +40,42 @@ $settings = $existing;
 ?>
 
 <?php
-$restoreCfgPath = '/boot/config/plugins/flash-backup/settings_remote.cfg';
+$remoteCfgPath = '/boot/config/plugins/flash-backup/settings_remote.cfg';
 
-// Define all default keys and their order for restore
-$restoreDefaults = [
+// Define all default keys and their order for remote
+$remoteDefaults = [
     'MINIMAL_BACKUP_REMOTE' => 'no',
-    'RCLONE_MODE' => 'mount',
-    'BACKUP_DESTINATION' => '',
-    'RCLONE_CONFIG' => '',
+    'RCLONE_CONFIG_REMOTE' => '',
     'BACKUPS_TO_KEEP_REMOTE' => '0',
     'DRY_RUN_REMOTE' => 'no',
     'NOTIFICATIONS_REMOTE' => 'no'
 ];
 
-// Load existing restore config if present
-$existingRestore = [];
-if (file_exists($restoreCfgPath)) {
-    $existingRestore = parse_ini_file($restoreCfgPath) ?: [];
+// Load existing remote config if present
+$existingRemote = [];
+if (file_exists($remoteCfgPath)) {
+    $existingRemote = parse_ini_file($remoteCfgPath) ?: [];
 }
 
 // Merge defaults without overwriting existing keys
-foreach ($restoreDefaults as $key => $value) {
-    if (!array_key_exists($key, $existingRestore)) {
-        $existingRestore[$key] = $value;
+foreach ($remoteDefaults as $key => $value) {
+    if (!array_key_exists($key, $existingRemote)) {
+        $existingRemote[$key] = $value;
     }
 }
 
-// Rebuild restore config text in the correct order
-$restoreConfigText = '';
-foreach ($restoreDefaults as $key => $defaultValue) {
-    $val = $existingRestore[$key];
-    $restoreConfigText .= "$key=\"$val\"\n";
+// Rebuild remote config text in the correct order
+$remoteConfigText = '';
+foreach ($remoteDefaults as $key => $defaultValue) {
+    $val = $existingRemote[$key];
+    $remoteConfigText .= "$key=\"$val\"\n";
 }
 
-// Save the restore config
-@file_put_contents($restoreCfgPath, $restoreConfigText);
+// Save the remote config
+@file_put_contents($remoteCfgPath, $remoteConfigText);
 
 // Make it available to your page
-$restoreSettings = $existingRestore;
+$remotesettings = $existingRemote;
 
 // Load saved VM list (string or array)
 $saved_vm_list = $vm_list_settings['VMS_TO_RESTORE'] ?? '';
@@ -153,36 +151,29 @@ if (file_exists("/etc/unraid-version")) {
     color: #f0f8ff;
     padding: 20px;
     flex: 1 1 auto;
-    /* grow and shrink dynamically */
     height: auto;
-    /* dynamic height */
     max-height: none;
-    /* remove fixed limit */
     overflow: visible;
-    /* expand with content */
     min-width: 0;
     width: 100%;
-    /* prevent overflow on long content */
     box-sizing: border-box;
   }
 
   #log-section {
     max-height: 74vh;
-    /* match your other panels */
     overflow: hidden;
-    /* prevent container expansion */
     display: flex;
     flex-direction: column;
     padding-top: 0;
   }
 
+  #flash-backup-settings-remote,
   #flash-backup-settings {
     background: #111;
     border-radius: 12px;
     box-shadow: 0 0 12px rgba(46, 204, 64, .3);
     color: #f0f8ff;
     padding: 16px !important;
-    /* final value wins */
     flex: 1 1 auto;
     height: auto;
     max-height: none;
@@ -297,7 +288,6 @@ if (file_exists("/etc/unraid-version")) {
 
   .form-pair label {
     width: 130px;
-    /* Match other field labels */
     color: var(--primary-blue);
     font-weight: bold;
     text-align: left;
@@ -309,17 +299,14 @@ if (file_exists("/etc/unraid-version")) {
     background: #111;
     color: #fff;
     width: 200px;
-    /* Full width under input-wrapper */
     min-width: fit-content;
     max-width: 100%;
-    /* Cap the input width */
   }
 
   .form-pair input[type="text"],
   .form-pair input[type="password"] {
     min-width: fit-content;
     max-width: 100%;
-    /* Cap the input width */
   }
 
   .short-input {
@@ -382,7 +369,6 @@ if (file_exists("/etc/unraid-version")) {
     padding-right: 0;
   }
 
-  /* Force Chrome/Webkit to place arrows at field edge */
   input[type="number"]::-webkit-inner-spin-button,
   input[type="number"]::-webkit-outer-spin-button {
     margin: 0;
@@ -396,13 +382,11 @@ if (file_exists("/etc/unraid-version")) {
     box-sizing: border-box;
   }
 
-  /* Focus outline for keyboard users */
   :focus-visible {
     outline: 2px solid var(--primary-blue);
     outline-offset: 2px;
   }
 
-  /* Hover and focus for interactive elements */
   button:hover,
   input[type="checkbox"]:hover,
   select:hover,
@@ -418,7 +402,6 @@ if (file_exists("/etc/unraid-version")) {
     box-shadow: none
   }
 
-  /* Scrollbar dark theme for readability */
   ::-webkit-scrollbar {
     width: 8px;
   }
@@ -519,7 +502,6 @@ if (file_exists("/etc/unraid-version")) {
   }
 
   #flash-backup-layout {
-    /* Layout */
     display: grid;
     grid-template-columns: minmax(320px, 1fr) minmax(320px, 1fr) minmax(420px, 1.6fr);
     gap: 20px;
@@ -528,7 +510,6 @@ if (file_exists("/etc/unraid-version")) {
     padding-top: 0;
     align-items: stretch;
 
-    /* Theme variables */
     --plugin-bg: #1e1e1e;
     --plugin-panel: #111;
     --plugin-border: #2ECC40;
@@ -610,6 +591,16 @@ if (file_exists("/etc/unraid-version")) {
   #cron-warning-fields,
   #cron-warning-minute,
   #cron-warning-interval {
+    max-width: 360px;
+    width: 100%;
+    box-sizing: border-box;
+    word-wrap: break-word;
+    color: yellow;
+  }
+
+  /* ⭐ NEW: Remote scheduler warning styles */
+  #cron-warning-fields-remote,
+  #cron-warning-slash-remote {
     max-width: 360px;
     width: 100%;
     box-sizing: border-box;
@@ -733,14 +724,12 @@ if (is_file($plg)) {
       <!-- NOTIFICATIONS -->
       <div class="form-pair">
         <label for="notifications">
-          <span class="flash-drivetip"
-            title="Send Unraid system notifications when VM backup starts and finishes">
+          <span class="flash-drivetip" title="Send Unraid system notifications when VM backup starts and finishes">
             Notifications:
           </span>
         </label>
 
-        <span class="flash-drivetip"
-          title="Send Unraid system notifications when VM backup starts and finishes">
+        <span class="flash-drivetip" title="Send Unraid system notifications when VM backup starts and finishes">
           <select id="notifications" class="short-input" name="NOTIFICATIONS">
             <option value="yes" <?=(($settings['NOTIFICATIONS'] ?? 'no' )==='yes' ) ? 'selected' : '' ?>>
               Yes
@@ -791,14 +780,9 @@ if (is_file($plg)) {
             <span class="flash-drivetip" title="Select minute frequency">
 
               <?php
-          // --- Normalize MINUTES_FREQUENCY before rendering ---
           $raw = $settings['MINUTES_FREQUENCY'] ?? '';
           $freq = intval($raw);
-
-          // If missing, invalid, or < 1 → default to 30
-          if ($freq < 1) {
-            $freq = 30;
-          }
+          if ($freq < 1) $freq = 30;
         ?>
 
               <select id="minutes_frequency" name="MINUTES_FREQUENCY" class="short-input">
@@ -989,7 +973,7 @@ if (is_file($plg)) {
       </div>
 
       <div id="backup-status" style="color:yellow; font-weight:bold; margin-bottom:6px; display:none;">
-        Backup or restore in progress!
+        Backup in progress!
       </div>
 
       <!-- Local Backup Button-->
@@ -1003,111 +987,332 @@ if (is_file($plg)) {
   </div>
 
   <div class="flash-backup-wrapper">
-    <form id="flash-backup-settings">
+    <form id="flash-backup-settings-remote">
 
-      <div class="remote-status-row"><span title="Shows which part of the backup to cloud storage with rclone process is currently running"
-          class="flash-drivetip remote-status-label">Status:</span><span id="remote-status-text">Cloud Backup Not Running</span></div>
+      <div class="status-row">
+        <span title="Shows which part of the backup to remote storage process is currently running"
+          class="flash-drivetip status-label">Status:</span>
+        <span id="status-text-remote">Remote Backup Not Running</span>
+      </div>
       <br>
 
       <!-- RCLONE CONFIG -->
       <div class="form-pair">
-        <label for="rclone_config">
-          <span class="flash-drivetip" title="Choose which rclone config to use">
+        <label>
+          <span class="flash-drivetip" title="Choose which rclone config to backup to">
             Rclone Config:
           </span>
         </label>
 
-        <span class="flash-drivetip" title="Choose which rclone config to use">
-          <select id="rclone_config" class="short-input" name="RCLONE_CONFIG">
-            <option value="mount" <?=(($restoreSettings['RCLONE_CONFIG'] ?? 'no' )==='mount' ) ? 'selected' : '' ?>>
-              Yes
-            </option>
-            <option value="config" <?=(($restoreSettings['RCLONE_CONFIG'] ?? 'no' )==='config' ) ? 'selected' : '' ?>>
-              No
-            </option>
-          </select>
+        <span class="flash-drivetip" title="Choose which rclone config to backup to">
+          <input type="text" id="rclone_config_remote" name="RCLONE_CONFIG_REMOTE" placeholder="Click here" readonly style="cursor:pointer;"
+            value="<?php echo htmlspecialchars($remotesettings['RCLONE_CONFIG_REMOTE'] ?? ''); ?>">
         </span>
       </div>
 
-      <!-- BACKUPS TO KEEP REMOTE -->
+      <!-- BACKUPS TO KEEP -->
       <div class="form-pair">
         <label for="backups_to_keep_remote">
-          <span title="Choose the amount of backups to keep for cloud backups" class="flash-drivetip">
+          <span title="Choose the amount of backups to keep for local backups" class="flash-drivetip">
             Backups To Keep:
           </span>
         </label>
 
-        <span title="Choose the amount of backups to keep for cloud backups" class="flash-drivetip">
+        <span title="Choose the amount of backups to keep for local backups" class="flash-drivetip">
           <select id="backups_to_keep_remote" class="short-input" name="BACKUPS_TO_KEEP_REMOTE">
             <?php
-        $current = $settings['BACKUPS_TO_KEEP_REMOTE'] ?? 0;
+            $current = $remotesettings['BACKUPS_TO_KEEP_REMOTE'] ?? 0;
 
-        for ($i = 0; $i <= 99; $i++) {
-          $selected = ((int)$current === $i) ? 'selected' : '';
+            for ($i = 0; $i <= 99; $i++) {
+              $selected = ((int)$current === $i) ? 'selected' : '';
 
-          if ($i === 0) {
-            echo "<option value=\"0\" $selected>Unlimited</option>";
-          } elseif ($i === 1) {
-            echo "<option value=\"1\" $selected>Only Latest</option>";
-          } else {
-            echo "<option value=\"$i\" $selected>$i</option>";
-          }
-        }
-      ?>
+              if ($i === 0) {
+                echo "<option value=\"0\" $selected>Unlimited</option>";
+              } elseif ($i === 1) {
+                echo "<option value=\"1\" $selected>Only Latest</option>";
+              } else {
+                echo "<option value=\"$i\" $selected>$i</option>";
+              }
+            }
+          ?>
           </select>
         </span>
       </div>
 
-      <!-- DRY RUN REMOTE -->
+      <!-- DRY RUN -->
       <div class="form-pair">
         <label for="dry_run_remote">
-          <span class="flash-drivetip" title="Enable to simulate a restore">
+          <span class="flash-drivetip" title="Enable to simulate a backup">
             Dry Run:
           </span>
         </label>
 
-        <span class="flash-drivetip" title="Enable to simulate a restore">
+        <span class="flash-drivetip" title="Enable to simulate a backup">
           <select id="dry_run_remote" class="short-input" name="DRY_RUN_REMOTE">
-            <option value="yes" <?=(($restoreSettings['DRY_RUN_REMOTE'] ?? 'no' )==='yes' ) ? 'selected' : '' ?>>
-              Yes
-            </option>
-            <option value="no" <?=(($restoreSettings['DRY_RUN_REMOTE'] ?? 'no' )==='no' ) ? 'selected' : '' ?>>
-              No
-            </option>
+            <option value="yes" <?=(($remotesettings['DRY_RUN_REMOTE'] ?? 'no' )==='yes' ) ? 'selected' : '' ?>>Yes</option>
+            <option value="no" <?=(($remotesettings['DRY_RUN_REMOTE'] ?? 'no' )==='no' ) ? 'selected' : '' ?>>No</option>
           </select>
         </span>
       </div>
 
-      <!-- NOTIFICATIONS REMOTE -->
+      <!-- NOTIFICATIONS -->
       <div class="form-pair">
         <label for="notifications_remote">
-          <span class="flash-drivetip"
-            title="Send Unraid system notifications when flash backup starts and finishes">
+          <span class="flash-drivetip" title="Send Unraid system notifications when VM backup starts and finishes">
             Notifications:
           </span>
         </label>
 
-        <span class="flash-drivetip"
-          title="Send Unraid system notifications when flash backup starts and finishes">
+        <span class="flash-drivetip" title="Send Unraid system notifications when VM backup starts and finishes">
           <select id="notifications_remote" class="short-input" name="NOTIFICATIONS_REMOTE">
-            <option value="yes" <?=(($restoreSettings['NOTIFICATIONS_REMOTE'] ?? 'no' )==='yes' ) ? 'selected' : '' ?>>
-              Yes
+            <option value="yes" <?=(($remotesettings['NOTIFICATIONS_REMOTE'] ?? 'no' )==='yes' ) ? 'selected' : '' ?>>Yes
             </option>
-            <option value="no" <?=(($restoreSettings['NOTIFICATIONS_REMOTE'] ?? 'no' )==='no' ) ? 'selected' : '' ?>>
-              No
+            <option value="no" <?=(($remotesettings['NOTIFICATIONS_REMOTE'] ?? 'no' )==='no' ) ? 'selected' : '' ?>>No
             </option>
           </select>
         </span>
       </div>
 
-      <div id="restore-status" style="color:yellow; font-weight:bold; margin-bottom:6px; display:none;">
+      <!-- Scheduling Selection -->
+      <div class="form-pair" id="cron-expression-row-remote">
+        <label for="cron_mode_remote">
+          <span class="flash-drivetip" title="Select scheduling selection">
+            Scheduling:
+          </span>
+        </label>
+        <div class="input-wrapper">
+          <span class="flash-drivetip" title="Select scheduling selection">
+            <select id="cron_mode_remote" name="CRON_MODE_REMOTE" class="short-input">
+              <option value="minutes" <?=(($remotesettings['CRON_MODE_REMOTE'] ?? '' )==='minutes' ) ? 'selected' : '' ?>
+                >Minutes</option>
+              <option value="hourly" <?=(($remotesettings['CRON_MODE_REMOTE'] ?? '' )==='hourly' ) ? 'selected' : '' ?>>Hourly
+              </option>
+              <option value="daily" <?=(($remotesettings['CRON_MODE_REMOTE'] ?? '' )==='daily' ) ? 'selected' : '' ?>>Daily
+              </option>
+              <option value="weekly" <?=(($remotesettings['CRON_MODE_REMOTE'] ?? '' )==='weekly' ) ? 'selected' : '' ?>>Weekly
+              </option>
+              <option value="monthly" <?=(($remotesettings['CRON_MODE_REMOTE'] ?? '' )==='monthly' ) ? 'selected' : '' ?>
+                >Monthly</option>
+              <option value="custom" <?=(($remotesettings['CRON_MODE_REMOTE'] ?? '' )==='custom' ) ? 'selected' : '' ?>>Custom
+              </option>
+            </select>
+          </span>
+        </div>
+      </div>
+
+      <!-- Minutes Options -->
+      <div id="minutes-options-remote" style="display:none; margin-top:10px;">
+        <div class="form-pair">
+          <label for="minutes_frequency_remote">
+            <span class="flash-drivetip" title="Select minute frequency">
+              Select Frequency:
+            </span>
+          </label>
+          <div class="input-wrapper">
+            <span class="flash-drivetip" title="Select minute frequency">
+
+              <?php
+              $raw = $remotesettings['MINUTES_FREQUENCY_REMOTE'] ?? '';
+              $freq = intval($raw);
+              if ($freq < 1) $freq = 30;
+            ?>
+
+              <select id="minutes_frequency_remote" name="MINUTES_FREQUENCY_REMOTE" class="short-input">
+                <?php
+                for ($i = 1; $i <= 59; $i++) {
+                  $selected = ($freq === $i) ? 'selected' : '';
+                  echo "<option value=\"$i\" $selected>Every $i Minutes</option>";
+                }
+              ?>
+              </select>
+
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hourly Options -->
+      <div id="hourly-options-remote" style="display:none; margin-top:10px;">
+        <div class="form-pair">
+          <label for="hourly_frequency_remote">
+            <span class="flash-drivetip" title="Select hourly frequency">
+              Select Frequency:
+            </span>
+          </label>
+          <div class="input-wrapper">
+            <span class="flash-drivetip" title="Select hourly frequency">
+              <select id="hourly_frequency_remote" name="HOURLY_FREQUENCY_REMOTE" class="short-input">
+                <?php
+                for ($i = 1; $i <= 23; $i++) {
+                  $selected = (($remotesettings['HOURLY_FREQUENCY_REMOTE'] ?? '') === (string)$i) ? 'selected' : '';
+                  echo "<option value=\"$i\" $selected>Every $i Hour" . ($i > 1 ? 's' : '') . "</option>";
+                }
+              ?>
+              </select>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Daily Options -->
+      <div id="daily-options-remote" style="display:none; margin-top:10px;">
+        <div class="form-pair">
+          <label for="daily_time_remote">
+            <span class="flash-drivetip" title="Select the time of day for daily execution">
+              Time Of Day:
+            </span>
+          </label>
+          <div class="input-wrapper">
+            <span class="flash-drivetip" title="Select the time of day for daily execution">
+              <select id="daily_time_remote" name="DAILY_TIME_REMOTE" class="short-input">
+                <?php for ($h = 0; $h < 24; $h++):
+                $time = str_pad($h, 2, "0", STR_PAD_LEFT) . ":00"; ?>
+                <option value="<?php echo $time; ?>" <?php echo (($remotesettings['DAILY_TIME_REMOTE'] ?? '' )===$time)
+                  ? 'selected' : '' ; ?>>
+                  <?php echo $time; ?>
+                </option>
+                <?php endfor; ?>
+              </select>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Weekly Options -->
+      <div id="weekly-options-remote" style="display:none; margin-top:10px;">
+        <div class="form-pair">
+          <label for="weekly_day_remote">
+            <span class="flash-drivetip" title="Select day of the week">
+              Day Of Week:
+            </span>
+          </label>
+          <div class="input-wrapper">
+            <span class="flash-drivetip" title="Select day of the week">
+              <select id="weekly_day_remote" name="WEEKLY_DAY_REMOTE" class="short-input">
+                <?php
+                $days = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+                foreach ($days as $day): ?>
+                <option value="<?php echo $day; ?>" <?php echo (($remotesettings['WEEKLY_DAY_REMOTE'] ?? '' )===$day)
+                  ? 'selected' : '' ; ?>>
+                  <?php echo $day; ?>
+                </option>
+                <?php endforeach; ?>
+              </select>
+            </span>
+          </div>
+        </div>
+
+        <div class="form-pair">
+          <label for="weekly_time_remote">
+            <span class="flash-drivetip" title="Select time of day for weekly execution">
+              Time Of Day:
+            </span>
+          </label>
+          <div class="input-wrapper">
+            <span class="flash-drivetip" title="Select time of day for weekly execution">
+              <select id="weekly_time_remote" name="WEEKLY_TIME_REMOTE" class="short-input">
+                <?php for ($h = 0; $h < 24; $h++):
+                $time = str_pad($h, 2, "0", STR_PAD_LEFT) . ":00"; ?>
+                <option value="<?php echo $time; ?>" <?php echo (($remotesettings['WEEKLY_TIME_REMOTE'] ?? '' )===$time)
+                  ? 'selected' : '' ; ?>>
+                  <?php echo $time; ?>
+                </option>
+                <?php endfor; ?>
+              </select>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Monthly Options -->
+      <div id="monthly-options-remote" style="display:none; margin-top:10px;">
+        <div class="form-pair">
+          <label for="monthly_day_remote">
+            <span class="flash-drivetip" title="Select day of the month">
+              Day Of Month:
+            </span>
+          </label>
+          <div class="input-wrapper">
+            <span class="flash-drivetip" title="Select day of the month">
+              <select id="monthly_day_remote" name="MONTHLY_DAY_REMOTE" class="short-input">
+                <?php for ($d = 1; $d <= 31; $d++):
+                $day = str_pad($d, 2, "0", STR_PAD_LEFT); ?>
+                <option value="<?php echo $day; ?>" <?php echo (($remotesettings['MONTHLY_DAY_REMOTE'] ?? '' )===$day)
+                  ? 'selected' : '' ; ?>>
+                  <?php echo $day; ?>
+                </option>
+                <?php endfor; ?>
+              </select>
+            </span>
+          </div>
+        </div>
+
+        <div class="form-pair">
+          <label for="monthly_time_remote">
+            <span class="flash-drivetip" title="Select time of day for monthly execution">
+              Time Of Day:
+            </span>
+          </label>
+          <div class="input-wrapper">
+            <span class="flash-drivetip" title="Select time of day for monthly execution">
+              <select id="monthly_time_remote" name="MONTHLY_TIME_REMOTE" class="short-input">
+                <?php for ($h = 0; $h < 24; $h++):
+                $time = str_pad($h, 2, "0", STR_PAD_LEFT) . ":00"; ?>
+                <option value="<?php echo $time; ?>" <?php echo (($remotesettings['MONTHLY_TIME_REMOTE'] ?? '' )===$time)
+                  ? 'selected' : '' ; ?>>
+                  <?php echo $time; ?>
+                </option>
+                <?php endfor; ?>
+              </select>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Custom Option -->
+      <div id="custom-options-remote" style="display:none; margin-top:10px;">
+        <div class="form-pair">
+          <label for="custom_cron_remote">
+            <span class="flash-drivetip"
+              title="Enter a valid cron expression 5 fields with spaces between each for example */2 * * * * visit https://crontab.guru for help">
+              Cron Expression:
+            </span>
+          </label>
+          <div class="input-wrapper">
+            <span class="flash-drivetip"
+              title="Enter a valid cron expression 5 fields with spaces between each for example */2 * * * * visit https://crontab.guru for help">
+              <input type="text" id="custom_cron_remote" name="CUSTOM_CRON_REMOTE" class="short-input"
+                placeholder="*/2 * * * *"
+                value="<?php echo htmlspecialchars($remotesettings['CUSTOM_CRON_REMOTE'] ?? ''); ?>">
+            </span>
+          </div>
+        </div>
+
+        <div class="form-pair">
+
+          <!-- Wrong number of fields OR invalid characters -->
+          <div id="cron-warning-fields-remote" class="field-warning" role="alert" style="display:none;">
+            ⚠️ Enter a valid cron expression with 5 fields separated by spaces.
+            Only numbers, *, and / are allowed.
+            Visit <a href="https://crontab.guru/" target="_blank">crontab.guru</a> for help.
+          </div>
+
+          <!-- Slash rule: must be exactly */N -->
+          <div id="cron-warning-slash-remote" class="field-warning" role="alert" style="display:none;">
+            ⚠️ Fields using "/" must be in the form */N (example: */5).
+          </div>
+
+        </div>
+      </div>
+
+      <div id="backup-status-remote" style="color:yellow; font-weight:bold; margin-bottom:6px; display:none;">
         Backup in progress!
       </div>
 
-      <!-- CLOUD BACKUP BUTTON-->
-      <div class="form-group">
-        <span title="Run backup of flash drive to cloud storage" class="flash-drivetip">
-          <button type="button" id="cloudbackupbtn">Backup Now</button>
+      <!-- Remote Backup Button-->
+      <div class="backup-actions">
+        <span title="Run backup of flash drive to remote storage" class="flash-drivetip">
+          <button type="button" id="backupbtn_remote">Backup Now</button>
         </span>
       </div>
 
@@ -1195,7 +1400,7 @@ if (is_file($plg)) {
   updateRestoreStatus();
   setInterval(updateRestoreStatus, 1000);
 
-  // --- Scheduling Dropdown Toggle ---
+  // --- Scheduling Dropdown Toggle (LOCAL) ---
   (function waitForSchedulingToggle() {
     function initSchedulingToggle() {
       const cronModeSelect = document.getElementById('cron_mode');
@@ -1301,6 +1506,107 @@ if (is_file($plg)) {
     }
   })();
 
+  // --- Scheduling Dropdown Toggle (REMOTE) ---
+  (function waitForSchedulingToggleRemote() {
+    function initSchedulingToggleRemote() {
+      const cronModeSelect = document.getElementById('cron_mode_remote');
+
+      // Option rows
+      const minutesOptions = document.getElementById('minutes-options-remote');
+      const hourlyOptions = document.getElementById('hourly-options-remote');
+      const dailyOptions = document.getElementById('daily-options-remote');
+      const weeklyOptions = document.getElementById('weekly-options-remote');
+      const monthlyOptions = document.getElementById('monthly-options-remote');
+      const customOptions = document.getElementById('custom-options-remote');
+
+      // Inputs
+      const minutesFreq = document.getElementById('minutes_frequency_remote');
+      const hourlyFreq = document.getElementById('hourly_frequency_remote');
+      const dailyTime = document.getElementById('daily_time_remote');
+      const weeklyDay = document.getElementById('weekly_day_remote');
+      const weeklyTime = document.getElementById('weekly_time_remote');
+      const monthlyDay = document.getElementById('monthly_day_remote');
+      const monthlyTime = document.getElementById('monthly_time_remote');
+      const customCron = document.getElementById('custom_cron_remote');
+
+      if (!cronModeSelect) return false;
+
+      function toggleCronOptions(value) {
+        minutesOptions.style.display = (value === 'minutes') ? 'block' : 'none';
+        hourlyOptions.style.display = (value === 'hourly') ? 'block' : 'none';
+        dailyOptions.style.display = (value === 'daily') ? 'block' : 'none';
+        weeklyOptions.style.display = (value === 'weekly') ? 'block' : 'none';
+        monthlyOptions.style.display = (value === 'monthly') ? 'block' : 'none';
+        customOptions.style.display = (value === 'custom') ? 'block' : 'none';
+        updateCronExpressionRemote();
+      }
+
+      function updateCronExpressionRemote() {
+        let cronString = "";
+
+        if (cronModeSelect.value === "minutes" && minutesFreq) {
+          const freq = parseInt(minutesFreq.value, 10);
+          cronString = `*/${freq} * * * *`;
+        }
+        else if (cronModeSelect.value === "hourly" && hourlyFreq) {
+          const freq = parseInt(hourlyFreq.value, 10);
+          cronString = `0 */${freq} * * *`;
+        }
+        else if (cronModeSelect.value === "daily" && dailyTime) {
+          const [hour, minute] = dailyTime.value.split(":");
+          cronString = `0 ${parseInt(hour, 10)} * * *`;
+        }
+        else if (cronModeSelect.value === "weekly" && weeklyDay && weeklyTime) {
+          const [hour, minute] = weeklyTime.value.split(":");
+          const dayMap = {
+            Sunday: 0, Monday: 1, Tuesday: 2, Wednesday: 3,
+            Thursday: 4, Friday: 5, Saturday: 6
+          };
+          cronString = `0 ${parseInt(hour, 10)} * * ${dayMap[weeklyDay.value]}`;
+        }
+        else if (cronModeSelect.value === "monthly" && monthlyDay && monthlyTime) {
+          const [hour, minute] = monthlyTime.value.split(":");
+          const day = parseInt(monthlyDay.value, 10);
+          cronString = `0 ${parseInt(hour, 10)} ${day} * *`;
+        }
+        else if (cronModeSelect.value === "custom" && customCron) {
+          cronString = customCron.value.trim();
+        }
+
+        let hidden = document.getElementById("cron_expression_hidden_remote");
+        if (!hidden) {
+          hidden = document.createElement("input");
+          hidden.type = "hidden";
+          hidden.id = "cron_expression_hidden_remote";
+          hidden.name = "CRON_EXPRESSION_REMOTE";
+          cronModeSelect.closest(".form-pair").appendChild(hidden);
+        }
+        hidden.value = cronString;
+      }
+
+      toggleCronOptions(cronModeSelect.value);
+
+      cronModeSelect.addEventListener('change', (e) => toggleCronOptions(e.target.value));
+      minutesFreq?.addEventListener('change', updateCronExpressionRemote);
+      hourlyFreq?.addEventListener('change', updateCronExpressionRemote);
+      dailyTime?.addEventListener('change', updateCronExpressionRemote);
+      weeklyDay?.addEventListener('change', updateCronExpressionRemote);
+      weeklyTime?.addEventListener('change', updateCronExpressionRemote);
+      monthlyDay?.addEventListener('change', updateCronExpressionRemote);
+      monthlyTime?.addEventListener('change', updateCronExpressionRemote);
+      customCron?.addEventListener('input', updateCronExpressionRemote);
+
+      return true;
+    }
+
+    if (!initSchedulingToggleRemote()) {
+      const observer = new MutationObserver(() => {
+        if (initSchedulingToggleRemote()) observer.disconnect();
+      });
+      observer.observe(document.body, { childList: true, subtree: true });
+    }
+  })();
+
   function loadLastRunLog() {
     fetch('/plugins/flash-backup/helpers/fetch_last_run_log.php')
       .then(res => res.text())
@@ -1383,7 +1689,10 @@ if (is_file($plg)) {
   let cronValid = false;
   let backupRunning = false;
 
-  // --- Elements ---
+  let cronValidRemote = false;
+  let backupRunningRemote = false;
+
+  // --- Elements (LOCAL) ---
   const cronInput = document.getElementById('custom_cron');
   const cronMode = document.getElementById('cron_mode');
   const backupbtn = document.getElementById('backupbtn');
@@ -1391,99 +1700,156 @@ if (is_file($plg)) {
   const warnFields = document.getElementById('cron-warning-fields');
   const warnSlash = document.getElementById('cron-warning-slash');
 
-  // --- Unified button state controller ---
+  // --- Elements (REMOTE) ---
+  const cronInputRemote = document.getElementById('custom_cron_remote');
+  const cronModeRemote = document.getElementById('cron_mode_remote');
+  const backupbtnRemote = document.getElementById('backupbtn_remote');
+
+  const warnFieldsRemote = document.getElementById('cron-warning-fields-remote');
+  const warnSlashRemote = document.getElementById('cron-warning-slash-remote');
+
+  // --- Unified button state controller (LOCAL) ---
   function updateBackupButtonState() {
+    if (!backupbtn) return;
     backupbtn.disabled = !(cronValid && !backupRunning);
   }
 
-  // --- Live Cron Validator ---
+  // --- Unified button state controller (REMOTE) ---
+  function updateBackupButtonStateRemote() {
+    if (!backupbtnRemote) return;
+    backupbtnRemote.disabled = !(cronValidRemote && !backupRunningRemote);
+  }
+
+  // --- Live Cron Validator (LOCAL) ---
   function validateCronLive() {
 
-    // ---------------------------------------------------------
+    if (!cronMode || !cronInput) return;
+
     // If NOT in custom mode → cron is automatically valid
-    // ---------------------------------------------------------
     if (cronMode.value !== "custom") {
       cronValid = true;
 
-      // Hide all warnings
-      [warnFields, warnSlash].forEach(w => w.style.display = 'none');
+      [warnFields, warnSlash].forEach(w => { if (w) w.style.display = 'none'; });
 
       updateBackupButtonState();
       return;
     }
 
-    // ---------------------------------------------------------
-    // Custom mode → strict cron validation
-    // ---------------------------------------------------------
     const cronExpression = cronInput.value.trim();
     const cronParts = cronExpression.split(/\s+/);
 
-    // Hide warnings at start
-    [warnFields, warnSlash].forEach(w => w.style.display = 'none');
+    [warnFields, warnSlash].forEach(w => { if (w) w.style.display = 'none'; });
 
     cronValid = true;
 
-    // Blank → invalid
     if (cronExpression === "") {
       cronValid = false;
       updateBackupButtonState();
       return;
     }
 
-    // Must have exactly 5 parts
     if (cronParts.length !== 5) {
       cronValid = false;
-      warnFields.style.display = 'block';
+      if (warnFields) warnFields.style.display = 'block';
     }
 
-    // Only validate fields if count is correct
     if (cronParts.length === 5) {
 
       for (let i = 0; i < cronParts.length; i++) {
         const field = cronParts[i];
 
-        // Only digits, *, and / allowed
         if (!/^[\d*\/]+$/.test(field)) {
           cronValid = false;
-          warnFields.style.display = 'block';
+          if (warnFields) warnFields.style.display = 'block';
         }
 
-        // Slash must be exactly */N
         if (field.includes('/')) {
           const validStep = field.match(/^\*\/\d+$/);
           if (!validStep) {
             cronValid = false;
-            warnSlash.style.display = 'block';
+            if (warnSlash) warnSlash.style.display = 'block';
           }
         }
-      }
-
-      // Minute field cannot be "*"
-      const minuteField = cronParts[0];
-      if (minuteField === "*") {
-        cronValid = false;
-        warnMinute.style.display = 'block';
       }
     }
 
     updateBackupButtonState();
   }
 
-  // --- Attach listeners ---
-  cronInput.addEventListener('input', validateCronLive);
-  cronMode.addEventListener('change', validateCronLive);
+  // --- Live Cron Validator (REMOTE) ---
+  function validateCronLiveRemote() {
 
-  // --- Run once on page load ---
+    if (!cronModeRemote || !cronInputRemote) return;
+
+    if (cronModeRemote.value !== "custom") {
+      cronValidRemote = true;
+
+      [warnFieldsRemote, warnSlashRemote].forEach(w => { if (w) w.style.display = 'none'; });
+
+      updateBackupButtonStateRemote();
+      return;
+    }
+
+    const cronExpression = cronInputRemote.value.trim();
+    const cronParts = cronExpression.split(/\s+/);
+
+    [warnFieldsRemote, warnSlashRemote].forEach(w => { if (w) w.style.display = 'none'; });
+
+    cronValidRemote = true;
+
+    if (cronExpression === "") {
+      cronValidRemote = false;
+      updateBackupButtonStateRemote();
+      return;
+    }
+
+    if (cronParts.length !== 5) {
+      cronValidRemote = false;
+      if (warnFieldsRemote) warnFieldsRemote.style.display = 'block';
+    }
+
+    if (cronParts.length === 5) {
+
+      for (let i = 0; i < cronParts.length; i++) {
+        const field = cronParts[i];
+
+        if (!/^[\d*\/]+$/.test(field)) {
+          cronValidRemote = false;
+          if (warnFieldsRemote) warnFieldsRemote.style.display = 'block';
+        }
+
+        if (field.includes('/')) {
+          const validStep = field.match(/^\*\/\d+$/);
+          if (!validStep) {
+            cronValidRemote = false;
+            if (warnSlashRemote) warnSlashRemote.style.display = 'block';
+          }
+        }
+      }
+    }
+
+    updateBackupButtonStateRemote();
+  }
+
+  // --- Attach listeners ---
+  if (cronInput) cronInput.addEventListener('input', validateCronLive);
+  if (cronMode) cronMode.addEventListener('change', validateCronLive);
   validateCronLive();
+
+  if (cronInputRemote) cronInputRemote.addEventListener('input', validateCronLiveRemote);
+  if (cronModeRemote) cronModeRemote.addEventListener('change', validateCronLiveRemote);
+  validateCronLiveRemote();
 
   let backupStartTime = 0;
   const MIN_DURATION = 5000;
+
+  let backupStartTimeRemote = 0;
+  const MIN_DURATION_REMOTE = 5000;
 
   function updateBackupUI(running) {
     const status = $('#backup-status');
     const btn = $('#backupbtn');
 
-    // --- Backup is running ---
     if (running) {
       if (!backupStartTime) {
         backupStartTime = Date.now();
@@ -1495,15 +1861,12 @@ if (is_file($plg)) {
       return;
     }
 
-    // --- Backup is NOT running ---
     if (!backupStartTime) {
-      // Never started or already reset
       btn.text('Backup Now');
       status.hide();
       return;
     }
 
-    // Enforce minimum visible duration
     const elapsed = Date.now() - backupStartTime;
 
     if (elapsed < MIN_DURATION) {
@@ -1511,8 +1874,40 @@ if (is_file($plg)) {
       return;
     }
 
-    // Reset state
     backupStartTime = 0;
+    btn.text('Backup Now');
+    status.hide();
+  }
+
+  function updateBackupUIRemote(running) {
+    const status = $('#backup-status-remote');
+    const btn = $('#backupbtn_remote');
+
+    if (running) {
+      if (!backupStartTimeRemote) {
+        backupStartTimeRemote = Date.now();
+      }
+
+      btn.text('Backup running...');
+      status.show();
+
+      return;
+    }
+
+    if (!backupStartTimeRemote) {
+      btn.text('Backup Now');
+      status.hide();
+      return;
+    }
+
+    const elapsed = Date.now() - backupStartTimeRemote;
+
+    if (elapsed < MIN_DURATION_REMOTE) {
+      setTimeout(() => updateBackupUIRemote(false), MIN_DURATION_REMOTE - elapsed);
+      return;
+    }
+
+    backupStartTimeRemote = 0;
     btn.text('Backup Now');
     status.hide();
   }
@@ -1525,10 +1920,20 @@ if (is_file($plg)) {
     });
   }
 
+  function pollBackupStatusRemote() {
+    $.getJSON('/plugins/flash-backup/helpers/remote_status.php', function (res) {
+      backupRunningRemote = res.running === true;
+      updateBackupButtonStateRemote();
+      updateBackupUIRemote(res.running);
+    });
+  }
+
   setInterval(pollBackupStatus, 1000);
+  setInterval(pollBackupStatusRemote, 1000);
 
   $(document).ready(function () {
     pollBackupStatus();
+    pollBackupStatusRemote();
   });
 
   // Force-close any Dynamix tooltip
@@ -1540,6 +1945,7 @@ if (is_file($plg)) {
   $('select').on('click', closeTooltips);
 
   let backupRequestInProgress = false;
+  let backupRequestInProgressRemote = false;
 
   function backupclassifyPath(p) {
     if (p.startsWith('/mnt/user/')) return 'USER';
@@ -1558,29 +1964,18 @@ if (is_file($plg)) {
 
     const dest = $('#backup_destination').val().trim();
 
-    if (!vms) {
-      alert('Please select at least one VM to backup');
-      return;
-    }
-
     if (!dest) {
       alert('Please select a backup destination');
       return;
     }
 
-    // -------------------------------
-    // UI-SIDE MOUNT-TYPE VALIDATION
-    // -------------------------------
-    const vmList = vms.split(',').map(v => v.trim()).filter(Boolean);
     const destClass = backupclassifyPath(dest);
-
-    // If we reach here → UI validation passed
-    // -------------------------------
 
     backupRequestInProgress = true;
 
+    const cronExpr = $('#cron_expression_hidden').val() || '';
+
     const params = $.param({
-      VMS_TO_BACKUP: vms,
       BACKUP_DESTINATION: dest,
       BACKUPS_TO_KEEP: $('#backups_to_keep').val(),
       BACKUP_OWNER: $('#backup_owner').val(),
@@ -1608,6 +2003,44 @@ if (is_file($plg)) {
 
   });
 
+  $('#backupbtn_remote').on('click', async function () {
+
+    if (backupRequestInProgressRemote) {
+      console.warn('Remote backup already being triggered');
+      return;
+    }
+
+    const cronExprRemote = $('#cron_expression_hidden_remote').val() || '';
+
+    backupRequestInProgressRemote = true;
+
+    const params = $.param({
+      RCLONE_CONFIG_REMOTE: $('#rclone_config_remote').val(),
+      BACKUPS_TO_KEEP_REMOTE: $('#backups_to_keep_remote').val(),
+      DRY_RUN_REMOTE: $('#dry_run_remote').val(),
+      NOTIFICATIONS_REMOTE: $('#notifications_remote').val(),
+      csrf_token: csrfToken
+    });
+
+    $.get('/plugins/flash-backup/helpers/save_settings_remote.php?' + params)
+      .done(function (res) {
+
+        if (res && res.status === 'ok') {
+          startBackupRemote();
+        } else {
+          alert('Failed to save remote settings');
+        }
+
+      })
+      .fail(function () {
+        alert('Error saving remote settings');
+      })
+      .always(function () {
+        backupRequestInProgressRemote = false;
+      });
+
+  });
+
   function startBackup() {
     $.get('/plugins/flash-backup/helpers/backup.php', {
       csrf_token: csrfToken
@@ -1624,7 +2057,23 @@ if (is_file($plg)) {
       });
   }
 
-  // --- Build cron string from UI selections ---
+  function startBackupRemote() {
+    $.get('/plugins/flash-backup/helpers/remote_backup.php', {
+      csrf_token: csrfToken
+    })
+      .done(function (res) {
+        if (res && res.status === 'ok') {
+          console.log('Remote backup started, PID:', res.pid);
+        } else {
+          alert(res.message || 'Failed to start remote backup');
+        }
+      })
+      .fail(function () {
+        alert('Error starting remote backup');
+      });
+  }
+
+  // --- Build cron string from UI selections (LOCAL ONLY, unchanged) ---
   function validateCustomCron(expr) {
     expr = expr.trim();
     const parts = expr.split(/\s+/);
@@ -1667,7 +2116,9 @@ if (is_file($plg)) {
         return { valid: false };
     }
   }
+</script>
 
+<script>
   function showPopup(message) {
     const popup = $('#popupMessage');
 
@@ -1694,170 +2145,9 @@ if (is_file($plg)) {
 </script>
 
 <script>
-  let restoreStartTime = 0;
-  const MIN_RESTORE_DURATION = 5000;
-
-  function updateRestoreUI(running) {
-
-    const btn = $('#cloudbackupbtn');
-    const status = $('#restore-status');
-
-    if (running) {
-
-      if (!restoreStartTime) {
-        restoreStartTime = Date.now();
-      }
-
-      btn.prop('disabled', true);
-      btn.text('Restore running...');
-      status.show();
-
-      return;
-    }
-
-    if (!restoreStartTime) {
-      btn.prop('disabled', false);
-      btn.text('Restore');
-      status.hide();
-      return;
-    }
-
-    const elapsed = Date.now() - restoreStartTime;
-
-    if (elapsed < MIN_RESTORE_DURATION) {
-      setTimeout(() => updateRestoreUI(false), MIN_RESTORE_DURATION - elapsed);
-      return;
-    }
-
-    restoreStartTime = 0;
-
-    btn.prop('disabled', false);
-    btn.text('Restore');
-    status.hide();
-  }
-
-  function pollRestoreStatus() {
-    $.getJSON('/plugins/flash-backup/helpers/restore_status.php', function (res) {
-      updateRestoreUI(res.running);
-    });
-  }
-
-  setInterval(pollRestoreStatus, 1000);
-
-  $(document).ready(function () {
-    pollRestoreStatus();
-  });
-
-  // Force-close any Dynamix tooltip
-  function closeTooltips() {
-    $('.flash-drivetip').trigger('mouseleave');
-  }
-
-  // When your dropdown opens, close tooltips
-  $('select').on('click', closeTooltips);
-
-  function classifyPath(p) {
-    if (p.startsWith('/mnt/user/')) return 'USER';
-    if (p === '/mnt/user') return 'USER';
-    if (p.startsWith('/mnt/user0/')) return 'USER0';
-    if (p === '/mnt/user0') return 'USER0';
-    return 'OTHER';
-  }
-
-  $('#cloudbackupbtn').on('click', function () {
-
-    // Basic validation
-    const vms_restore = $('#vm-hidden-restore').val();
-    const dest = $('#location_of_backups').val().trim();
-    const restore_dest = $('#restore_destination').val().trim();
-
-    if (!vms_restore) {
-      alert('Please select at least one VM to restore');
-      return;
-    }
-
-    if (!dest) {
-      alert('Please set location of backups');
-      return;
-    }
-
-    if (!restore_dest) {
-      alert('Please set a restore destination');
-      return;
-    }
-
-    // Classify both paths
-    const srcClass = classifyPath(dest);
-    const dstClass = classifyPath(restore_dest);
-
-    // If classes differ → alert
-    if (srcClass !== dstClass) {
-      alert(
-        `Location of backups is using mount type (${srcClass}) and restore destination (${dstClass}). They must be on the same mount type i.e both fields using user or both user0 or none using either user or user0`
-      );
-      return;
-    }
-
-    if ($('#cloudbackupbtn').prop('disabled')) {
-      return;
-    }
-
-    // Build restore versions string
-    const restoreVersions = collectRestoreVersions();
-    const restoreVersionsStr = Object.entries(restoreVersions)
-      .map(([vm, ver]) => `${vm}=${ver}`)
-      .join(',');
-
-    const params = $.param({
-      LOCATION_OF_BACKUPS: dest,
-      VMS_TO_RESTORE: vms_restore,
-      VERSIONS: restoreVersionsStr,
-      RESTORE_DESTINATION: restore_dest,
-      DRY_RUN_REMOTE: $('#dry_run_remote').val(),
-      NOTIFICATIONS_REMOTE: $('#notifications_remote').val(),
-      csrf_token: csrfToken
-    });
-
-    // Save settings first
-    $.get(
-      '/plugins/flash-backup/helpers/save_settings_remote.php?' + params
-    )
-      .done(function (res) {
-        if (res && res.status === 'ok') {
-          console.log('Settings saved');
-
-          // Now trigger the actual restore
-          startRestore();
-        } else {
-          alert('Failed to save settings');
-        }
-      })
-      .fail(function () {
-        alert('Error saving settings');
-      });
-
-  });
-
-  function startRestore() {
-    $.get('/plugins/flash-backup/helpers/backup_remote.php', {
-      csrf_token: csrfToken
-    })
-      .done(function (res) {
-        if (res && res.status === 'ok') {
-          console.log('Restore started, PID:', res.pid);
-        } else {
-          alert(res.message || 'Failed to start restore');
-        }
-      })
-      .fail(function () {
-        alert('Error starting restore');
-      });
-  }
-
   if (typeof caPluginUpdateCheck === "function") {
     caPluginUpdateCheck("flash-backup.plg", { name: "flash-backup" });
   }
-
 </script>
 
 <script>

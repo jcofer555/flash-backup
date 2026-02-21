@@ -1,11 +1,11 @@
 <?php
 header('Content-Type: application/json');
 
-$cmd = '/usr/local/emhttp/plugins/flash-backup/helpers/save_settings_restore.sh';
+$cmd = '/usr/local/emhttp/plugins/flash-backup/helpers/save_settings_remote.sh';
 
 // --- Grab raw values ---
 $minimal_backup_remote       = $_GET['MINIMAL_BACKUP_REMOTE'] ?? '';
-$rclone_config               = $_GET['RCLONE_CONFIG'] ?? '';
+$rclone_config_remote        = $_GET['RCLONE_CONFIG_REMOTE'] ?? '';
 $backups_to_keep_remote      = $_GET['BACKUPS_TO_KEEP_REMOTE'] ?? '';
 $dry_run_remote              = $_GET['DRY_RUN_REMOTE'] ?? '';
 $notifications_remote        = $_GET['NOTIFICATIONS_REMOTE'] ?? '';
@@ -13,7 +13,7 @@ $notifications_remote        = $_GET['NOTIFICATIONS_REMOTE'] ?? '';
 // --- Build args array ---
 $args = [
     $minimal_backup_remote,
-    $rclone_config,
+    $rclone_config_remote,
     $backups_to_keep_remote,
     $dry_run_remote,
     $notifications_remote,
