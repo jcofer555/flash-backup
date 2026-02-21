@@ -643,12 +643,12 @@ if (is_file($plg)) {
       <!-- BACKUP DESTINATION -->
       <div class="form-pair">
         <label>
-          <span class="flash-drivetip" title="Choose destination for backup">
+          <span class="flash-drivetip" title="Choose destination for local backup">
             Backup Destination:
           </span>
         </label>
 
-        <span class="flash-drivetip" title="Choose destination for backup">
+        <span class="flash-drivetip" title="Choose destination for local backup">
           <input type="text" id="backup_destination" name="BACKUP_DESTINATION"
             data-picker-title="Select Backup Destination" placeholder="Click here" readonly style="cursor:pointer;"
             value="<?php echo htmlspecialchars($settings['BACKUP_DESTINATION'] ?? ''); ?>">
@@ -658,12 +658,12 @@ if (is_file($plg)) {
       <!-- BACKUPS TO KEEP -->
       <div class="form-pair">
         <label for="backups_to_keep">
-          <span title="Choose the amount of backups to keep for local backups" class="flash-drivetip">
+          <span title="Choose the amount of backups to keep for your local backups" class="flash-drivetip">
             Backups To Keep:
           </span>
         </label>
 
-        <span title="Choose the amount of backups to keep for local backups" class="flash-drivetip">
+        <span title="Choose the amount of backups to keep for your local backups" class="flash-drivetip">
           <select id="backups_to_keep" class="short-input" name="BACKUPS_TO_KEEP">
             <?php
         $current = $settings['BACKUPS_TO_KEEP'] ?? 0;
@@ -688,13 +688,13 @@ if (is_file($plg)) {
       <div class="form-pair">
         <label>
           <span class="flash-drivetip"
-            title="Choose the owner for the backup if you wanted it owned by one of your created users">
+            title="Choose the owner for the local backup if you wanted it owned by one of your created users">
             Backup Owner:
           </span>
         </label>
 
         <span class="flash-drivetip"
-          title="Choose the owner for the backup if you wanted it owned by one of your created users">
+          title="Choose the owner for the local backup if you wanted it owned by one of your created users">
           <select id="backup_owner" name="BACKUP_OWNER"
             data-selected="<?php echo htmlspecialchars($settings['BACKUP_OWNER'] ?? 'nobody'); ?>">
           </select>
@@ -704,12 +704,12 @@ if (is_file($plg)) {
       <!-- DRY RUN -->
       <div class="form-pair">
         <label for="dry_run">
-          <span class="flash-drivetip" title="Enable to simulate a backup">
+          <span class="flash-drivetip" title="Enable to simulate the local backup">
             Dry Run:
           </span>
         </label>
 
-        <span class="flash-drivetip" title="Enable to simulate a backup">
+        <span class="flash-drivetip" title="Enable to simulate the local backup">
           <select id="dry_run" class="short-input" name="DRY_RUN">
             <option value="yes" <?=(($settings['DRY_RUN'] ?? 'no' )==='yes' ) ? 'selected' : '' ?>>
               Yes
@@ -724,12 +724,12 @@ if (is_file($plg)) {
       <!-- NOTIFICATIONS -->
       <div class="form-pair">
         <label for="notifications">
-          <span class="flash-drivetip" title="Send Unraid system notifications when VM backup starts and finishes">
+          <span class="flash-drivetip" title="Send unraid system notifications when flash backup to local storage starts and finishes">
             Notifications:
           </span>
         </label>
 
-        <span class="flash-drivetip" title="Send Unraid system notifications when VM backup starts and finishes">
+        <span class="flash-drivetip" title="Send unraid system notifications when flash backup to local storage starts and finishes">
           <select id="notifications" class="short-input" name="NOTIFICATIONS">
             <option value="yes" <?=(($settings['NOTIFICATIONS'] ?? 'no' )==='yes' ) ? 'selected' : '' ?>>
               Yes
@@ -973,7 +973,7 @@ if (is_file($plg)) {
       </div>
 
       <div id="backup-status" style="color:yellow; font-weight:bold; margin-bottom:6px; display:none;">
-        Backup in progress!
+        Local or Remote backup in progress!
       </div>
 
       <!-- Local Backup Button-->
@@ -996,29 +996,29 @@ if (is_file($plg)) {
       </div>
       <br>
 
-      <!-- RCLONE CONFIG -->
+      <!-- RCLONE CONFIG REMOTE -->
       <div class="form-pair">
         <label>
-          <span class="flash-drivetip" title="Choose which rclone config to backup to">
+          <span class="flash-drivetip" title="Choose which rclone config to use for the remote backup">
             Rclone Config:
           </span>
         </label>
 
-        <span class="flash-drivetip" title="Choose which rclone config to backup to">
+        <span class="flash-drivetip" title="Choose which rclone config to use for the remote backup">
           <input type="text" id="rclone_config_remote" name="RCLONE_CONFIG_REMOTE" placeholder="Click here" readonly style="cursor:pointer;"
             value="<?php echo htmlspecialchars($remotesettings['RCLONE_CONFIG_REMOTE'] ?? ''); ?>">
         </span>
       </div>
 
-      <!-- BACKUPS TO KEEP -->
+      <!-- BACKUPS TO KEEP REMOTE -->
       <div class="form-pair">
         <label for="backups_to_keep_remote">
-          <span title="Choose the amount of backups to keep for local backups" class="flash-drivetip">
+          <span title="Choose the amount of backups to keep for your remote backups" class="flash-drivetip">
             Backups To Keep:
           </span>
         </label>
 
-        <span title="Choose the amount of backups to keep for local backups" class="flash-drivetip">
+        <span title="Choose the amount of backups to keep for your remote backups" class="flash-drivetip">
           <select id="backups_to_keep_remote" class="short-input" name="BACKUPS_TO_KEEP_REMOTE">
             <?php
             $current = $remotesettings['BACKUPS_TO_KEEP_REMOTE'] ?? 0;
@@ -1039,15 +1039,15 @@ if (is_file($plg)) {
         </span>
       </div>
 
-      <!-- DRY RUN -->
+      <!-- DRY RUN REMOTE -->
       <div class="form-pair">
         <label for="dry_run_remote">
-          <span class="flash-drivetip" title="Enable to simulate a backup">
+          <span class="flash-drivetip" title="Enable to simulate the remote backup">
             Dry Run:
           </span>
         </label>
 
-        <span class="flash-drivetip" title="Enable to simulate a backup">
+        <span class="flash-drivetip" title="Enable to simulate the remote backup">
           <select id="dry_run_remote" class="short-input" name="DRY_RUN_REMOTE">
             <option value="yes" <?=(($remotesettings['DRY_RUN_REMOTE'] ?? 'no' )==='yes' ) ? 'selected' : '' ?>>Yes</option>
             <option value="no" <?=(($remotesettings['DRY_RUN_REMOTE'] ?? 'no' )==='no' ) ? 'selected' : '' ?>>No</option>
@@ -1055,15 +1055,15 @@ if (is_file($plg)) {
         </span>
       </div>
 
-      <!-- NOTIFICATIONS -->
+      <!-- NOTIFICATIONS REMOTE -->
       <div class="form-pair">
         <label for="notifications_remote">
-          <span class="flash-drivetip" title="Send Unraid system notifications when VM backup starts and finishes">
+          <span class="flash-drivetip" title="Send unraid system notifications when flash backup to remote storage starts and finishes">
             Notifications:
           </span>
         </label>
 
-        <span class="flash-drivetip" title="Send Unraid system notifications when VM backup starts and finishes">
+        <span class="flash-drivetip" title="Send unraid system notifications when flash backup to remote storage starts and finishes">
           <select id="notifications_remote" class="short-input" name="NOTIFICATIONS_REMOTE">
             <option value="yes" <?=(($remotesettings['NOTIFICATIONS_REMOTE'] ?? 'no' )==='yes' ) ? 'selected' : '' ?>>Yes
             </option>
@@ -1306,7 +1306,7 @@ if (is_file($plg)) {
       </div>
 
       <div id="backup-status-remote" style="color:yellow; font-weight:bold; margin-bottom:6px; display:none;">
-        Backup in progress!
+        Local or Remote backup in progress!
       </div>
 
       <!-- Remote Backup Button-->
