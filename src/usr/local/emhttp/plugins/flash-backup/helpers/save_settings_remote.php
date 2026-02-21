@@ -5,9 +5,7 @@ $cmd = '/usr/local/emhttp/plugins/flash-backup/helpers/save_settings_restore.sh'
 
 // --- Grab raw values ---
 $minimal_backup_remote       = $_GET['MINIMAL_BACKUP_REMOTE'] ?? '';
-$rclone_mode                 = $_GET['RCLONE_MODE'] ?? '';
-$backup_destination          = $_GET['BACKUP_DESTINATION'] ?? '';
-$rclone_clonfig              = $_GET['RCLONE_CONFIG'] ?? '';
+$rclone_config               = $_GET['RCLONE_CONFIG'] ?? '';
 $backups_to_keep_remote      = $_GET['BACKUPS_TO_KEEP_REMOTE'] ?? '';
 $dry_run_remote              = $_GET['DRY_RUN_REMOTE'] ?? '';
 $notifications_remote        = $_GET['NOTIFICATIONS_REMOTE'] ?? '';
@@ -15,9 +13,7 @@ $notifications_remote        = $_GET['NOTIFICATIONS_REMOTE'] ?? '';
 // --- Build args array ---
 $args = [
     $minimal_backup_remote,
-    $rclone_mode,
-    $backup_destination,
-    $rclone_clonfig,
+    $rclone_config,
     $backups_to_keep_remote,
     $dry_run_remote,
     $notifications_remote,

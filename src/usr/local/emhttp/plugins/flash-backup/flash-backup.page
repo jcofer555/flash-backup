@@ -146,7 +146,7 @@ if (file_exists("/etc/unraid-version")) {
   }
 
   /* === Each Panel (auto-sizing) === */
-  #vm-third-section {
+  #log-section {
     background: #111;
     border-radius: 12px;
     box-shadow: 0 0 12px rgba(46, 204, 64, .3);
@@ -166,7 +166,7 @@ if (file_exists("/etc/unraid-version")) {
     box-sizing: border-box;
   }
 
-  #vm-third-section {
+  #log-section {
     max-height: 74vh;
     /* match your other panels */
     overflow: hidden;
@@ -177,20 +177,21 @@ if (file_exists("/etc/unraid-version")) {
   }
 
   #flash-backup-settings {
-  background: #111;
-  border-radius: 12px;
-  box-shadow: 0 0 12px rgba(46, 204, 64, .3);
-  color: #f0f8ff;
-  padding: 16px !important; /* final value wins */
-  flex: 1 1 auto;
-  height: auto;
-  max-height: none;
-  overflow: visible;
-  min-width: 0;
-  width: 100%;
-  box-sizing: border-box;
-  flex-basis: 25%;
-}
+    background: #111;
+    border-radius: 12px;
+    box-shadow: 0 0 12px rgba(46, 204, 64, .3);
+    color: #f0f8ff;
+    padding: 16px !important;
+    /* final value wins */
+    flex: 1 1 auto;
+    height: auto;
+    max-height: none;
+    overflow: visible;
+    min-width: 0;
+    width: 100%;
+    box-sizing: border-box;
+    flex-basis: 25%;
+  }
 
   .unraid-71 #flash-backup-settings {
     min-height: 77vh;
@@ -199,7 +200,7 @@ if (file_exists("/etc/unraid-version")) {
     margin: 0;
   }
 
-  .unraid-71 #vm-third-section pre {
+  .unraid-71 #log-section pre {
     max-height: 68vh;
     overflow-y: auto;
     margin: 0;
@@ -212,7 +213,7 @@ if (file_exists("/etc/unraid-version")) {
     margin: 0;
   }
 
-  .unraid-72 #vm-third-section pre {
+  .unraid-72 #log-section pre {
     max-height: 67vh;
     overflow-y: auto;
     margin: 0;
@@ -261,14 +262,14 @@ if (file_exists("/etc/unraid-version")) {
     width: 16px;
   }
 
-  .restore-status-row,
+  .remote-status-row,
   .status-row {
     align-items: center;
     display: flex;
     margin-bottom: 6px;
   }
 
-  .restore-status-label,
+  .remote-status-label,
   .status-label {
     color: var(--primary-blue);
     font-weight: bold;
@@ -518,23 +519,23 @@ if (file_exists("/etc/unraid-version")) {
   }
 
   #flash-backup-layout {
-  /* Layout */
-  display: grid;
-  grid-template-columns: minmax(320px, 1fr) minmax(320px, 1fr) minmax(420px, 1.6fr);
-  gap: 20px;
-  width: 100%;
-  margin-top: 0;
-  padding-top: 0;
-  align-items: stretch;
+    /* Layout */
+    display: grid;
+    grid-template-columns: minmax(320px, 1fr) minmax(320px, 1fr) minmax(420px, 1.6fr);
+    gap: 20px;
+    width: 100%;
+    margin-top: 0;
+    padding-top: 0;
+    align-items: stretch;
 
-  /* Theme variables */
-  --plugin-bg: #1e1e1e;
-  --plugin-panel: #111;
-  --plugin-border: #2ECC40;
-  --plugin-text: #e6e6e6;
-  --plugin-muted: #b0b0b0;
-  --plugin-accent: #2ECC40;
-}
+    /* Theme variables */
+    --plugin-bg: #1e1e1e;
+    --plugin-panel: #111;
+    --plugin-border: #2ECC40;
+    --plugin-text: #e6e6e6;
+    --plugin-muted: #b0b0b0;
+    --plugin-accent: #2ECC40;
+  }
 
   #flash-backup-layout select,
   #flash-backup-layout input[type="text"],
@@ -643,22 +644,20 @@ if (is_file($plg)) {
   <div class="flash-backup-wrapper">
     <form id="flash-backup-settings">
 
-      <div class="status-row"><span title="Shows which part of the backup process is currently running"
-          class="flash-backuptip status-label">Status:</span><span id="status-text">Local Backup Not Running</span>
+      <div class="status-row"><span title="Shows which part of the backup to local storage process is currently running"
+          class="flash-drivetip status-label">Status:</span><span id="status-text">Local Backup Not Running</span>
       </div>
       <br>
 
-      <!-- DESTINATION -->
+      <!-- BACKUP DESTINATION -->
       <div class="form-pair">
         <label>
-          <span class="flash-backuptip"
-            title="Choose destination for backup">
+          <span class="flash-drivetip" title="Choose destination for backup">
             Backup Destination:
           </span>
         </label>
 
-        <span class="flash-backuptip"
-          title="Choose destination for backup">
+        <span class="flash-drivetip" title="Choose destination for backup">
           <input type="text" id="backup_destination" name="BACKUP_DESTINATION"
             data-picker-title="Select Backup Destination" placeholder="Click here" readonly style="cursor:pointer;"
             value="<?php echo htmlspecialchars($settings['BACKUP_DESTINATION'] ?? ''); ?>">
@@ -668,12 +667,12 @@ if (is_file($plg)) {
       <!-- BACKUPS TO KEEP -->
       <div class="form-pair">
         <label for="backups_to_keep">
-          <span title="Choose the amount of backups to keep" class="flash-backuptip">
+          <span title="Choose the amount of backups to keep for local backups" class="flash-drivetip">
             Backups To Keep:
           </span>
         </label>
 
-        <span title="Choose the amount of backups to keep" class="flash-backuptip">
+        <span title="Choose the amount of backups to keep for local backups" class="flash-drivetip">
           <select id="backups_to_keep" class="short-input" name="BACKUPS_TO_KEEP">
             <?php
         $current = $settings['BACKUPS_TO_KEEP'] ?? 0;
@@ -697,13 +696,13 @@ if (is_file($plg)) {
       <!-- BACKUP OWNER -->
       <div class="form-pair">
         <label>
-          <span class="flash-backuptip"
+          <span class="flash-drivetip"
             title="Choose the owner for the backup if you wanted it owned by one of your created users">
             Backup Owner:
           </span>
         </label>
 
-        <span class="flash-backuptip"
+        <span class="flash-drivetip"
           title="Choose the owner for the backup if you wanted it owned by one of your created users">
           <select id="backup_owner" name="BACKUP_OWNER"
             data-selected="<?php echo htmlspecialchars($settings['BACKUP_OWNER'] ?? 'nobody'); ?>">
@@ -714,15 +713,19 @@ if (is_file($plg)) {
       <!-- DRY RUN -->
       <div class="form-pair">
         <label for="dry_run">
-          <span class="flash-backuptip" title="Enable to simulate a backup">
+          <span class="flash-drivetip" title="Enable to simulate a backup">
             Dry Run:
           </span>
         </label>
 
-        <span class="flash-backuptip" title="Enable to simulate a backup">
+        <span class="flash-drivetip" title="Enable to simulate a backup">
           <select id="dry_run" class="short-input" name="DRY_RUN">
-            <option value="0" <?=((string)($settings['DRY_RUN'] ?? '1' )==='0' ) ? 'selected' : '' ?>>Yes</option>
-            <option value="1" <?=((string)($settings['DRY_RUN'] ?? '1' )==='1' ) ? 'selected' : '' ?>>No</option>
+            <option value="yes" <?=(($settings['DRY_RUN'] ?? 'no' )==='yes' ) ? 'selected' : '' ?>>
+              Yes
+            </option>
+            <option value="no" <?=(($settings['DRY_RUN'] ?? 'no' )==='no' ) ? 'selected' : '' ?>>
+              No
+            </option>
           </select>
         </span>
       </div>
@@ -730,17 +733,19 @@ if (is_file($plg)) {
       <!-- NOTIFICATIONS -->
       <div class="form-pair">
         <label for="notifications">
-          <span class="flash-backuptip" title="Send Unraid system notifications when flash backup starts and finishes">
+          <span class="flash-drivetip"
+            title="Send Unraid system notifications when VM backup starts and finishes">
             Notifications:
           </span>
         </label>
 
-        <span class="flash-backuptip" title="Send Unraid system notifications when flash backup starts and finishes">
+        <span class="flash-drivetip"
+          title="Send Unraid system notifications when VM backup starts and finishes">
           <select id="notifications" class="short-input" name="NOTIFICATIONS">
-            <option value="1" <?=((int)($settings['NOTIFICATIONS'] ?? 0)===1) ? 'selected' : '' ?>>
+            <option value="yes" <?=(($settings['NOTIFICATIONS'] ?? 'no' )==='yes' ) ? 'selected' : '' ?>>
               Yes
             </option>
-            <option value="0" <?=((int)($settings['NOTIFICATIONS'] ?? 0)===0) ? 'selected' : '' ?>>
+            <option value="no" <?=(($settings['NOTIFICATIONS'] ?? 'no' )==='no' ) ? 'selected' : '' ?>>
               No
             </option>
           </select>
@@ -750,12 +755,12 @@ if (is_file($plg)) {
       <!-- Scheduling Selection -->
       <div class="form-pair" id="cron-expression-row">
         <label for="cron_mode">
-          <span class="flash-backuptip" title="Select scheduling selection">
+          <span class="flash-drivetip" title="Select scheduling selection">
             Scheduling:
           </span>
         </label>
         <div class="input-wrapper">
-          <span class="flash-backuptip" title="Select scheduling selection">
+          <span class="flash-drivetip" title="Select scheduling selection">
             <select id="cron_mode" name="CRON_MODE" class="short-input">
               <option value="minutes" <?php echo (($settings['CRON_MODE'] ?? '' )==='minutes' ) ? 'selected' : '' ; ?>
                 >Minutes</option>
@@ -778,12 +783,12 @@ if (is_file($plg)) {
       <div id="minutes-options" style="display:none; margin-top:10px;">
         <div class="form-pair">
           <label for="minutes_frequency">
-            <span class="flash-backuptip" title="Select minute frequency">
+            <span class="flash-drivetip" title="Select minute frequency">
               Select Frequency:
             </span>
           </label>
           <div class="input-wrapper">
-            <span class="flash-backuptip" title="Select minute frequency">
+            <span class="flash-drivetip" title="Select minute frequency">
 
               <?php
           // --- Normalize MINUTES_FREQUENCY before rendering ---
@@ -814,12 +819,12 @@ if (is_file($plg)) {
       <div id="hourly-options" style="display:none; margin-top:10px;">
         <div class="form-pair">
           <label for="hourly_frequency">
-            <span class="flash-backuptip" title="Select hourly frequency">
+            <span class="flash-drivetip" title="Select hourly frequency">
               Select Frequency:
             </span>
           </label>
           <div class="input-wrapper">
-            <span class="flash-backuptip" title="Select hourly frequency">
+            <span class="flash-drivetip" title="Select hourly frequency">
               <select id="hourly_frequency" name="HOURLY_FREQUENCY" class="short-input">
                 <?php
           for ($i = 1; $i <= 23; $i++) {
@@ -837,12 +842,12 @@ if (is_file($plg)) {
       <div id="daily-options" style="display:none; margin-top:10px;">
         <div class="form-pair">
           <label for="daily_time">
-            <span class="flash-backuptip" title="Select the time of day for daily execution">
+            <span class="flash-drivetip" title="Select the time of day for daily execution">
               Time Of Day:
             </span>
           </label>
           <div class="input-wrapper">
-            <span class="flash-backuptip" title="Select the time of day for daily execution">
+            <span class="flash-drivetip" title="Select the time of day for daily execution">
               <select id="daily_time" name="DAILY_TIME" class="short-input">
                 <?php for ($h = 0; $h < 24; $h++): 
             $time = str_pad($h, 2, "0", STR_PAD_LEFT) . ":00"; ?>
@@ -861,12 +866,12 @@ if (is_file($plg)) {
       <div id="weekly-options" style="display:none; margin-top:10px;">
         <div class="form-pair">
           <label for="weekly_day">
-            <span class="flash-backuptip" title="Select day of the week">
+            <span class="flash-drivetip" title="Select day of the week">
               Day Of Week:
             </span>
           </label>
           <div class="input-wrapper">
-            <span class="flash-backuptip" title="Select day of the week">
+            <span class="flash-drivetip" title="Select day of the week">
               <select id="weekly_day" name="WEEKLY_DAY" class="short-input">
                 <?php 
             $days = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
@@ -883,12 +888,12 @@ if (is_file($plg)) {
 
         <div class="form-pair">
           <label for="weekly_time">
-            <span class="flash-backuptip" title="Select time of day for weekly execution">
+            <span class="flash-drivetip" title="Select time of day for weekly execution">
               Time Of Day:
             </span>
           </label>
           <div class="input-wrapper">
-            <span class="flash-backuptip" title="Select time of day for weekly execution">
+            <span class="flash-drivetip" title="Select time of day for weekly execution">
               <select id="weekly_time" name="WEEKLY_TIME" class="short-input">
                 <?php for ($h = 0; $h < 24; $h++): 
             $time = str_pad($h, 2, "0", STR_PAD_LEFT) . ":00"; ?>
@@ -907,12 +912,12 @@ if (is_file($plg)) {
       <div id="monthly-options" style="display:none; margin-top:10px;">
         <div class="form-pair">
           <label for="monthly_day">
-            <span class="flash-backuptip" title="Select day of the month">
+            <span class="flash-drivetip" title="Select day of the month">
               Day Of Month:
             </span>
           </label>
           <div class="input-wrapper">
-            <span class="flash-backuptip" title="Select day of the month">
+            <span class="flash-drivetip" title="Select day of the month">
               <select id="monthly_day" name="MONTHLY_DAY" class="short-input">
                 <?php for ($d = 1; $d <= 31; $d++): 
             $day = str_pad($d, 2, "0", STR_PAD_LEFT); ?>
@@ -928,12 +933,12 @@ if (is_file($plg)) {
 
         <div class="form-pair">
           <label for="monthly_time">
-            <span class="flash-backuptip" title="Select time of day for monthly execution">
+            <span class="flash-drivetip" title="Select time of day for monthly execution">
               Time Of Day:
             </span>
           </label>
           <div class="input-wrapper">
-            <span class="flash-backuptip" title="Select time of day for monthly execution">
+            <span class="flash-drivetip" title="Select time of day for monthly execution">
               <select id="monthly_time" name="MONTHLY_TIME" class="short-input">
                 <?php for ($h = 0; $h < 24; $h++): 
             $time = str_pad($h, 2, "0", STR_PAD_LEFT) . ":00"; ?>
@@ -952,13 +957,13 @@ if (is_file($plg)) {
       <div id="custom-options" style="display:none; margin-top:10px;">
         <div class="form-pair">
           <label for="custom_cron">
-            <span class="flash-backuptip"
+            <span class="flash-drivetip"
               title="Enter a valid cron expression 5 fields with spaces between each for example */2 * * * * visit https://crontab.guru for help">
               Cron Expression:
             </span>
           </label>
           <div class="input-wrapper">
-            <span class="flash-backuptip"
+            <span class="flash-drivetip"
               title="Enter a valid cron expression 5 fields with spaces between each for example */2 * * * * visit https://crontab.guru for help">
               <input type="text" id="custom_cron" name="CUSTOM_CRON" class="short-input" placeholder="*/2 * * * *"
                 value="<?php echo htmlspecialchars($settings['CUSTOM_CRON'] ?? ''); ?>">
@@ -987,9 +992,9 @@ if (is_file($plg)) {
         Backup or restore in progress!
       </div>
 
-      <!-- Backup Button-->
+      <!-- Local Backup Button-->
       <div class="backup-actions">
-        <span title="Run backup of flash drive" class="flash-backuptip">
+        <span title="Run backup of flash drive to local storage" class="flash-drivetip">
           <button type="button" id="backupbtn">Backup Now</button>
         </span>
       </div>
@@ -1000,61 +1005,95 @@ if (is_file($plg)) {
   <div class="flash-backup-wrapper">
     <form id="flash-backup-settings">
 
-      <div class="restore-status-row"><span title="Shows which part of the restore process is currently running"
-          class="flash-backuptip restore-status-label">Status:</span><span id="restore-status-text">No Restore
-          Running</span></div>
+      <div class="remote-status-row"><span title="Shows which part of the backup to cloud storage with rclone process is currently running"
+          class="flash-drivetip remote-status-label">Status:</span><span id="remote-status-text">Cloud Backup Not Running</span></div>
       <br>
 
-      <!-- RESTORE DESTINATION -->
+      <!-- RCLONE CONFIG -->
       <div class="form-pair">
-        <label>
-          <span class="flash-backuptip" title="Choose destination to restore VM(s)">
-            Restore Destination:
+        <label for="rclone_config">
+          <span class="flash-drivetip" title="Choose which rclone config to use">
+            Rclone Config:
           </span>
         </label>
 
-        <span class="flash-backuptip" title="Choose destination to restore VM(s)">
-          <input type="text" id="restore_destination" name="RESTORE_DESTINATION"
-            data-picker-title="Select Restore Destination" placeholder="Click here" readonly style="cursor:pointer;"
-            value="<?php echo htmlspecialchars($restoreSettings['RESTORE_DESTINATION'] ?? ''); ?>">
-        </span>
-      </div>
-
-      <!-- DRY RUN -->
-      <div class="form-pair">
-        <label for="dry_run_restore">
-          <span class="flash-backuptip" title="Enable to simulate a restore">
-            Dry Run:
-          </span>
-        </label>
-
-        <span class="flash-backuptip" title="Enable to simulate a restore">
-          <select id="dry_run_restore" class="short-input" name="DRY_RUN_RESTORE">
-            <?php
-        $val = (string)($restoreSettings['DRY_RUN_RESTORE'] ?? 'true');
-      ?>
-            <option value="true" <?=$val==='true' ? 'selected' : '' ?>>Yes</option>
-            <option value="false" <?=$val==='false' ? 'selected' : '' ?>>No</option>
+        <span class="flash-drivetip" title="Choose which rclone config to use">
+          <select id="rclone_config" class="short-input" name="RCLONE_CONFIG">
+            <option value="mount" <?=(($restoreSettings['RCLONE_CONFIG'] ?? 'no' )==='mount' ) ? 'selected' : '' ?>>
+              Yes
+            </option>
+            <option value="config" <?=(($restoreSettings['RCLONE_CONFIG'] ?? 'no' )==='config' ) ? 'selected' : '' ?>>
+              No
+            </option>
           </select>
         </span>
       </div>
 
-      <!-- NOTIFICATIONS -->
+      <!-- BACKUPS TO KEEP REMOTE -->
       <div class="form-pair">
-        <label for="notifications_restore">
-          <span class="flash-backuptip" title="Send Unraid system notifications when VM restore starts and finishes">
+        <label for="backups_to_keep_remote">
+          <span title="Choose the amount of backups to keep for cloud backups" class="flash-drivetip">
+            Backups To Keep:
+          </span>
+        </label>
+
+        <span title="Choose the amount of backups to keep for cloud backups" class="flash-drivetip">
+          <select id="backups_to_keep_remote" class="short-input" name="BACKUPS_TO_KEEP_REMOTE">
+            <?php
+        $current = $settings['BACKUPS_TO_KEEP_REMOTE'] ?? 0;
+
+        for ($i = 0; $i <= 99; $i++) {
+          $selected = ((int)$current === $i) ? 'selected' : '';
+
+          if ($i === 0) {
+            echo "<option value=\"0\" $selected>Unlimited</option>";
+          } elseif ($i === 1) {
+            echo "<option value=\"1\" $selected>Only Latest</option>";
+          } else {
+            echo "<option value=\"$i\" $selected>$i</option>";
+          }
+        }
+      ?>
+          </select>
+        </span>
+      </div>
+
+      <!-- DRY RUN REMOTE -->
+      <div class="form-pair">
+        <label for="dry_run_remote">
+          <span class="flash-drivetip" title="Enable to simulate a restore">
+            Dry Run:
+          </span>
+        </label>
+
+        <span class="flash-drivetip" title="Enable to simulate a restore">
+          <select id="dry_run_remote" class="short-input" name="DRY_RUN_REMOTE">
+            <option value="yes" <?=(($restoreSettings['DRY_RUN_REMOTE'] ?? 'no' )==='yes' ) ? 'selected' : '' ?>>
+              Yes
+            </option>
+            <option value="no" <?=(($restoreSettings['DRY_RUN_REMOTE'] ?? 'no' )==='no' ) ? 'selected' : '' ?>>
+              No
+            </option>
+          </select>
+        </span>
+      </div>
+
+      <!-- NOTIFICATIONS REMOTE -->
+      <div class="form-pair">
+        <label for="notifications_remote">
+          <span class="flash-drivetip"
+            title="Send Unraid system notifications when flash backup starts and finishes">
             Notifications:
           </span>
         </label>
 
-        <span class="flash-backuptip" title="Send Unraid system notifications when VM restore starts and finishes">
-          <select id="notifications_restore" class="short-input" name="NOTIFICATIONS_RESTORE">
-            <option value="1" <?=((int)($restoreSettings['NOTIFICATIONS_RESTORE'] ?? 0)===1) ? 'selected' : '' ?>
-              >
+        <span class="flash-drivetip"
+          title="Send Unraid system notifications when flash backup starts and finishes">
+          <select id="notifications_remote" class="short-input" name="NOTIFICATIONS_REMOTE">
+            <option value="yes" <?=(($restoreSettings['NOTIFICATIONS_REMOTE'] ?? 'no' )==='yes' ) ? 'selected' : '' ?>>
               Yes
             </option>
-            <option value="0" <?=((int)($restoreSettings['NOTIFICATIONS_RESTORE'] ?? 0)===0) ? 'selected' : '' ?>
-              >
+            <option value="no" <?=(($restoreSettings['NOTIFICATIONS_REMOTE'] ?? 'no' )==='no' ) ? 'selected' : '' ?>>
               No
             </option>
           </select>
@@ -1062,24 +1101,24 @@ if (is_file($plg)) {
       </div>
 
       <div id="restore-status" style="color:yellow; font-weight:bold; margin-bottom:6px; display:none;">
-        Backup or restore in progress!
+        Backup in progress!
       </div>
 
-      <!-- Restore Button-->
+      <!-- CLOUD BACKUP BUTTON-->
       <div class="form-group">
-        <span title="Run restore of selected VM(s)" class="flash-backuptip">
-          <button type="button" id="restorebtn">Restore</button>
+        <span title="Run backup of flash drive to cloud storage" class="flash-drivetip">
+          <button type="button" id="cloudbackupbtn">Backup Now</button>
         </span>
       </div>
 
     </form>
   </div>
 
-  <div id="vm-third-section">
-    <form id="vm-third-section-form">
+  <div id="log-section">
+    <form id="log-section-form">
 
       <div class="log-header-row">
-        <span title="Clear the flash backup log" class="flash-backuptip">
+        <span title="Clear the flash backup log" class="flash-drivetip">
           <button type="button" id="clear-last-run-log">Clear Log</button>
         </span>
       </div>
@@ -1110,7 +1149,7 @@ if (is_file($plg)) {
 
 <script>
   $(function () {
-    $(document).on('mouseenter', '.flash-backuptip', function () {
+    $(document).on('mouseenter', '.flash-drivetip', function () {
       const $el = $(this);
 
       if (!$el.hasClass('tooltipstered')) {
@@ -1333,10 +1372,10 @@ if (is_file($plg)) {
 
   // Force-close any Dynamix tooltip when dropdown opens
   function closeTooltips() {
-    $('.flash-backuptip').trigger('mouseleave');
+    $('.flash-drivetip').trigger('mouseleave');
   }
 
-$('select').on('click', closeTooltips);
+  $('select').on('click', closeTooltips);
 </script>
 
 <script>
@@ -1494,11 +1533,11 @@ $('select').on('click', closeTooltips);
 
   // Force-close any Dynamix tooltip
   function closeTooltips() {
-    $('.flash-backuptip').trigger('mouseleave');
+    $('.flash-drivetip').trigger('mouseleave');
   }
 
   // When your dropdown opens, close tooltips
-$('select').on('click', closeTooltips);
+  $('select').on('click', closeTooltips);
 
   let backupRequestInProgress = false;
 
@@ -1660,7 +1699,7 @@ $('select').on('click', closeTooltips);
 
   function updateRestoreUI(running) {
 
-    const btn = $('#restorebtn');
+    const btn = $('#cloudbackupbtn');
     const status = $('#restore-status');
 
     if (running) {
@@ -1711,11 +1750,11 @@ $('select').on('click', closeTooltips);
 
   // Force-close any Dynamix tooltip
   function closeTooltips() {
-    $('.flash-backuptip').trigger('mouseleave');
+    $('.flash-drivetip').trigger('mouseleave');
   }
 
   // When your dropdown opens, close tooltips
-$('select').on('click', closeTooltips);
+  $('select').on('click', closeTooltips);
 
   function classifyPath(p) {
     if (p.startsWith('/mnt/user/')) return 'USER';
@@ -1725,7 +1764,7 @@ $('select').on('click', closeTooltips);
     return 'OTHER';
   }
 
-  $('#restorebtn').on('click', function () {
+  $('#cloudbackupbtn').on('click', function () {
 
     // Basic validation
     const vms_restore = $('#vm-hidden-restore').val();
@@ -1759,7 +1798,7 @@ $('select').on('click', closeTooltips);
       return;
     }
 
-    if ($('#restorebtn').prop('disabled')) {
+    if ($('#cloudbackupbtn').prop('disabled')) {
       return;
     }
 
@@ -1774,8 +1813,8 @@ $('select').on('click', closeTooltips);
       VMS_TO_RESTORE: vms_restore,
       VERSIONS: restoreVersionsStr,
       RESTORE_DESTINATION: restore_dest,
-      DRY_RUN_RESTORE: $('#dry_run_restore').val(),
-      NOTIFICATIONS_RESTORE: $('#notifications_restore').val(),
+      DRY_RUN_REMOTE: $('#dry_run_remote').val(),
+      NOTIFICATIONS_REMOTE: $('#notifications_remote').val(),
       csrf_token: csrfToken
     });
 
