@@ -1,7 +1,7 @@
 <?php
 header('Content-Type: application/json');
 
-$status_file = '/tmp/flash-backup/backup_status.txt';
+$status_file = '/tmp/flash-backup/local_backup_status.txt';
 
 $status = 'Local Backup Not Running';
 

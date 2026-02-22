@@ -1391,8 +1391,26 @@ if (is_file($plg)) {
 
     <div id="folderList" class="vm-folder-list"></div>
 
-    <div class="vm-modal-footer">
-      <button type="button" id="confirmFolderSelection">Select</button>
+    <div class="vm-modal-footer"
+      style="display:flex; align-items:center; justify-content:flex-end; gap:12px; position:relative;">
+
+      <div id="folderToast" style="
+         position:absolute;
+         left:0;
+         bottom:50%;
+         transform:translateY(50%);
+         background:#00c853;
+         color:white;
+         padding:6px 12px;
+         border-radius:4px;
+         font-size:13px;
+         box-shadow:0 2px 6px rgba(0,0,0,0.25);
+         display:none;
+       ">
+      </div>
+
+      <button type="button" id="clearSelectedFolders">Clear Selected</button>
+      <button type="button" id="confirmFolderSelection">Done</button>
     </div>
   </div>
 </div>
@@ -1416,6 +1434,16 @@ if (is_file($plg)) {
       }
     });
   });
+
+  function showFolderToast(msg) {
+    const t = $('#folderToast');
+    t.stop(true, true);        // cancel any fade timers
+    t.text(msg).fadeIn(150);
+
+    setTimeout(() => {
+      t.fadeOut(200);
+    }, 2000);
+  }
 
   function updateBackupStatus() {
     fetch('/plugins/flash-backup/helpers/backup_status_check.php')
@@ -2199,7 +2227,9 @@ if (is_file($plg)) {
 
 <script>
   let currentPath = "/mnt";
-  let selectedFolder = null;
+  let selectedFolders = [];        // folders checked in current view
+  let accumulatedFolders = [];     // folders added via "Add Selected"
+  let persistentFolders = [];   // survives modal close
 
   function resolveAndApplyPath(selectedPath, targetInputId) {
     const params = new URLSearchParams({
@@ -2291,6 +2321,7 @@ if (is_file($plg)) {
 
         data.folders.forEach(folder => {
 
+          const isChecked = persistentFolders.includes(folder.path) ? 'checked' : '';
           const disabledAttr = folder.selectable ? '' : 'disabled';
           const tooltip = folder.selectable ? '' : 'title="Can’t select. Browse deeper"';
           const disabledStyle = folder.selectable ? '' : 'style="opacity:0.4;"';
@@ -2300,12 +2331,13 @@ if (is_file($plg)) {
                data-path="${folder.path}"
                style="cursor:pointer; display:flex; align-items:center; gap:8px;">
 
-            <input type="checkbox"
-                   class="folder-checkbox"
-                   value="${folder.path}"
-                   ${disabledAttr}
-                   ${tooltip}
-                   ${disabledStyle}>
+<input type="checkbox"
+       class="folder-checkbox"
+       value="${folder.path}"
+       ${isChecked}
+       ${disabledAttr}
+       ${tooltip}
+       ${disabledStyle}>
 
             <span>${folder.name}</span>
           </div>
@@ -2338,16 +2370,49 @@ if (is_file($plg)) {
 
 
         /* -----------------------
-           Single Checkbox Selection
+           Multi-Checkbox Selection
         ----------------------- */
         $('.folder-checkbox').off('change').on('change', function (e) {
-
           if (this.disabled) return;
 
-          $('.folder-checkbox').not(this).prop('checked', false);
-          selectedFolder = this.checked ? $(this).val() : null;
+          const path = $(this).val();
+
+          if (this.checked) {
+            if (!persistentFolders.includes(path)) {
+              persistentFolders.push(path);
+              showFolderToast("Folder selected");
+            }
+          } else {
+            persistentFolders = persistentFolders.filter(p => p !== path);
+            showFolderToast("Removed");
+          }
 
           e.stopPropagation();
+        });
+
+        $('#addSelectedFolders').off('click').on('click', function () {
+
+          selectedFolders.forEach(path => {
+            if (!persistentFolders.includes(path)) {
+              persistentFolders.push(path);
+            }
+          });
+
+          selectedFolders = [];
+          $('.folder-checkbox').prop('checked', false);
+
+          showFolderToast("Added to selection");
+        });
+
+        $('#clearSelectedFolders').off('click').on('click', function () {
+          persistentFolders = [];
+          selectedFolders = [];
+          accumulatedFolders = [];
+
+          // Uncheck all boxes
+          $('.folder-checkbox').prop('checked', false);
+
+          showFolderToast("Selections cleared");
         });
 
       });
@@ -2359,16 +2424,23 @@ if (is_file($plg)) {
     activeInputFieldId = $(this).attr('id');
     const modalTitle = $(this).data('picker-title');
 
+    // Load persistent selections from the input field
+    const existing = $(this).val().trim();
+    if (existing.length > 0) {
+      persistentFolders = existing.split(',').map(s => s.trim());
+    } else {
+      persistentFolders = [];
+    }
+
+    // Reset session arrays
+    selectedFolders = [];
+    accumulatedFolders = [];
+
     $('#folderPickerTitle').text(modalTitle);
     $('#folderPickerModal').show();
 
     const savedPath = $(this).val();
-
-    if (savedPath && savedPath.startsWith('/mnt')) {
-      loadFolders(savedPath);
-    } else {
-      loadFolders('/mnt');
-    }
+    loadFolders(savedPath && savedPath.startsWith('/mnt') ? savedPath : '/mnt');
   });
 
   $('#closeFolderPicker').on('click', function () {
@@ -2378,8 +2450,12 @@ if (is_file($plg)) {
   $('#confirmFolderSelection').off('click').on('click', function (e) {
     e.preventDefault();
 
-    if (!selectedFolder || !activeInputFieldId) return;
+    if (!activeInputFieldId) return;
 
-    resolveAndApplyPath(selectedFolder, activeInputFieldId);
+    const destString = persistentFolders.join(',');
+
+    $('#' + activeInputFieldId).val(destString).trigger('change');
+
+    $('#folderPickerModal').hide();
   });
 </script>
