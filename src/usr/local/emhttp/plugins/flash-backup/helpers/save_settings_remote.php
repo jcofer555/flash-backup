@@ -10,6 +10,11 @@ $backups_to_keep_remote      = $_GET['BACKUPS_TO_KEEP_REMOTE'] ?? '';
 $dry_run_remote              = $_GET['DRY_RUN_REMOTE'] ?? '';
 $notifications_remote        = $_GET['NOTIFICATIONS_REMOTE'] ?? '';
 
+if (is_array($rclone_config_remote)) {
+    $rclone_config_remote = array_map('trim', $rclone_config_remote);
+    $rclone_config_remote = implode(',', $rclone_config_remote);
+}
+
 // --- Build args array ---
 $args = [
     $minimal_backup_remote,

@@ -8,7 +8,7 @@ export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 if [[ -n "${BACKUP_DESTINATION:-}" ]]; then
     DRY_RUN="${DRY_RUN:-no}"
     MINIMAL_BACKUP="${MINIMAL_BACKUP:-no}"
-    BACKUPS_TO_KEEP="${BACKUPS_TO_KEEP:-7}"
+    BACKUPS_TO_KEEP="${BACKUPS_TO_KEEP:-0}"
     BACKUP_OWNER="${BACKUP_OWNER:-nobody}"
     NOTIFICATIONS="${NOTIFICATIONS:-no}"
 fi

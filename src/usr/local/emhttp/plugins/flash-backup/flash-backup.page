@@ -632,6 +632,69 @@ if (file_exists("/etc/unraid-version")) {
   .minimal-backup-label input[type="checkbox"] {
     transform: scale(1.1);
   }
+
+  .flash-multiselect {
+    display: block;
+    width: 100%;
+    /* match form-input width */
+    height: 2.4em;
+    /* match Unraid input height */
+    line-height: 2.4em;
+    /* vertically center text */
+    border: 1px solid #2ECC40;
+    border-radius: 4px;
+    padding: 0 0.5em;
+    font-size: 1em;
+    background-color: #111;
+    box-sizing: border-box;
+    cursor: pointer;
+    position: relative;
+    width: 200px;
+    min-width: fit-content;
+    max-width: 100%;
+  }
+
+  .flash-multiselect .selected-placeholder {
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: #fff;
+  }
+
+  /* dropdown */
+  .flash-multiselect .options-container {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    border: 1px solid #2ECC40;
+    border-top: none;
+    background: #111;
+    color: #fff;
+    z-index: 10;
+    max-height: 200px;
+    overflow-y: auto;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+    font-size: 1em;
+  }
+
+  /* options */
+  .flash-multiselect .option {
+    padding: 0.3em 0.5em;
+    line-height: 1.6em;
+    cursor: pointer;
+  }
+
+  .flash-multiselect .option:hover {
+    background-color: #5a5959;
+  }
+
+  .flash-multiselect .option.selected {
+    background-color: #4aa555;
+    color: #fff;
+  }
 </style>
 
 <?php
@@ -1021,18 +1084,58 @@ if (is_file($plg)) {
       </div>
       <br>
 
+      <?php
+// --- Parse rclone config ---
+$rcloneConfig = '/boot/config/plugins/rclone/.rclone.conf';
+$rcloneIni = [];
+$rcloneRemotes = [];
+
+if (file_exists($rcloneConfig)) {
+    $rcloneIni = parse_ini_file($rcloneConfig, true, INI_SCANNER_RAW);
+    if (is_array($rcloneIni)) {
+        $rcloneRemotes = array_keys($rcloneIni);
+        sort($rcloneRemotes, SORT_NATURAL | SORT_FLAG_CASE);
+    }
+}
+
+// --- Load saved selection ---
+$saved = $remotesettings['RCLONE_CONFIG_REMOTE'] ?? '';
+$selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
+?>
+
       <!-- RCLONE CONFIG REMOTE -->
       <div class="form-pair">
         <label>
-          <span class="flash-drivetip" title="Choose which rclone config to use for the remote backup">
+          <span class="flash-drivetip" title="Choose which rclone config(s) to use for the remote backup">
             Rclone Config:
           </span>
         </label>
 
-        <span class="flash-drivetip" title="Choose which rclone config to use for the remote backup">
-          <input type="text" id="rclone_config_remote" name="RCLONE_CONFIG_REMOTE" placeholder="Click here" readonly
-            style="cursor:pointer;"
-            value="<?php echo htmlspecialchars($remotesettings['RCLONE_CONFIG_REMOTE'] ?? ''); ?>">
+        <span class="form-input"> <!-- important for width/height -->
+          <!-- Hidden select for form submission -->
+          <select id="rclone_config_remote_hidden" name="RCLONE_CONFIG_REMOTE[]" multiple style="display:none;">
+            <?php foreach ($rcloneRemotes as $remote): ?>
+            <option value="<?= htmlspecialchars($remote) ?>" <?=in_array($remote, $selectedRemotes, true) ? 'selected'
+              : '' ?>>
+              <?= htmlspecialchars($remote) ?>
+            </option>
+            <?php endforeach; ?>
+          </select>
+
+          <!-- Custom dropdown styled to match form-input -->
+          <div id="rclone_config_remote" class="flash-multiselect">
+            <span class="selected-placeholder">
+              <?= !empty($selectedRemotes) ? implode(', ', $selectedRemotes) : 'Select config(s)' ?>
+            </span>
+            <div class="options-container">
+              <?php foreach ($rcloneRemotes as $remote): ?>
+              <?php $type = $rcloneIni[$remote]['type'] ?? 'unknown'; ?>
+              <div class="option" data-value="<?= htmlspecialchars($remote) ?>">
+                <?= htmlspecialchars("$type - $remote") ?>
+              </div>
+              <?php endforeach; ?>
+            </div>
+          </div>
         </span>
       </div>
 
@@ -1449,7 +1552,7 @@ if (is_file($plg)) {
     fetch('/plugins/flash-backup/helpers/backup_status_check.php')
       .then(res => res.json())
       .then(data => {
-        document.getElementById('status-text').textContent = data.status;
+        document.getElementById('').textContent = data.status;
       })
       .catch(() => {
         document.getElementById('status-text').textContent = 'Local Backup Not Running';
@@ -1460,13 +1563,13 @@ if (is_file($plg)) {
   setInterval(updateBackupStatus, 1000);
 
   function updateRestoreStatus() {
-    fetch('/plugins/flash-backup/helpers/restore_status_check.php')
+    fetch('/plugins/flash-backup/helpers/remote_status_check.php')
       .then(res => res.json())
       .then(data => {
-        document.getElementById('restore-status-text').textContent = data.status;
+        document.getElementById('status-text-remote').textContent = data.status;
       })
       .catch(() => {
-        document.getElementById('restore-status-text').textContent = 'No Restore Running';
+        document.getElementById('status-text-remote').textContent = 'Remote Backup Not Running';
       });
   }
 
@@ -2086,11 +2189,18 @@ if (is_file($plg)) {
 
     const cronExprRemote = $('#cron_expression_hidden_remote').val() || '';
 
+    // --- NEW: check that at least one rclone remote is selected ---
+    const selectedRemotes = $('#rclone_config_remote_hidden').val() || [];
+    if (!selectedRemotes.length) {
+      alert('Please select at least one rclone config');
+      return;
+    }
+
     backupRequestInProgressRemote = true;
 
     const params = $.param({
       MINIMAL_BACKUP_REMOTE: $('#minimal_backup_remote').is(':checked') ? 'yes' : 'no',
-      RCLONE_CONFIG_REMOTE: $('#rclone_config_remote').val(),
+      RCLONE_CONFIG_REMOTE: selectedRemotes,   // already an array
       BACKUPS_TO_KEEP_REMOTE: $('#backups_to_keep_remote').val(),
       DRY_RUN_REMOTE: $('#dry_run_remote').val(),
       NOTIFICATIONS_REMOTE: $('#notifications_remote').val(),
@@ -2457,5 +2567,53 @@ if (is_file($plg)) {
     $('#' + activeInputFieldId).val(destString).trigger('change');
 
     $('#folderPickerModal').hide();
+  });
+</script>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const multiselect = document.getElementById('rclone_config_remote');
+    const hiddenSelect = document.getElementById('rclone_config_remote_hidden');
+    const placeholder = multiselect.querySelector('.selected-placeholder');
+    const optionsContainer = multiselect.querySelector('.options-container');
+    const options = optionsContainer.querySelectorAll('.option');
+
+    multiselect.addEventListener('click', () => {
+      optionsContainer.style.display = optionsContainer.style.display === 'block' ? 'none' : 'block';
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!multiselect.contains(e.target)) {
+        optionsContainer.style.display = 'none';
+      }
+    });
+
+    options.forEach(opt => {
+      const value = opt.dataset.value;
+
+      if ([...hiddenSelect.options].find(o => o.value === value && o.selected)) {
+        opt.classList.add('selected');
+      }
+
+      opt.addEventListener('click', (e) => {
+        e.stopPropagation();
+
+        const hiddenOption = [...hiddenSelect.options].find(o => o.value === value);
+
+        if (hiddenOption.selected) {
+          hiddenOption.selected = false;
+          opt.classList.remove('selected');
+        } else {
+          hiddenOption.selected = true;
+          opt.classList.add('selected');
+        }
+
+        // Update placeholder
+        const selectedValues = [...hiddenSelect.options].filter(o => o.selected).map(o => o.value);
+        placeholder.textContent = selectedValues.length ? selectedValues.join(', ') : 'Select remote(s)';
+
+        // Optional: keep hiddenSelect values synced for AJAX
+        hiddenSelect.dispatchEvent(new Event('change'));
+      });
+    });
   });
 </script>
