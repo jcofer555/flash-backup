@@ -1399,7 +1399,7 @@ if (is_file($plg)) {
          left:0;
          bottom:50%;
          transform:translateY(50%);
-         background:#00c853;
+         background:#6f8d7b;
          color:white;
          padding:6px 12px;
          border-radius:4px;
@@ -1441,7 +1441,7 @@ if (is_file($plg)) {
     t.text(msg).fadeIn(150);
 
     setTimeout(() => {
-      t.fadeOut(200);
+      t.fadeOut(400);
     }, 2000);
   }
 
