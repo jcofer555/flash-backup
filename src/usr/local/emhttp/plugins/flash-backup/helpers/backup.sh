@@ -170,15 +170,21 @@ fi
 # ----------------------------
 # MAIN LOOP — backup each destination
 # ----------------------------
+IFS=',' read -r -a DEST_ARRAY <<< "$BACKUP_DESTINATION"
+dest_count=${#DEST_ARRAY[@]}
+
 for DEST in "${DEST_ARRAY[@]}"; do
-    ### [MULTI] Trim whitespace
+    # Trim whitespace
     DEST="${DEST#"${DEST%%[![:space:]]*}"}"
     DEST="${DEST%"${DEST##*[![:space:]]}"}"
 
     [[ -z "$DEST" ]] && continue
 
-    echo ""
-    echo "Processing destination -> $DEST"
+    # Only show header when more than one destination
+    if (( dest_count > 1 )); then
+        echo ""
+        echo "Processing destination -> $DEST"
+    fi
 
     if [[ ! -d "$DEST" ]]; then
       if [[ "$DRY_RUN" == "yes" ]]; then
