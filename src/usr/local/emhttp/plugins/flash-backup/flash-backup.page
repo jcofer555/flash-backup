@@ -46,6 +46,7 @@ $remoteCfgPath = '/boot/config/plugins/flash-backup/settings_remote.cfg';
 $remoteDefaults = [
     'MINIMAL_BACKUP_REMOTE' => 'no',
     'RCLONE_CONFIG_REMOTE' => '',
+    'REMOTE_PATH_IN_CONFIG' => '/Flash_Backups',
     'BACKUPS_TO_KEEP_REMOTE' => '0',
     'DRY_RUN_REMOTE' => 'no',
     'NOTIFICATIONS_REMOTE' => 'no'
@@ -1139,6 +1140,20 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
         </span>
       </div>
 
+      <!-- PATH IN CONFIG REMOTE -->
+      <div class="form-pair">
+        <label>
+          <span class="flash-drivetip" title="Optional path inside the remote where backups will be stored">
+            Path In Config:
+          </span>
+        </label>
+        <span class="flash-drivetip" title="Optional path inside the remote where backups will be stored">
+          <input type="text" name="REMOTE_PATH_IN_CONFIG" id="remote_path_in_config" placeholder="/folder/subfolder"
+            value="<?= htmlspecialchars($remotesettings['REMOTE_PATH_IN_CONFIG'] ?? '') ?>">
+        </span>
+      </div>
+
+
       <!-- BACKUPS TO KEEP REMOTE -->
       <div class="form-pair">
         <label for="backups_to_keep_remote">
@@ -2189,10 +2204,17 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
 
     const cronExprRemote = $('#cron_expression_hidden_remote').val() || '';
 
-    // --- NEW: check that at least one rclone remote is selected ---
+    // --- Check that at least one rclone remote is selected ---
     const selectedRemotes = $('#rclone_config_remote_hidden').val() || [];
     if (!selectedRemotes.length) {
       alert('Please select at least one rclone config');
+      return;
+    }
+
+    // --- NEW: Validate Path In Config ---
+    const remotePath = $('#remote_path_in_config').val().trim();
+    if (remotePath !== '' && !remotePath.startsWith('/')) {
+      alert('Path In Config must start with a "/" or be left blank');
       return;
     }
 
@@ -2200,10 +2222,11 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
 
     const params = $.param({
       MINIMAL_BACKUP_REMOTE: $('#minimal_backup_remote').is(':checked') ? 'yes' : 'no',
-      RCLONE_CONFIG_REMOTE: selectedRemotes,   // already an array
+      RCLONE_CONFIG_REMOTE: selectedRemotes,
       BACKUPS_TO_KEEP_REMOTE: $('#backups_to_keep_remote').val(),
       DRY_RUN_REMOTE: $('#dry_run_remote').val(),
       NOTIFICATIONS_REMOTE: $('#notifications_remote').val(),
+      REMOTE_PATH_IN_CONFIG: remotePath,
       csrf_token: csrfToken
     });
 
@@ -2568,7 +2591,30 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
 
     $('#folderPickerModal').hide();
   });
+
+  // Auto-normalize Path In Config
+  $('#remote_path_in_config').on('blur', function () {
+    let val = $(this).val().trim();
+
+    // Allow blank
+    if (val === '') {
+      return;
+    }
+
+    // Auto-prepend slash if missing
+    if (!val.startsWith('/')) {
+      val = '/' + val;
+    }
+
+    // Remove trailing slash unless it's just "/"
+    if (val.length > 1 && val.endsWith('/')) {
+      val = val.replace(/\/+$/, '');
+    }
+
+    $(this).val(val);
+  });
 </script>
+
 <script>
   document.addEventListener('DOMContentLoaded', function () {
     const multiselect = document.getElementById('rclone_config_remote');

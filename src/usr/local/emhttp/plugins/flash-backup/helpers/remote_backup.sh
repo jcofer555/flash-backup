@@ -10,6 +10,7 @@ if [[ -n "${RCLONE_CONFIG_REMOTE:-}" ]]; then
     MINIMAL_BACKUP_REMOTE="${MINIMAL_BACKUP_REMOTE:-no}"
     BACKUPS_TO_KEEP_REMOTE="${BACKUPS_TO_KEEP_REMOTE:-0}"
     NOTIFICATIONS_REMOTE="${NOTIFICATIONS_REMOTE:-no}"
+    REMOTE_PATH_IN_CONFIG="${REMOTE_PATH_IN_CONFIG:-}"
 fi
 
 # Remove accidental quotes
@@ -18,6 +19,7 @@ DRY_RUN_REMOTE="${DRY_RUN_REMOTE//\"/}"
 MINIMAL_BACKUP_REMOTE="${MINIMAL_BACKUP_REMOTE//\"/}"
 BACKUPS_TO_KEEP_REMOTE="${BACKUPS_TO_KEEP_REMOTE//\"/}"
 NOTIFICATIONS_REMOTE="${NOTIFICATIONS_REMOTE//\"/}"
+REMOTE_PATH_IN_CONFIG="${REMOTE_PATH_IN_CONFIG//\"/}"
 
 SCRIPT_START_EPOCH=$(date +%s)
 
@@ -101,10 +103,9 @@ sleep 5
 # Cleanup trap
 # ----------------------------
 cleanup() {
-    # Always remove temporary backup archives
+    LOCK_FILE="/tmp/flash-backup/lock.txt"
+    rm -f "$LOCK_FILE"
     rm -f /tmp/flash_*.tar.gz /tmp/flash_*.tar.gz.tmp 2>/dev/null
-
-    rm -f "$STATUS_FILE"
 
     SCRIPT_END_EPOCH=$(date +%s)
     SCRIPT_DURATION=$(( SCRIPT_END_EPOCH - SCRIPT_START_EPOCH ))
@@ -117,6 +118,8 @@ cleanup() {
 
     notify_unraid_remote "normal" "Flash Backup" \
       "Remote backup finished - Duration: $SCRIPT_DURATION_HUMAN"
+
+    rm -f "$STATUS_FILE"
 }
 
 trap cleanup EXIT SIGTERM SIGINT SIGHUP SIGQUIT
@@ -142,6 +145,19 @@ if (( ${#REMOTE_ARRAY[@]} == 0 )); then
   echo "[ERROR] No valid rclone remotes"
   exit 1
 fi
+
+# ----------------------------
+# Normalize remote path
+# ----------------------------
+if [[ -z "$REMOTE_PATH_IN_CONFIG" ]]; then
+    REMOTE_SUBPATH="Flash_Backups"
+else
+    REMOTE_SUBPATH="${REMOTE_PATH_IN_CONFIG#/}"
+    REMOTE_SUBPATH="${REMOTE_SUBPATH%/}"
+    [[ -z "$REMOTE_SUBPATH" ]] && REMOTE_SUBPATH="Flash_Backups"
+fi
+
+echo "Remote backup folder being used for backup -> $REMOTE_PATH_IN_CONFIG"
 
 # ----------------------------
 # Build file list (minimal vs full)
@@ -177,12 +193,12 @@ if [[ "$DRY_RUN_REMOTE" == "yes" ]]; then
 else
   if [[ "${TAR_PATHS[0]}" == "boot" ]]; then
     tar czf "$tmp_backup_file" -C / boot || {
-      echo "[ERROR] Failed to create remote backup archive"
+      echo "[ERROR] Failed to create remote backup tar archive"
       exit 1
     }
   else
     tar czf "$tmp_backup_file" -C / "${TAR_PATHS[@]}" || {
-      echo "[ERROR] Failed to create remote backup archive"
+      echo "[ERROR] Failed to create remote backup tar archive"
       exit 1
     }
   fi
@@ -200,6 +216,7 @@ fi
 # ----------------------------
 success_count=0
 failure_count=0
+DEST="${REMOTE}:${REMOTE_SUBPATH}"
 
 for REMOTE in "${REMOTE_ARRAY[@]}"; do
     REMOTE="${REMOTE#"${REMOTE%%[![:space:]]*}"}"
@@ -208,10 +225,20 @@ for REMOTE in "${REMOTE_ARRAY[@]}"; do
     [[ -z "$REMOTE" ]] && continue
 
     echo ""
-    echo "Processing remote destination -> $REMOTE"
+    echo "Uploading remote backup to config -> $REMOTE using folder ${REMOTE_SUBPATH}"
     set_status "Uploading remote backup to $REMOTE"
 
-    DEST="${REMOTE}:flash-backup"
+    # Ensure remote folder exists
+    if [[ "$DRY_RUN_REMOTE" == "yes" ]]; then
+        echo "[DRY RUN] Would ensure remote folder exists -> $DEST"
+    else
+        if ! rclone mkdir "$DEST"; then
+            echo "[ERROR] Failed to create folder $REMOTE_SUBPATH on config $REMOTE"
+            set_status "Failed to create folder on $REMOTE"
+            ((failure_count++))
+            continue
+        fi
+    fi
 
     # Upload backup
     if [[ "$DRY_RUN_REMOTE" == "yes" ]]; then
@@ -250,7 +277,7 @@ for REMOTE in "${REMOTE_ARRAY[@]}"; do
             echo "Removing old remote backups keeping $keep_label $backup_word for $REMOTE"
         fi
 
-        mapfile -t files < <(rclone l lsf "$DEST" --files-only --format "p" | sort -r)
+        mapfile -t files < <(rclone lsf "$DEST" --files-only --format "p" | sort -r)
         num_files=${#files[@]}
 
         if (( num_files > BACKUPS_TO_KEEP_REMOTE )); then

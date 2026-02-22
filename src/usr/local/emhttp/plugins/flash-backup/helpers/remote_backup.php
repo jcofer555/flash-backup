@@ -2,7 +2,7 @@
 header('Content-Type: application/json');
 
 $lockDir = '/tmp/flash-backup';
-$lock = "$lockDir/ock.txt";
+$lock = "$lockDir/lock.txt";
 $script = '/usr/local/emhttp/plugins/flash-backup/helpers/remote_backup.sh';
 
 if (!is_dir($lockDir)) {
