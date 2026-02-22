@@ -216,13 +216,14 @@ fi
 # ----------------------------
 success_count=0
 failure_count=0
-DEST="${REMOTE}:${REMOTE_SUBPATH}"
 
 for REMOTE in "${REMOTE_ARRAY[@]}"; do
     REMOTE="${REMOTE#"${REMOTE%%[![:space:]]*}"}"
     REMOTE="${REMOTE%"${REMOTE##*[![:space:]]}"}"
 
     [[ -z "$REMOTE" ]] && continue
+
+    DEST="${REMOTE}:${REMOTE_SUBPATH}/"
 
     echo ""
     echo "Uploading remote backup to config -> $REMOTE using folder ${REMOTE_SUBPATH}"
