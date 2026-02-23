@@ -722,52 +722,58 @@ if (file_exists("/etc/unraid-version")) {
     color: #fff;
   }
 
-/* Anchor buttons to log */
-#log-wrapper {
-  position: relative;
-}
+  /* Anchor buttons to log */
+  #log-wrapper {
+    position: relative;
+  }
 
-/* Scrollable log */
-#last-run-log {
-  white-space: pre-wrap;
-}
+  /* Scrollable log */
+  #last-run-log {
+    white-space: pre-wrap;
+  }
 
-/* Buttons pinned inside log */
-#log-scroll-buttons {
-  position: absolute;
-  right: 24px;
-  bottom: 38px;
-  display: none; /* JS controls visibility */
-  flex-direction: column;
-  gap: 6px;
-  z-index: 10;
-}
+  /* Buttons pinned inside log */
+  #log-scroll-buttons {
+    position: absolute;
+    right: 24px;
+    bottom: 198px;
+    display: none;
+    /* JS controls visibility */
+    flex-direction: column;
+    gap: 6px;
+    z-index: 10;
+  }
 
-/* Compact button style (Unraid-safe override) */
-#log-scroll-buttons > button {
-  width: 24px;
-  min-width: 24px;
-  max-width: 24px;
-  height: 24px;
-  padding: 0;
-  border-radius: 4px;
-  border: 1px solid #444;
-  background: #111;
-  color: #ccc;
-  font-size: 12px;
-  line-height: 1;
-  cursor: pointer;
-  opacity: 0.85;
-}
+  /* Compact button style (Unraid-safe override) */
+  #log-scroll-buttons>button {
+    width: 24px;
+    min-width: 24px;
+    max-width: 24px;
+    height: 24px;
+    padding: 0;
+    border-radius: 4px;
+    border: 1px solid #444;
+    background: #111;
+    color: #ccc;
+    font-size: 12px;
+    line-height: 1;
+    cursor: pointer;
+    opacity: 0.85;
+  }
 
-#log-scroll-buttons > button:hover {
-  opacity: 1;
-}
+  #log-scroll-buttons>button:hover {
+    opacity: 1;
+  }
 
-#log-scroll-buttons > button:disabled {
-  opacity: 0.25;
-  cursor: default;
-}
+  #log-scroll-buttons>button:disabled {
+    opacity: 0.25;
+    cursor: default;
+  }
+
+  .flash-backup-schedules-table td {
+    padding-top: 2px !important;
+    padding-bottom: 2px !important;
+  }
 </style>
 
 <?php
@@ -787,19 +793,19 @@ if (is_file($plg)) {
     <form id="flash-backup-settings">
 
       <div class="status-row"><span title="Shows which part of the backup to local storage process is currently running"
-          class="flash-drivetip status-label">Status:</span><span id="status-text">Local Backup Not Running</span>
+          class="flash-backuptip status-label">Status:</span><span id="status-text">Local Backup Not Running</span>
       </div>
       <br>
 
       <!-- BACKUP DESTINATION -->
       <div class="form-pair">
         <label>
-          <span class="flash-drivetip" title="Choose destination for local backup">
+          <span class="flash-backuptip" title="Choose destination for local backup">
             Backup Destination:
           </span>
         </label>
 
-        <span class="flash-drivetip" title="Choose destination for local backup">
+        <span class="flash-backuptip" title="Choose destination for local backup">
           <input type="text" id="backup_destination" name="BACKUP_DESTINATION"
             data-picker-title="Select Backup Destination" placeholder="Click here" readonly style="cursor:pointer;"
             value="<?php echo htmlspecialchars($settings['BACKUP_DESTINATION'] ?? ''); ?>">
@@ -809,12 +815,12 @@ if (is_file($plg)) {
       <!-- BACKUPS TO KEEP -->
       <div class="form-pair">
         <label for="backups_to_keep">
-          <span title="Choose the amount of backups to keep for your local backups" class="flash-drivetip">
+          <span title="Choose the amount of backups to keep for your local backups" class="flash-backuptip">
             Backups To Keep:
           </span>
         </label>
 
-        <span title="Choose the amount of backups to keep for your local backups" class="flash-drivetip">
+        <span title="Choose the amount of backups to keep for your local backups" class="flash-backuptip">
           <select id="backups_to_keep" class="short-input" name="BACKUPS_TO_KEEP">
             <?php
         $current = $settings['BACKUPS_TO_KEEP'] ?? 0;
@@ -838,13 +844,13 @@ if (is_file($plg)) {
       <!-- BACKUP OWNER -->
       <div class="form-pair">
         <label>
-          <span class="flash-drivetip"
+          <span class="flash-backuptip"
             title="Choose the owner for the local backup if you wanted it owned by one of your created users">
             Backup Owner:
           </span>
         </label>
 
-        <span class="flash-drivetip"
+        <span class="flash-backuptip"
           title="Choose the owner for the local backup if you wanted it owned by one of your created users">
           <select id="backup_owner" name="BACKUP_OWNER"
             data-selected="<?php echo htmlspecialchars($settings['BACKUP_OWNER'] ?? 'nobody'); ?>">
@@ -855,12 +861,12 @@ if (is_file($plg)) {
       <!-- DRY RUN -->
       <div class="form-pair">
         <label for="dry_run">
-          <span class="flash-drivetip" title="Enable to simulate the local backup">
+          <span class="flash-backuptip" title="Enable to simulate the local backup">
             Dry Run:
           </span>
         </label>
 
-        <span class="flash-drivetip" title="Enable to simulate the local backup">
+        <span class="flash-backuptip" title="Enable to simulate the local backup">
           <select id="dry_run" class="short-input" name="DRY_RUN">
             <option value="yes" <?=(($settings['DRY_RUN'] ?? 'no' )==='yes' ) ? 'selected' : '' ?>>
               Yes
@@ -875,13 +881,13 @@ if (is_file($plg)) {
       <!-- NOTIFICATIONS -->
       <div class="form-pair">
         <label for="notifications">
-          <span class="flash-drivetip"
+          <span class="flash-backuptip"
             title="Send unraid system notifications when flash backup to local storage starts and finishes">
             Notifications:
           </span>
         </label>
 
-        <span class="flash-drivetip"
+        <span class="flash-backuptip"
           title="Send unraid system notifications when flash backup to local storage starts and finishes">
           <select id="notifications" class="short-input" name="NOTIFICATIONS">
             <option value="yes" <?=(($settings['NOTIFICATIONS'] ?? 'no' )==='yes' ) ? 'selected' : '' ?>>
@@ -897,12 +903,12 @@ if (is_file($plg)) {
       <!-- Scheduling Selection -->
       <div class="form-pair" id="cron-expression-row">
         <label for="cron_mode">
-          <span class="flash-drivetip" title="Select scheduling selection">
+          <span class="flash-backuptip" title="Select scheduling selection">
             Scheduling:
           </span>
         </label>
         <div class="input-wrapper">
-          <span class="flash-drivetip" title="Select scheduling selection">
+          <span class="flash-backuptip" title="Select scheduling selection">
             <select id="cron_mode" name="CRON_MODE" class="short-input">
               <option value="minutes" <?php echo (($settings['CRON_MODE'] ?? '' )==='minutes' ) ? 'selected' : '' ; ?>
                 >Minutes</option>
@@ -925,12 +931,12 @@ if (is_file($plg)) {
       <div id="minutes-options" style="display:none; margin-top:10px;">
         <div class="form-pair">
           <label for="minutes_frequency">
-            <span class="flash-drivetip" title="Select minute frequency">
+            <span class="flash-backuptip" title="Select minute frequency">
               Select Frequency:
             </span>
           </label>
           <div class="input-wrapper">
-            <span class="flash-drivetip" title="Select minute frequency">
+            <span class="flash-backuptip" title="Select minute frequency">
 
               <?php
           $raw = $settings['MINUTES_FREQUENCY'] ?? '';
@@ -956,12 +962,12 @@ if (is_file($plg)) {
       <div id="hourly-options" style="display:none; margin-top:10px;">
         <div class="form-pair">
           <label for="hourly_frequency">
-            <span class="flash-drivetip" title="Select hourly frequency">
+            <span class="flash-backuptip" title="Select hourly frequency">
               Select Frequency:
             </span>
           </label>
           <div class="input-wrapper">
-            <span class="flash-drivetip" title="Select hourly frequency">
+            <span class="flash-backuptip" title="Select hourly frequency">
               <select id="hourly_frequency" name="HOURLY_FREQUENCY" class="short-input">
                 <?php
           for ($i = 1; $i <= 23; $i++) {
@@ -979,12 +985,12 @@ if (is_file($plg)) {
       <div id="daily-options" style="display:none; margin-top:10px;">
         <div class="form-pair">
           <label for="daily_time">
-            <span class="flash-drivetip" title="Select the time of day for daily execution">
+            <span class="flash-backuptip" title="Select the time of day for daily execution">
               Time Of Day:
             </span>
           </label>
           <div class="input-wrapper">
-            <span class="flash-drivetip" title="Select the time of day for daily execution">
+            <span class="flash-backuptip" title="Select the time of day for daily execution">
               <select id="daily_time" name="DAILY_TIME" class="short-input">
                 <?php for ($h = 0; $h < 24; $h++): 
             $time = str_pad($h, 2, "0", STR_PAD_LEFT) . ":00"; ?>
@@ -1003,12 +1009,12 @@ if (is_file($plg)) {
       <div id="weekly-options" style="display:none; margin-top:10px;">
         <div class="form-pair">
           <label for="weekly_day">
-            <span class="flash-drivetip" title="Select day of the week">
+            <span class="flash-backuptip" title="Select day of the week">
               Day Of Week:
             </span>
           </label>
           <div class="input-wrapper">
-            <span class="flash-drivetip" title="Select day of the week">
+            <span class="flash-backuptip" title="Select day of the week">
               <select id="weekly_day" name="WEEKLY_DAY" class="short-input">
                 <?php 
             $days = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
@@ -1025,12 +1031,12 @@ if (is_file($plg)) {
 
         <div class="form-pair">
           <label for="weekly_time">
-            <span class="flash-drivetip" title="Select time of day for weekly execution">
+            <span class="flash-backuptip" title="Select time of day for weekly execution">
               Time Of Day:
             </span>
           </label>
           <div class="input-wrapper">
-            <span class="flash-drivetip" title="Select time of day for weekly execution">
+            <span class="flash-backuptip" title="Select time of day for weekly execution">
               <select id="weekly_time" name="WEEKLY_TIME" class="short-input">
                 <?php for ($h = 0; $h < 24; $h++): 
             $time = str_pad($h, 2, "0", STR_PAD_LEFT) . ":00"; ?>
@@ -1049,12 +1055,12 @@ if (is_file($plg)) {
       <div id="monthly-options" style="display:none; margin-top:10px;">
         <div class="form-pair">
           <label for="monthly_day">
-            <span class="flash-drivetip" title="Select day of the month">
+            <span class="flash-backuptip" title="Select day of the month">
               Day Of Month:
             </span>
           </label>
           <div class="input-wrapper">
-            <span class="flash-drivetip" title="Select day of the month">
+            <span class="flash-backuptip" title="Select day of the month">
               <select id="monthly_day" name="MONTHLY_DAY" class="short-input">
                 <?php for ($d = 1; $d <= 31; $d++): 
             $day = str_pad($d, 2, "0", STR_PAD_LEFT); ?>
@@ -1070,12 +1076,12 @@ if (is_file($plg)) {
 
         <div class="form-pair">
           <label for="monthly_time">
-            <span class="flash-drivetip" title="Select time of day for monthly execution">
+            <span class="flash-backuptip" title="Select time of day for monthly execution">
               Time Of Day:
             </span>
           </label>
           <div class="input-wrapper">
-            <span class="flash-drivetip" title="Select time of day for monthly execution">
+            <span class="flash-backuptip" title="Select time of day for monthly execution">
               <select id="monthly_time" name="MONTHLY_TIME" class="short-input">
                 <?php for ($h = 0; $h < 24; $h++): 
             $time = str_pad($h, 2, "0", STR_PAD_LEFT) . ":00"; ?>
@@ -1094,13 +1100,13 @@ if (is_file($plg)) {
       <div id="custom-options" style="display:none; margin-top:10px;">
         <div class="form-pair">
           <label for="custom_cron">
-            <span class="flash-drivetip"
+            <span class="flash-backuptip"
               title="Enter a valid cron expression 5 fields with spaces between each for example */2 * * * * visit https://crontab.guru for help">
               Cron Expression:
             </span>
           </label>
           <div class="input-wrapper">
-            <span class="flash-drivetip"
+            <span class="flash-backuptip"
               title="Enter a valid cron expression 5 fields with spaces between each for example */2 * * * * visit https://crontab.guru for help">
               <input type="text" id="custom_cron" name="CUSTOM_CRON" class="short-input" placeholder="*/2 * * * *"
                 value="<?php echo htmlspecialchars($settings['CUSTOM_CRON'] ?? ''); ?>">
@@ -1131,18 +1137,29 @@ if (is_file($plg)) {
 
       <!-- Local Backup Button-->
       <div class="backup-actions">
-        <span title="Run backup of flash drive to local storage" class="flash-drivetip">
+        <span title="Run backup of flash drive to local storage" class="flash-backuptip">
           <button type="button" id="backupbtn">Backup Now</button>
         </span>
 
+        <span title="Create/update a backup schedule using the settings shown in the fields above"
+          class="flash-backuptip">
+          <button type="button" id="schedule-local-backup" class="button schedule-button">Schedule It</button>
+        </span>
+
+        <span title="Cancel editing of schedule" class="flash-backuptip">
+          <button type="button" id="cancelEditBtn" style="display:none;">Cancel</button>
+        </span>
+
         <!-- Minimal Backup Checkbox -->
-        <label class="minimal-backup-label flash-drivetip"
+        <label class="minimal-backup-label flash-backuptip"
           title="Enable to have the local backup only include the config and extra folders, and the syslinux.cfg file">
           <input type="checkbox" id="minimal_backup" name="MINIMAL_BACKUP" value="yes" <?php echo
             (($settings['MINIMAL_BACKUP'] ?? 'no' )==='yes' ) ? 'checked' : '' ; ?>>
           Minimal Backup
         </label>
       </div>
+
+      <div id="popupMessage"></div>
 
     </form>
   </div>
@@ -1152,7 +1169,7 @@ if (is_file($plg)) {
 
       <div class="status-row">
         <span title="Shows which part of the backup to remote storage process is currently running"
-          class="flash-drivetip status-label">Status:</span>
+          class="flash-backuptip status-label">Status:</span>
         <span id="status-text-remote">Remote Backup Not Running</span>
       </div>
       <br>
@@ -1179,7 +1196,7 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
       <!-- RCLONE CONFIG REMOTE -->
       <div class="form-pair">
         <label>
-          <span class="flash-drivetip" title="Choose which rclone config(s) to use for the remote backup">
+          <span class="flash-backuptip" title="Choose which rclone config(s) to use for the remote backup">
             Rclone Config:
           </span>
         </label>
@@ -1226,11 +1243,11 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
       <!-- PATH IN CONFIG REMOTE -->
       <div class="form-pair">
         <label>
-          <span class="flash-drivetip" title="Optional path inside the remote where backups will be stored">
+          <span class="flash-backuptip" title="Optional path inside the remote where backups will be stored">
             Path In Config:
           </span>
         </label>
-        <span class="flash-drivetip" title="Optional path inside the remote where backups will be stored">
+        <span class="flash-backuptip" title="Optional path inside the remote where backups will be stored">
           <input type="text" name="REMOTE_PATH_IN_CONFIG" id="remote_path_in_config" placeholder="/folder/subfolder"
             value="<?= htmlspecialchars($remotesettings['REMOTE_PATH_IN_CONFIG'] ?? '') ?>">
         </span>
@@ -1240,12 +1257,12 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
       <!-- BACKUPS TO KEEP REMOTE -->
       <div class="form-pair">
         <label for="backups_to_keep_remote">
-          <span title="Choose the amount of backups to keep for your remote backups" class="flash-drivetip">
+          <span title="Choose the amount of backups to keep for your remote backups" class="flash-backuptip">
             Backups To Keep:
           </span>
         </label>
 
-        <span title="Choose the amount of backups to keep for your remote backups" class="flash-drivetip">
+        <span title="Choose the amount of backups to keep for your remote backups" class="flash-backuptip">
           <select id="backups_to_keep_remote" class="short-input" name="BACKUPS_TO_KEEP_REMOTE">
             <?php
             $current = $remotesettings['BACKUPS_TO_KEEP_REMOTE'] ?? 0;
@@ -1269,12 +1286,12 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
       <!-- DRY RUN REMOTE -->
       <div class="form-pair">
         <label for="dry_run_remote">
-          <span class="flash-drivetip" title="Enable to simulate the remote backup">
+          <span class="flash-backuptip" title="Enable to simulate the remote backup">
             Dry Run:
           </span>
         </label>
 
-        <span class="flash-drivetip" title="Enable to simulate the remote backup">
+        <span class="flash-backuptip" title="Enable to simulate the remote backup">
           <select id="dry_run_remote" class="short-input" name="DRY_RUN_REMOTE">
             <option value="yes" <?=(($remotesettings['DRY_RUN_REMOTE'] ?? 'no' )==='yes' ) ? 'selected' : '' ?>>Yes
             </option>
@@ -1287,13 +1304,13 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
       <!-- NOTIFICATIONS REMOTE -->
       <div class="form-pair">
         <label for="notifications_remote">
-          <span class="flash-drivetip"
+          <span class="flash-backuptip"
             title="Send unraid system notifications when flash backup to remote storage starts and finishes">
             Notifications:
           </span>
         </label>
 
-        <span class="flash-drivetip"
+        <span class="flash-backuptip"
           title="Send unraid system notifications when flash backup to remote storage starts and finishes">
           <select id="notifications_remote" class="short-input" name="NOTIFICATIONS_REMOTE">
             <option value="yes" <?=(($remotesettings['NOTIFICATIONS_REMOTE'] ?? 'no' )==='yes' ) ? 'selected' : '' ?>
@@ -1308,12 +1325,12 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
       <!-- Scheduling Selection -->
       <div class="form-pair" id="cron-expression-row-remote">
         <label for="cron_mode_remote">
-          <span class="flash-drivetip" title="Select scheduling selection">
+          <span class="flash-backuptip" title="Select scheduling selection">
             Scheduling:
           </span>
         </label>
         <div class="input-wrapper">
-          <span class="flash-drivetip" title="Select scheduling selection">
+          <span class="flash-backuptip" title="Select scheduling selection">
             <select id="cron_mode_remote" name="CRON_MODE_REMOTE" class="short-input">
               <option value="minutes" <?=(($remotesettings['CRON_MODE_REMOTE'] ?? '' )==='minutes' ) ? 'selected' : ''
                 ?>
@@ -1342,12 +1359,12 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
       <div id="minutes-options-remote" style="display:none; margin-top:10px;">
         <div class="form-pair">
           <label for="minutes_frequency_remote">
-            <span class="flash-drivetip" title="Select minute frequency">
+            <span class="flash-backuptip" title="Select minute frequency">
               Select Frequency:
             </span>
           </label>
           <div class="input-wrapper">
-            <span class="flash-drivetip" title="Select minute frequency">
+            <span class="flash-backuptip" title="Select minute frequency">
 
               <?php
               $raw = $remotesettings['MINUTES_FREQUENCY_REMOTE'] ?? '';
@@ -1373,12 +1390,12 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
       <div id="hourly-options-remote" style="display:none; margin-top:10px;">
         <div class="form-pair">
           <label for="hourly_frequency_remote">
-            <span class="flash-drivetip" title="Select hourly frequency">
+            <span class="flash-backuptip" title="Select hourly frequency">
               Select Frequency:
             </span>
           </label>
           <div class="input-wrapper">
-            <span class="flash-drivetip" title="Select hourly frequency">
+            <span class="flash-backuptip" title="Select hourly frequency">
               <select id="hourly_frequency_remote" name="HOURLY_FREQUENCY_REMOTE" class="short-input">
                 <?php
                 for ($i = 1; $i <= 23; $i++) {
@@ -1396,12 +1413,12 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
       <div id="daily-options-remote" style="display:none; margin-top:10px;">
         <div class="form-pair">
           <label for="daily_time_remote">
-            <span class="flash-drivetip" title="Select the time of day for daily execution">
+            <span class="flash-backuptip" title="Select the time of day for daily execution">
               Time Of Day:
             </span>
           </label>
           <div class="input-wrapper">
-            <span class="flash-drivetip" title="Select the time of day for daily execution">
+            <span class="flash-backuptip" title="Select the time of day for daily execution">
               <select id="daily_time_remote" name="DAILY_TIME_REMOTE" class="short-input">
                 <?php for ($h = 0; $h < 24; $h++):
                 $time = str_pad($h, 2, "0", STR_PAD_LEFT) . ":00"; ?>
@@ -1420,12 +1437,12 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
       <div id="weekly-options-remote" style="display:none; margin-top:10px;">
         <div class="form-pair">
           <label for="weekly_day_remote">
-            <span class="flash-drivetip" title="Select day of the week">
+            <span class="flash-backuptip" title="Select day of the week">
               Day Of Week:
             </span>
           </label>
           <div class="input-wrapper">
-            <span class="flash-drivetip" title="Select day of the week">
+            <span class="flash-backuptip" title="Select day of the week">
               <select id="weekly_day_remote" name="WEEKLY_DAY_REMOTE" class="short-input">
                 <?php
                 $days = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
@@ -1442,12 +1459,12 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
 
         <div class="form-pair">
           <label for="weekly_time_remote">
-            <span class="flash-drivetip" title="Select time of day for weekly execution">
+            <span class="flash-backuptip" title="Select time of day for weekly execution">
               Time Of Day:
             </span>
           </label>
           <div class="input-wrapper">
-            <span class="flash-drivetip" title="Select time of day for weekly execution">
+            <span class="flash-backuptip" title="Select time of day for weekly execution">
               <select id="weekly_time_remote" name="WEEKLY_TIME_REMOTE" class="short-input">
                 <?php for ($h = 0; $h < 24; $h++):
                 $time = str_pad($h, 2, "0", STR_PAD_LEFT) . ":00"; ?>
@@ -1466,12 +1483,12 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
       <div id="monthly-options-remote" style="display:none; margin-top:10px;">
         <div class="form-pair">
           <label for="monthly_day_remote">
-            <span class="flash-drivetip" title="Select day of the month">
+            <span class="flash-backuptip" title="Select day of the month">
               Day Of Month:
             </span>
           </label>
           <div class="input-wrapper">
-            <span class="flash-drivetip" title="Select day of the month">
+            <span class="flash-backuptip" title="Select day of the month">
               <select id="monthly_day_remote" name="MONTHLY_DAY_REMOTE" class="short-input">
                 <?php for ($d = 1; $d <= 31; $d++):
                 $day = str_pad($d, 2, "0", STR_PAD_LEFT); ?>
@@ -1487,12 +1504,12 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
 
         <div class="form-pair">
           <label for="monthly_time_remote">
-            <span class="flash-drivetip" title="Select time of day for monthly execution">
+            <span class="flash-backuptip" title="Select time of day for monthly execution">
               Time Of Day:
             </span>
           </label>
           <div class="input-wrapper">
-            <span class="flash-drivetip" title="Select time of day for monthly execution">
+            <span class="flash-backuptip" title="Select time of day for monthly execution">
               <select id="monthly_time_remote" name="MONTHLY_TIME_REMOTE" class="short-input">
                 <?php for ($h = 0; $h < 24; $h++):
                 $time = str_pad($h, 2, "0", STR_PAD_LEFT) . ":00"; ?>
@@ -1511,13 +1528,13 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
       <div id="custom-options-remote" style="display:none; margin-top:10px;">
         <div class="form-pair">
           <label for="custom_cron_remote">
-            <span class="flash-drivetip"
+            <span class="flash-backuptip"
               title="Enter a valid cron expression 5 fields with spaces between each for example */2 * * * * visit https://crontab.guru for help">
               Cron Expression:
             </span>
           </label>
           <div class="input-wrapper">
-            <span class="flash-drivetip"
+            <span class="flash-backuptip"
               title="Enter a valid cron expression 5 fields with spaces between each for example */2 * * * * visit https://crontab.guru for help">
               <input type="text" id="custom_cron_remote" name="CUSTOM_CRON_REMOTE" class="short-input"
                 placeholder="*/2 * * * *"
@@ -1549,12 +1566,12 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
 
       <!-- Remote Backup Button -->
       <div class="backup-actions">
-        <span title="Run backup of flash drive to remote storage" class="flash-drivetip">
+        <span title="Run backup of flash drive to remote storage" class="flash-backuptip">
           <button type="button" id="backupbtn_remote">Backup Now</button>
         </span>
 
         <!-- Minimal Remote Backup Checkbox -->
-        <label class="minimal-backup-label flash-drivetip"
+        <label class="minimal-backup-label flash-backuptip"
           title="Enable to have the remote backup only include the config and extra folders, and the syslinux.cfg file">
           <input type="checkbox" id="minimal_backup_remote" name="MINIMAL_BACKUP_REMOTE" value="yes" <?php echo
             (($remotesettings['MINIMAL_BACKUP_REMOTE'] ?? 'no' )==='yes' ) ? 'checked' : '' ; ?>>
@@ -1569,11 +1586,11 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
     <form id="log-section-form">
 
       <div class="log-header-row">
-        <span title="Clear the vm backup and restore log" class="vm-backup-and-restoretip">
+        <span title="Clear the flash backup log" class="flash-backuptip">
           <button type="button" id="clear-last-run-log">Clear Log</button>
         </span>
 
-        <span title="Copy vm backup and restore log to clipboard" class="vm-backup-and-restoretip">
+        <span title="Copy flash backup log to clipboard" class="flash-backuptip">
           <button type="button" id="copy-last-run-log">Copy</button>
         </span>
       </div>
@@ -1587,6 +1604,9 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
 
   </form>
 </div>
+
+<h3>📅 Scheduled Backup Jobs</h3>
+<div id="schedule-list"></div>
 
 </div>
 
@@ -1627,7 +1647,7 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
 
 <script>
   $(function () {
-    $(document).on('mouseenter', '.flash-drivetip', function () {
+    $(document).on('mouseenter', '.flash-backuptip', function () {
       const $el = $(this);
 
       if (!$el.hasClass('tooltipstered')) {
@@ -1644,6 +1664,30 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
       }
     });
   });
+
+  let scheduleUILocked = false;
+  let rebuildToken = 0;
+
+  function validateBackupPrereqs() {
+    const dest = $('#backup_destination').val()?.trim();
+
+    if (!dest) {
+      alert("Please select a backup destination for the schedule");
+      return false;
+    }
+
+    return true;
+  }
+
+  function lockScheduleUI() {
+    scheduleUILocked = true;
+    $(".schedule-action-btn").prop("disabled", true);
+  }
+
+  function unlockScheduleUI() {
+    scheduleUILocked = false;
+    $(".schedule-action-btn").prop("disabled", false);
+  }
 
   function showFolderToast(msg) {
     const t = $('#folderToast');
@@ -1947,7 +1991,7 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
 
   // Force-close any Dynamix tooltip when dropdown opens
   function closeTooltips() {
-    $('.flash-drivetip').trigger('mouseleave');
+    $('.flash-backuptip').trigger('mouseleave');
   }
 
   $('select').on('click', closeTooltips);
@@ -2207,7 +2251,7 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
 
   // Force-close any Dynamix tooltip
   function closeTooltips() {
-    $('.flash-drivetip').trigger('mouseleave');
+    $('.flash-backuptip').trigger('mouseleave');
   }
 
   // When your dropdown opens, close tooltips
@@ -2385,6 +2429,21 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
       });
   }
 
+  // --- Global variable to track editing ---
+  window.editingScheduleId = null;
+
+  // --- Load schedule list ---
+  function loadSchedules() {
+    return $.get(
+      '/plugins/flash-backup/helpers/schedule_list.php',
+      function (html) {
+        $('#schedule-list').html(html);
+      }
+    ).always(() => {
+      unlockScheduleUI();
+    });
+  }
+
   // --- Build cron string from UI selections (LOCAL ONLY, unchanged) ---
   function validateCustomCron(expr) {
     expr = expr.trim();
@@ -2428,6 +2487,234 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
         return { valid: false };
     }
   }
+
+  // --- Create or update schedule ---
+  async function scheduleJob(type) {
+
+    if (!validateBackupPrereqs()) {
+      return; // block saving schedule
+    }
+
+    if (scheduleUILocked) return;
+    lockScheduleUI();
+
+    const cron = buildCronFromUI();
+    if (!cron.valid) {
+      unlockScheduleUI();
+      alert("Invalid cron expression");
+      return;
+    }
+
+    // -------------------------------
+    // CONTINUE WITH NORMAL SAVE LOGIC
+    // -------------------------------
+
+    const settings = {};
+    $('input[name], select[name]').each(function () {
+      if ($(this).is(':checkbox')) {
+        settings[this.name] = $(this).is(':checked') ? 'yes' : 'no';
+      } else {
+        settings[this.name] = $(this).val();
+      }
+    });
+
+    const url = window.editingScheduleId
+      ? 'schedule_update.php'
+      : 'schedule_create.php';
+
+    $.ajax({
+      type: 'POST',
+      url: `/plugins/flash-backup/helpers/${url}`,
+      data: {
+        id: window.editingScheduleId,
+        type: type,
+        cron: cron.expression,
+        settings: settings
+      },
+      success: function (response) {
+        resetScheduleUI();
+        window.editingScheduleId = null;
+        loadSchedules();
+        showPopup("Schedule saved!");
+      },
+      error: function (xhr) {
+        unlockScheduleUI();
+
+        if (xhr.status === 409) {
+          alert('Duplicate schedule detected during create!');
+        } else {
+          alert('Error creating/updating schedule: ' + xhr.responseText);
+        }
+      }
+    });
+  }
+
+  // --- Edit a schedule ---
+  function editSchedule(id) {
+    if (scheduleUILocked) return;   // prevent double‑clicks during reload
+    lockScheduleUI();               // freeze all schedule action buttons
+
+    $.getJSON('/plugins/flash-backup/helpers/schedule_load.php', { id }, function (s) {
+      const settings = s.SETTINGS || {};
+
+      // Apply schedule type first
+      if (s.TYPE) {
+        $('[name="type"]').val(s.TYPE).trigger('change');
+      }
+
+      // Apply all settings to form fields
+      for (const k in settings) {
+        const el = $('[name="' + k + '"]');
+        if (!el.length) continue;
+
+        if (el.is(':checkbox')) {
+          const v = String(settings[k]).toLowerCase();
+          el.prop('checked', v === 'yes' || v === '1' || v === 'true');
+        } else if (el.is(':radio')) {
+          $('[name="' + k + '"][value="' + settings[k] + '"]').prop('checked', true);
+        } else {
+          el.val(settings[k]).trigger('change');
+        }
+      }
+
+      // Cron mode detection
+      $('#cron_mode')
+        .val(detectCronMode(s.CRON))
+        .trigger('change');
+
+      // Store ID globally
+      window.editingScheduleId = id;
+
+      // Switch Schedule It → Edit
+      $('#schedule-local-backup').text('Edit');
+
+      // Show Cancel button
+      $('#cancelEditBtn').show();
+
+      unlockScheduleUI();
+    });
+  }
+
+  $('#cancelEditBtn').on('click', function () {
+    location.reload();
+  });
+
+  function showPopup(message) {
+    const popup = $('#popupMessage');
+
+    popup.text(message).fadeIn(150);
+
+    setTimeout(() => {
+      popup.fadeOut(200, () => {
+        popup.text('');
+        popup.hide();
+      });
+    }, 3000);
+  }
+
+  function resetScheduleUI() {
+    // Revert Edit → Schedule It
+    $('#schedule-local-backup').text('Schedule It');
+
+    // Hide Cancel button
+    $('#cancelEditBtn').hide();
+
+    // Remove any popup message immediately
+    $('#popupMessage').stop(true, true).hide().text('');
+  }
+
+  // --- Delete a schedule ---
+  function deleteSchedule(id) {
+    if (scheduleUILocked) return;   // prevent double‑clicks during reload
+
+    if (!confirm("Delete this schedule?")) return;
+
+    lockScheduleUI();               // freeze all schedule action buttons
+
+    $.post(
+      '/plugins/flash-backup/helpers/schedule_delete.php',
+      { id: id }
+    ).always(() => {
+      loadSchedules();
+    });
+  }
+
+  // --- Run backup manually ---
+  function runScheduleBackup(id, btn) {
+    if (scheduleUILocked) return;
+
+    if (!confirm("Are you sure you want to run this backup now?")) return;
+
+    lockScheduleUI();
+
+    // Disable clicked button and change tooltip
+    btn.disabled = true;
+    const originalText = btn.textContent;
+    const originalTitle = btn.getAttribute('title');
+
+    btn.textContent = "Running";
+
+    $.post('/plugins/flash-backup/helpers/run_schedule.php', { id })
+      .done(function (res) {
+        if (!res.started) {
+          alert("Failed to start backup");
+          btn.disabled = false;
+          btn.textContent = originalText;
+          btn.setAttribute('title', originalTitle);
+          unlockScheduleUI();
+          return;
+        }
+
+        // Poll lock
+        const poll = setInterval(function () {
+          $.getJSON('/plugins/flash-backup/helpers/check_lock.php', function (res) {
+            if (!res.locked) {
+              clearInterval(poll);
+
+              btn.disabled = false;
+              btn.textContent = originalText;
+
+              unlockScheduleUI();
+            }
+          });
+        }, 1000);
+      })
+      .fail(function (xhr, status, err) {
+        alert("Failed to start backup: " + (xhr.responseJSON?.error || err));
+        btn.disabled = false;
+        btn.textContent = originalText;
+        btn.setAttribute('title', originalTitle);
+        unlockScheduleUI();
+      });
+  }
+
+  // --- Toggle enable/disable ---
+  function toggleSchedule(id, isEnabled) {
+    if (scheduleUILocked) return;   // prevent double‑clicks during reload
+
+    const msg = isEnabled
+      ? "Disable this schedule?"
+      : "Enable this schedule?";
+
+    if (!confirm(msg)) return;
+
+    lockScheduleUI();               // freeze all schedule action buttons
+
+    $.post(
+      '/plugins/flash-backup/helpers/schedule_toggle.php',
+      { id: id }
+    ).always(() => {
+      loadSchedules();
+    });
+  }
+
+  // --- Button click handlers ---
+  $(document).ready(function () {
+    loadSchedules();
+
+    $(document).on('click', '#schedule-local-backup', function () { scheduleJob('local-backup'); });
+    $(document).on('click', '#schedule-remote-backup', function () { scheduleJob('remote-backup'); });
+  });
 </script>
 
 <script>
@@ -2857,7 +3144,7 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
     fetch('/plugins/flash-backup/helpers/fetch_last_run_log.php')
       .then(resp => resp.text())
       .then(text => {
-        logEl.textContent = text || 'Log is empty';
+        logEl.textContent = text || 'Flash backup log not found';
       })
       .catch(err => {
         console.error('Failed to load log', err);
@@ -2874,7 +3161,7 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
     const text = logEl.innerText || logEl.textContent;
 
     if (!text || text.trim() === '' || text.includes('not found')) {
-      alert('Log is empty or not loaded yet');
+      alert('Flash backup log is empty or not loaded yet');
       return;
     }
 
@@ -2957,4 +3244,37 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
 
   // Initial evaluation
   updateScrollButtons();
+</script>
+
+<script>
+  (function () {
+    const CHECK_INTERVAL = 1000;
+
+    function updateRunButtons(locked) {
+      document.querySelectorAll('.run-schedule-btn').forEach(btn => {
+        btn.disabled = locked;
+        if (locked) {
+          btn.classList.add('disabled');
+        } else {
+          btn.classList.remove('disabled');
+        }
+      });
+    }
+
+    async function pollLock() {
+      try {
+        const res = await fetch('/plugins/flash-backup/helpers/check_lock.php');
+        const data = await res.json();
+        updateRunButtons(Boolean(data.locked));
+      } catch (e) {
+        console.error('Failed to check lock:', e);
+      }
+    }
+
+    // Initial check
+    pollLock();
+
+    // Poll continuously
+    setInterval(pollLock, CHECK_INTERVAL);
+  })();
 </script>
