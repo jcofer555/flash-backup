@@ -4,7 +4,7 @@
 <PLUGIN 
   name="flash-backup"
   author="jcofer555"
-  version="2026.02.22.05"
+  version="2026.02.23.01"
   launch="Settings/flash-backup"
   pluginURL="https://raw.githubusercontent.com/jcofer555/flash-backup/main/plugin/flash-backup.plg"
   support="https://forums.unraid.net/topic/197218-flash-backup-for-unraid/"
@@ -16,11 +16,11 @@
 <CHANGES>
 <![CDATA[
 
-### 2026.02.22.05
+### 2026.02.23.01
 
 - 1
 
-### 2026.02.22.04
+### 2026.02.22.05
 
 - 1
 
@@ -29,9 +29,9 @@ For older releases, see https://github.com/jcofer555/flash-backup/releases
 ]]>
 </CHANGES>
 
-<FILE Name="/boot/config/plugins/flash-backup/unraid-flash-backup-2026.02.22.05-noarch-1.txz">
-<URL>https://github.com/jcofer555/flash-backup/releases/download/2026.02.22.05/unraid-flash-backup-2026.02.22.05-noarch-1.txz</URL>
-<SHA256>92ebda65234b861ebe2aab8e22419edcc7bcf7a57791164e7fd6c32e22ef810d</SHA256>
+<FILE Name="/boot/config/plugins/flash-backup/unraid-flash-backup-2026.02.23.01-noarch-1.txz">
+<URL>https://github.com/jcofer555/flash-backup/releases/download/2026.02.23.01/unraid-flash-backup-2026.02.23.01-noarch-1.txz</URL>
+<SHA256>befcf0915025cc543d07944fe7775f4832f550d0a1292c61ee54f44ac366caa5</SHA256>
 </FILE>
 
 <!-- ==========================================================
@@ -44,7 +44,7 @@ For older releases, see https://github.com/jcofer555/flash-backup/releases
 #  INSTALL / UPGRADE LOGIC
 # ==========================================================
 
-PACKAGE_TXZ="/boot/config/plugins/flash-backup/unraid-flash-backup-2026.02.22.05-noarch-1.txz"
+PACKAGE_TXZ="/boot/config/plugins/flash-backup/unraid-flash-backup-2026.02.23.01-noarch-1.txz"
 USER_CFG="/boot/config/plugins/flash-backup/settings.cfg"
 REMOTE_USER_CFG="/boot/config/plugins/flash-backup/settings_remote.cfg"
 DEFAULT_CFG="/usr/local/emhttp/plugins/flash-backup/helpers/default_settings.cfg"
@@ -125,12 +125,12 @@ fi
 mv "$REMOTE_TMP_CFG" "$REMOTE_USER_CFG"
 
 # Remove older txz packages (keep only the current one)
-find /boot/config/plugins/flash-backup/ -maxdepth 1 -type f -name "unraid-flash-backup-*.txz" ! -name "unraid-flash-backup-2026.02.22.05-noarch-1.txz" -delete
+find /boot/config/plugins/flash-backup/ -maxdepth 1 -type f -name "unraid-flash-backup-*.txz" ! -name "unraid-flash-backup-2026.02.23.01-noarch-1.txz" -delete
 
 echo ""
 echo "----------------------------------------------------"
 echo " flash-backup has been installed."
-echo " Version: 2026.02.22.05"
+echo " Version: 2026.02.23.01"
 echo "----------------------------------------------------"
 echo ""
 
