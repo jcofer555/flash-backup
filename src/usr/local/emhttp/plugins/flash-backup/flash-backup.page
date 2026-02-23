@@ -634,14 +634,12 @@ if (file_exists("/etc/unraid-version")) {
     transform: scale(1.1);
   }
 
+  /* MAIN FIELD */
   .flash-multiselect {
     display: block;
-    width: 100%;
-    /* match form-input width */
+    width: 200px;
     height: 2.4em;
-    /* match Unraid input height */
     line-height: 2.4em;
-    /* vertically center text */
     border: 1px solid #2ECC40;
     border-radius: 4px;
     padding: 0 0.5em;
@@ -650,11 +648,11 @@ if (file_exists("/etc/unraid-version")) {
     box-sizing: border-box;
     cursor: pointer;
     position: relative;
-    width: 200px;
-    min-width: fit-content;
-    max-width: 100%;
+    min-width: 0;
+    max-width: 200px;
   }
 
+  /* Placeholder text */
   .flash-multiselect .selected-placeholder {
     display: block;
     white-space: nowrap;
@@ -663,7 +661,7 @@ if (file_exists("/etc/unraid-version")) {
     color: #fff;
   }
 
-  /* dropdown */
+  /* DROPDOWN CONTAINER */
   .flash-multiselect .options-container {
     display: none;
     position: absolute;
@@ -675,15 +673,43 @@ if (file_exists("/etc/unraid-version")) {
     background: #111;
     color: #fff;
     z-index: 10;
-    max-height: 200px;
-    overflow-y: auto;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
-    font-size: 1em;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.6);
   }
 
-  /* options */
+  /* ACTION ROW */
+  .flash-multiselect .options-actions {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.5em;
+    padding: 0.3em 0.4em;
+    background: #0c0c0c;
+  }
+
+  /* SCROLL AREA */
+  .flash-multiselect .options-list {
+    max-height: 200px;
+    overflow-y: auto;
+  }
+
+  /* BUTTONS */
+  .flash-multiselect .options-actions button {
+    font-size: 0.85em;
+    padding: 0.15em 0.6em;
+    border: 1px solid #2ECC40;
+    background: #111;
+    color: #2ECC40;
+    border-radius: 3px;
+    cursor: pointer;
+  }
+
+  .flash-multiselect .options-actions button:hover {
+    background: #2ECC40;
+    color: #000;
+  }
+
+  /* OPTIONS */
   .flash-multiselect .option {
-    padding: 0.3em 0.5em;
+    padding: 0.35em 0.5em;
     line-height: 1.6em;
     cursor: pointer;
   }
@@ -1129,12 +1155,23 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
               <?= !empty($selectedRemotes) ? implode(', ', $selectedRemotes) : 'Select config(s)' ?>
             </span>
             <div class="options-container">
-              <?php foreach ($rcloneRemotes as $remote): ?>
-              <?php $type = $rcloneIni[$remote]['type'] ?? 'unknown'; ?>
-              <div class="option" data-value="<?= htmlspecialchars($remote) ?>">
-                <?= htmlspecialchars("$type - $remote") ?>
+
+              <!-- ACTION ROW (NOT SCROLLABLE) -->
+              <div class="options-actions">
+                <button type="button" class="select-all">Select all</button>
+                <button type="button" class="clear-all">Clear</button>
               </div>
-              <?php endforeach; ?>
+
+              <!-- SCROLLABLE OPTIONS -->
+              <div class="options-list">
+                <?php foreach ($rcloneRemotes as $remote): ?>
+                <?php $type = $rcloneIni[$remote]['type'] ?? 'unknown'; ?>
+                <div class="option" data-value="<?= htmlspecialchars($remote) ?>">
+                  <?= htmlspecialchars("$type - $remote") ?>
+                </div>
+                <?php endforeach; ?>
+              </div>
+
             </div>
           </div>
         </span>
@@ -1489,7 +1526,12 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
         <span title="Clear the flash backup log" class="flash-drivetip">
           <button type="button" id="clear-last-run-log">Clear Log</button>
         </span>
+
+        <span title="Copy flash backup log to clipboard" class="flash-drivetip">
+          <button type="button" id="copy-last-run-log">Copy</button>
+        </span>
       </div>
+
       <pre id="last-run-log">Flash backup log not found</pre>
   </div>
 
@@ -2211,14 +2253,40 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
       return;
     }
 
-    // --- NEW: Validate Path In Config ---
+    // --- Validate Path In Config ---
     const remotePath = $('#remote_path_in_config').val().trim();
+
     if (remotePath !== '' && !remotePath.startsWith('/')) {
-      alert('Path In Config must start with a "/" or be left blank');
+      alert('Path In Config must start with a "/" or be left blank to use default /Flash_Backups');
       return;
     }
 
+    if (remotePath !== '' && !remotePath.endsWith('/')) {
+      alert('Path In Config must end with a "/" or be left blank to use default /Flash_Backups');
+      return;
+    }
+
+    // --- Validate allowed characters for each folder segment ---
+    if (remotePath !== '') {
+      const inner = remotePath.replace(/^\/+|\/+$/g, ''); // strip leading/trailing slashes
+      const parts = inner.split('/');
+
+      // rclone-safe folder name characters
+      const validName = /^[A-Za-z0-9._+\-@ ]+$/;
+
+      for (const p of parts) {
+        if (!validName.test(p)) {
+          alert(
+            'Invalid character detected in folder name: "' + p + '"\n\n' +
+            'Allowed characters:\nletters, numbers, space, _ - . + @'
+          );
+          return;
+        }
+      }
+    }
+
     backupRequestInProgressRemote = true;
+    let finalPath = remotePath === '' ? '/Flash_Backups/' : remotePath;
 
     const params = $.param({
       MINIMAL_BACKUP_REMOTE: $('#minimal_backup_remote').is(':checked') ? 'yes' : 'no',
@@ -2226,7 +2294,7 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
       BACKUPS_TO_KEEP_REMOTE: $('#backups_to_keep_remote').val(),
       DRY_RUN_REMOTE: $('#dry_run_remote').val(),
       NOTIFICATIONS_REMOTE: $('#notifications_remote').val(),
-      REMOTE_PATH_IN_CONFIG: remotePath,
+      REMOTE_PATH_IN_CONFIG: finalPath,
       csrf_token: csrfToken
     });
 
@@ -2592,26 +2660,71 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
     $('#folderPickerModal').hide();
   });
 
-  // Auto-normalize Path In Config
-  $('#remote_path_in_config').on('blur', function () {
-    let val = $(this).val().trim();
+  let remotePathTimer = null;
+
+  $('#remote_path_in_config').on('input', function () {
+    let val = $(this).val();
 
     // Allow blank
-    if (val === '') {
+    if (val.trim() === '') {
+      clearTimeout(remotePathTimer);
       return;
     }
 
-    // Auto-prepend slash if missing
+    // Collapse multiple slashes
+    val = val.replace(/\/+/g, '/');
+
+    // Ensure leading slash immediately
     if (!val.startsWith('/')) {
       val = '/' + val;
     }
 
-    // Remove trailing slash unless it's just "/"
-    if (val.length > 1 && val.endsWith('/')) {
-      val = val.replace(/\/+$/, '');
-    }
+    $(this).val(val);
+
+    // Debounce trailing slash normalization (2 seconds)
+    clearTimeout(remotePathTimer);
+    remotePathTimer = setTimeout(() => {
+      let v = $('#remote_path_in_config').val().trim();
+
+      if (v !== '' && !v.endsWith('/')) {
+        $('#remote_path_in_config').val(v + '/');
+      }
+    }, 2000);
+  });
+
+  // Final safety net on blur
+  $('#remote_path_in_config').on('blur', function () {
+    let val = $(this).val().trim();
+
+    if (val === '') return;
+
+    val = val.replace(/\/+/g, '/');
+
+    if (!val.startsWith('/')) val = '/' + val;
+    if (!val.endsWith('/')) val = val + '/';
 
     $(this).val(val);
+  });
+
+  $(function () {
+    let val = $('#remote_path_in_config').val().trim();
+
+    if (val === '') return;
+
+    // Collapse multiple slashes
+    val = val.replace(/\/+/g, '/');
+
+    // Ensure leading slash
+    if (!val.startsWith('/')) {
+      val = '/' + val;
+    }
+
+    // Ensure trailing slash
+    if (!val.endsWith('/')) {
+      val = val + '/';
+    }
+
+    $('#remote_path_in_config').val(val);
   });
 </script>
 
@@ -2622,6 +2735,43 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
     const placeholder = multiselect.querySelector('.selected-placeholder');
     const optionsContainer = multiselect.querySelector('.options-container');
     const options = optionsContainer.querySelectorAll('.option');
+
+    const selectAllBtn = optionsContainer.querySelector('.select-all');
+    const clearAllBtn = optionsContainer.querySelector('.clear-all');
+
+    function updatePlaceholder() {
+      const selectedValues = [...hiddenSelect.options]
+        .filter(o => o.selected)
+        .map(o => o.value);
+
+      placeholder.textContent = selectedValues.length
+        ? selectedValues.join(', ')
+        : 'Select config(s)';
+    }
+
+    /* Select all */
+    selectAllBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+
+      options.forEach(opt => {
+        opt.classList.add('selected');
+        const val = opt.dataset.value;
+        const hiddenOpt = [...hiddenSelect.options].find(o => o.value === val);
+        if (hiddenOpt) hiddenOpt.selected = true;
+      });
+
+      updatePlaceholder();
+    });
+
+    /* Clear all */
+    clearAllBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+
+      options.forEach(opt => opt.classList.remove('selected'));
+      [...hiddenSelect.options].forEach(o => o.selected = false);
+
+      updatePlaceholder();
+    });
 
     multiselect.addEventListener('click', () => {
       optionsContainer.style.display = optionsContainer.style.display === 'block' ? 'none' : 'block';
@@ -2662,4 +2812,73 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
       });
     });
   });
+</script>
+
+<script>
+  function loadLastRunLog() {
+    const logEl = document.getElementById('last-run-log');
+
+    fetch('/plugins/flash-backup/helpers/fetch_last_run_log.php')
+      .then(resp => resp.text())
+      .then(text => {
+        logEl.textContent = text || 'Log is empty';
+      })
+      .catch(err => {
+        console.error('Failed to load log', err);
+        logEl.textContent = 'Failed to load log';
+      });
+  }
+
+  // Load log on page load
+  document.addEventListener('DOMContentLoaded', loadLastRunLog);
+
+  // Copy button logic
+  document.getElementById('copy-last-run-log').addEventListener('click', function () {
+    const logEl = document.getElementById('last-run-log');
+    const text = logEl.innerText || logEl.textContent;
+
+    if (!text || text.trim() === '' || text.includes('not found')) {
+      alert('Log is empty or not loaded yet');
+      return;
+    }
+
+    // Try Clipboard API first
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(() => {
+        showCopiedFeedback(this);
+      }).catch(err => {
+        console.warn('Clipboard API failed, using fallback', err);
+        fallbackCopyText(text, this);
+      });
+    } else {
+      fallbackCopyText(text, this);
+    }
+  });
+
+  // Fallback for older browsers or Clipboard API failure
+  function fallbackCopyText(text, btn) {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    document.body.appendChild(textarea);
+    textarea.select();
+    try {
+      document.execCommand('copy');
+      showCopiedFeedback(btn);
+    } catch (err) {
+      console.error('Fallback copy failed', err);
+      alert('Failed to copy log');
+    }
+    document.body.removeChild(textarea);
+  }
+
+  // Visual feedback
+  function showCopiedFeedback(btn) {
+    const original = btn.textContent;
+    btn.textContent = 'Copied!';
+    btn.disabled = true;
+    setTimeout(() => {
+      btn.textContent = original;
+      btn.disabled = false;
+    }, 1200);
+  }
 </script>

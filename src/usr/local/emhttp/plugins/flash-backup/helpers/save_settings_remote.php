@@ -11,6 +11,28 @@ $backups_to_keep_remote      = $_GET['BACKUPS_TO_KEEP_REMOTE'] ?? '';
 $dry_run_remote              = $_GET['DRY_RUN_REMOTE'] ?? '';
 $notifications_remote        = $_GET['NOTIFICATIONS_REMOTE'] ?? '';
 
+// --- Normalize remote path in config ---
+$remote_path_in_config = trim($remote_path_in_config);
+
+// Default blank to /Flash_Backups/
+if ($remote_path_in_config === '') {
+    $remote_path_in_config = '/Flash_Backups/';
+}
+
+// Normalize only if not blank (now guaranteed non-blank)
+if ($remote_path_in_config !== '') {
+
+    // Ensure leading slash
+    if ($remote_path_in_config[0] !== '/') {
+        $remote_path_in_config = '/' . $remote_path_in_config;
+    }
+
+    // Ensure trailing slash
+    if (substr($remote_path_in_config, -1) !== '/') {
+        $remote_path_in_config .= '/';
+    }
+}
+
 if (is_array($rclone_config_remote)) {
     $rclone_config_remote = array_map('trim', $rclone_config_remote);
     $rclone_config_remote = implode(',', $rclone_config_remote);

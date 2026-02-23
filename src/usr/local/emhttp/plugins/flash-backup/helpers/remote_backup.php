@@ -59,7 +59,7 @@ if (!$pid || !is_numeric($pid)) {
 // Write metadata
 $meta = [
     "PID=$pid",
-    "MODE=manual",
+    "MODE=remote",
     "START=" . time()
 ];
 

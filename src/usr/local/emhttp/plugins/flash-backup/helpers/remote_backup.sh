@@ -146,6 +146,22 @@ if (( ${#REMOTE_ARRAY[@]} == 0 )); then
   exit 1
 fi
 
+# Validate allowed characters for each folder segment
+if [[ -n "$REMOTE_PATH_IN_CONFIG" ]]; then
+    inner="${REMOTE_PATH_IN_CONFIG#/}"
+    inner="${inner%/}"
+    IFS='/' read -r -a parts <<< "$inner"
+
+    for p in "${parts[@]}"; do
+        # Literal regex — safe, correct, portable
+        if ! [[ "$p" =~ ^[A-Za-z0-9._+\-@[:space:]]+$ ]]; then
+            echo "[ERROR] Invalid folder name $p"
+            set_status "Invalid folder name"
+            exit 1
+        fi
+    done
+fi
+
 # ----------------------------
 # Normalize remote path
 # ----------------------------
@@ -156,8 +172,6 @@ else
     REMOTE_SUBPATH="${REMOTE_SUBPATH%/}"
     [[ -z "$REMOTE_SUBPATH" ]] && REMOTE_SUBPATH="Flash_Backups"
 fi
-
-echo "Remote backup folder being used for backup -> $REMOTE_PATH_IN_CONFIG"
 
 # ----------------------------
 # Build file list (minimal vs full)
@@ -185,8 +199,6 @@ fi
 ts="$(date +"%Y-%m-%d_%H-%M-%S")"
 backup_file="/tmp/flash_${ts}.tar.gz"
 tmp_backup_file="${backup_file}.tmp"
-
-set_status "Creating remote backup archive"
 
 if [[ "$DRY_RUN_REMOTE" == "yes" ]]; then
   echo "[DRY RUN] Would create archive -> $backup_file"
@@ -223,11 +235,9 @@ for REMOTE in "${REMOTE_ARRAY[@]}"; do
 
     [[ -z "$REMOTE" ]] && continue
 
-    DEST="${REMOTE}:${REMOTE_SUBPATH}/"
+    DEST="${REMOTE}:${REMOTE_SUBPATH}"
 
-    echo ""
-    echo "Uploading remote backup to config -> $REMOTE using folder ${REMOTE_SUBPATH}"
-    set_status "Uploading remote backup to $REMOTE"
+    set_status "Uploading flash backup to config $REMOTE"
 
     # Ensure remote folder exists
     if [[ "$DRY_RUN_REMOTE" == "yes" ]]; then
@@ -278,16 +288,16 @@ for REMOTE in "${REMOTE_ARRAY[@]}"; do
             echo "Removing old remote backups keeping $keep_label $backup_word for $REMOTE"
         fi
 
-        mapfile -t files < <(rclone lsf "$DEST" --files-only --format "p" | sort -r)
+        mapfile -t files < <(rclone lsf "$DEST" --files-only --format "p" 2>/dev/null | sort -r)
         num_files=${#files[@]}
 
         if (( num_files > BACKUPS_TO_KEEP_REMOTE )); then
             for (( idx=BACKUPS_TO_KEEP_REMOTE; idx<num_files; idx++ )); do
                 old="${files[$idx]}"
                 if [[ "$DRY_RUN_REMOTE" == "yes" ]]; then
-                    echo "[DRY RUN] Would remove $DEST/$old"
+                    echo "[DRY RUN] Would remove ${DEST}/${old}"
                 else
-                    if ! rclone delete "$DEST/$old"; then
+                    if ! rclone delete "${DEST}/${old}"; then
                         echo "WARNING: Failed to remove remote file $old on $REMOTE"
                         set_status "Retention warning for $REMOTE"
                     fi
