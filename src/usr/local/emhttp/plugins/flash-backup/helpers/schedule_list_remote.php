@@ -1,17 +1,17 @@
 <?php
-$cfg = '/boot/config/plugins/flash-backup/schedules.cfg';
+$cfg = '/boot/config/plugins/flash-backup/schedules-remote.cfg';
 
 $schedules = [];
 if (file_exists($cfg)) {
     $schedules = parse_ini_file($cfg, true, INI_SCANNER_RAW);
 }
 
-function yesNo($value) {
+function yesNoremote($value) {
     $v = strtolower((string)$value);
     return ($v === 'yes' || $v === '1' || $v === 'true') ? 'Yes' : 'No';
 }
 
-function humanCron($cron) {
+function humanCronRemote($cron) {
     $cron = trim($cron);
     $parts = preg_split('/\s+/', $cron);
     if (count($parts) !== 5) return $cron;
@@ -66,13 +66,13 @@ function humanCron($cron) {
 <tr style="background:#f9f9f9; color:#b30000; text-align:center; border-bottom:2px solid #b30000;">
 
     <th style="padding:8px; width:18%;">Scheduling</th>
-    <th style="padding:8px; width:9%;">Minimal Backup</th>
-    <th style="padding:8px; width:20%;">Backup Destination</th>
+    <th style="padding:8px; width:10%;">Minimal Backup</th>
+    <th style="padding:8px; width:16%;">Rclone Config</th>
+    <th style="padding:8px; width:11%;">Path In Config</th>
     <th style="padding:8px; width:9%;">Backups To Keep</th>
-    <th style="padding:8px; width:8%;">Backup Owner</th>
-    <th style="padding:8px; width:6%;">Dry Run</th>
+    <th style="padding:8px; width:7%;">Dry Run</th>
     <th style="padding:8px; width:8%;">Notifications</th>
-    <th style="padding:8px; width:22%;">Actions</th>
+    <th style="padding:8px; width:21%;">Actions</th>
 
 </tr>
 </thead>
@@ -83,7 +83,7 @@ function humanCron($cron) {
 
     <tr style="border-bottom:1px solid #ccc;">
         <td style="padding:12px; text-align:center; vertical-align:middle;" colspan="9">
-            No schedules found
+            No remote schedules found
         </td>
     </tr>
 
@@ -107,42 +107,35 @@ function humanCron($cron) {
             if (!is_array($settings)) $settings = [];
         }
 
-        $dest = '—';
-        if (!empty($settings['BACKUP_DESTINATION'])) {
-            $dest = $settings['BACKUP_DESTINATION'];
-        }
+        $rcloneConfig = !empty($settings['RCLONE_CONFIG_REMOTE']) ? $settings['RCLONE_CONFIG_REMOTE'] : '—';
+        $pathInConfig = !empty($settings['REMOTE_PATH_IN_CONFIG']) ? $settings['REMOTE_PATH_IN_CONFIG'] : '—';
 
-        if (!isset($settings['BACKUPS_TO_KEEP'])) {
+        if (!isset($settings['BACKUPS_TO_KEEP_REMOTE'])) {
             $backupsToKeep = '—';
         } else {
-            $btk = (int)$settings['BACKUPS_TO_KEEP'];
+            $btk = (int)$settings['BACKUPS_TO_KEEP_REMOTE'];
             if ($btk === 1)      $backupsToKeep = 'Only Latest';
             elseif ($btk === 0)  $backupsToKeep = 'Unlimited';
             else                 $backupsToKeep = $btk;
         }
 
-        $backupOwner = $settings['BACKUP_OWNER'] ?? '—';
-
-        $dryRun = !isset($settings['DRY_RUN']) ? '—' : yesNo($settings['DRY_RUN']);
-        $notify = !isset($settings['NOTIFICATIONS']) ? '—' : yesNo($settings['NOTIFICATIONS']);
-        $minimalBackup = !isset($settings['MINIMAL_BACKUP']) ? '—' : yesNo($settings['MINIMAL_BACKUP']);
+        $dryRun = !isset($settings['DRY_RUN_REMOTE']) ? '—' : yesNoremote($settings['DRY_RUN_REMOTE']);
+        $notify = !isset($settings['NOTIFICATIONS_REMOTE']) ? '—' : yesNoremote($settings['NOTIFICATIONS_REMOTE']);
+        $minimalBackup = !isset($settings['MINIMAL_BACKUP_REMOTE']) ? '—' : yesNoremote($settings['MINIMAL_BACKUP_REMOTE']);
         ?>
 
         <tr style="border-bottom:1px solid #ccc; height: 3px; background:<?php echo $rowColor; ?>; color:<?php echo $textColor; ?>;">
 
-            <!-- Scheduling -->
             <td style="padding:8px; text-align:center;">
                 <span class="flash-backuptip" title="<?php echo htmlspecialchars($cron); ?>">
-                    <?php echo htmlspecialchars(humanCron($cron)); ?>
+                    <?php echo htmlspecialchars(humanCronRemote($cron)); ?>
                 </span>
             </td>
 
-            <!-- Minimal Backup -->
             <td style="padding:8px; text-align:center;">
                 <?php echo htmlspecialchars($minimalBackup); ?>
             </td>
 
-            <!-- Backup Destination -->
             <td style="
                 padding:8px;
                 text-align:center;
@@ -150,58 +143,60 @@ function humanCron($cron) {
                 overflow:hidden;
                 text-overflow:ellipsis;"
                 class="flash-backuptip"
-                title="<?php echo htmlspecialchars($dest); ?>">
-                <?php echo htmlspecialchars($dest); ?>
+                title="<?php echo htmlspecialchars($rcloneConfig); ?>">
+                <?php echo htmlspecialchars($rcloneConfig); ?>
             </td>
 
-            <!-- Backups To Keep -->
+            <td style="
+                padding:8px;
+                text-align:center;
+                white-space:nowrap;
+                overflow:hidden;
+                text-overflow:ellipsis;"
+                class="flash-backuptip"
+                title="<?php echo htmlspecialchars($pathInConfig); ?>">
+                <?php echo htmlspecialchars($pathInConfig); ?>
+            </td>
+
             <td style="padding:8px; text-align:center;">
                 <?php echo htmlspecialchars($backupsToKeep); ?>
             </td>
 
-            <!-- Backup Owner -->
-            <td style="padding:8px; text-align:center;">
-                <?php echo htmlspecialchars($backupOwner); ?>
-            </td>
-
-            <!-- Dry Run -->
             <td style="padding:8px; text-align:center;">
                 <?php echo $dryRun; ?>
             </td>
 
-            <!-- Notifications -->
             <td style="padding:8px; text-align:center;">
                 <?php echo htmlspecialchars($notify); ?>
             </td>
 
-            <!-- Actions -->
             <td style="padding:0px; text-align:center;">
 
                 <button type="button"
                         class="flash-backuptip"
-                        title="Edit schedule"
-                        onclick="editSchedule('<?php echo $id; ?>')">
+                        title="Edit remote schedule"
+                        onclick="editScheduleremote('<?php echo $id; ?>')">
                     Edit
                 </button>
 
                 <button type="button"
                         class="flash-backuptip"
-                        title="<?php echo $enabledBool ? 'Disable schedule' : 'Enable schedule'; ?>"
-                        onclick="toggleSchedule('<?php echo $id; ?>', <?php echo $enabledBool ? 'true' : 'false'; ?>)">
+                        title="<?php echo $enabledBool ? 'Disable remote schedule' : 'Enable remote schedule'; ?>"
+                        onclick="toggleScheduleremote('<?php echo $id; ?>', <?php echo $enabledBool ? 'true' : 'false'; ?>)">
                     <?php echo $btnText; ?>
                 </button>
 
                 <button type="button"
                         class="flash-backuptip"
-                        title="Delete schedule"
-                        onclick="deleteSchedule('<?php echo $id; ?>')">
+                        title="Delete remote schedule"
+                        onclick="deleteScheduleremote('<?php echo $id; ?>')">
                     Delete
                 </button>
 
                 <button type="button"
-                        class="schedule-action-btn running-btn run-schedule-btn flash-backuptip"
-                        title="Run schedule"
-                        onclick="runScheduleBackup('<?php echo $id; ?>', this)">
+                        class="schedule-action-btn-remote running-btn run-schedule-btn flash-backuptip"
+                        title="Run remote schedule"
+                        onclick="runScheduleBackupremote('<?php echo $id; ?>', this)">
                     Run
                 </button>
 

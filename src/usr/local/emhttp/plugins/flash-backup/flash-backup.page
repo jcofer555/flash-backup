@@ -607,6 +607,7 @@ if (file_exists("/etc/unraid-version")) {
     color: yellow;
   }
 
+  #popupMessageremote,
   #popupMessage {
     display: none;
     background: yellow;
@@ -1564,20 +1565,31 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
         Local or Remote backup in progress!
       </div>
 
-      <!-- Remote Backup Button -->
-      <div class="backup-actions">
-        <span title="Run backup of flash drive to remote storage" class="flash-backuptip">
-          <button type="button" id="backupbtn_remote">Backup Now</button>
-        </span>
+<!-- Remote Backup Button-->
+<div class="backup-actions">
+  <span title="Run remote backup" class="flash-backuptip">
+    <button type="button" id="backupbtn_remote">Backup Now</button>
+  </span>
 
-        <!-- Minimal Remote Backup Checkbox -->
-        <label class="minimal-backup-label flash-backuptip"
-          title="Enable to have the remote backup only include the config and extra folders, and the syslinux.cfg file">
-          <input type="checkbox" id="minimal_backup_remote" name="MINIMAL_BACKUP_REMOTE" value="yes" <?php echo
-            (($remotesettings['MINIMAL_BACKUP_REMOTE'] ?? 'no' )==='yes' ) ? 'checked' : '' ; ?>>
-          Minimal Backup
-        </label>
-      </div>
+  <span title="Create/update a remote backup schedule using the settings shown in the fields above"
+    class="flash-backuptip">
+    <button type="button" id="schedule-remote-backup" class="button schedule-button">Schedule It</button>
+  </span>
+
+  <span title="Cancel editing of remote schedule" class="flash-backuptip">
+    <button type="button" id="cancelEditBtnremote" style="display:none;">Cancel</button>
+  </span>
+
+  <!-- Minimal Backup Checkbox -->
+  <label class="minimal-backup-label flash-backuptip"
+    title="Enable to have the remote backup only include the config and extra folders, and the syslinux.cfg file">
+    <input type="checkbox" id="minimal_backup_remote" name="MINIMAL_BACKUP_REMOTE" value="yes" <?php echo
+      (($settings['MINIMAL_BACKUP_REMOTE'] ?? 'no')==='yes') ? 'checked' : ''; ?>>
+    Minimal Backup
+  </label>
+</div>
+
+<div id="popupMessageremote"></div>
 
     </form>
   </div>
@@ -1605,8 +1617,11 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
   </form>
 </div>
 
-<h3>📅 Scheduled Backup Jobs</h3>
+<h3>📅 Scheduled Local Backup Jobs</h3>
 <div id="schedule-list"></div>
+
+<h3>📅 Scheduled Remote Backup Jobs</h3>
+<div id="schedule-list-remote"></div>
 
 </div>
 
@@ -1698,6 +1713,73 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
       t.fadeOut(400);
     }, 2000);
   }
+
+let scheduleUILockedremote = false;
+let rebuildTokenremote = 0;
+
+function validateBackupPrereqsremote() {
+  const cronExprRemote = $('#cron_expression_hidden_remote').val() || '';
+
+  // --- Check that at least one rclone remote is selected ---
+  const selectedRemotes = $('#rclone_config_remote_hidden').val() || [];
+  if (!selectedRemotes.length) {
+    alert('Please select at least one rclone config');
+    return false;
+  }
+
+  // --- Validate Path In Config ---
+  const remotePath = $('#remote_path_in_config').val().trim();
+
+  if (remotePath !== '' && !remotePath.startsWith('/')) {
+    alert('Path In Config must start with a "/" or be left blank to use default /Flash_Backups');
+    return false;
+  }
+
+  if (remotePath !== '' && !remotePath.endsWith('/')) {
+    alert('Path In Config must end with a "/" or be left blank to use default /Flash_Backups');
+    return false;
+  }
+
+  // --- Validate allowed characters for each folder segment ---
+  if (remotePath !== '') {
+    const inner = remotePath.replace(/^\/+|\/+$/g, '');
+    const parts = inner.split('/');
+
+    const validName = /^[A-Za-z0-9._+\-@ ]+$/;
+
+    for (const p of parts) {
+      if (!validName.test(p)) {
+        alert(
+          'Invalid character detected in folder name: "' + p + '"\n\n' +
+          'Allowed characters:\nletters, numbers, space, _ - . + @'
+        );
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
+
+function lockScheduleUIremote() {
+  scheduleUILockedremote = true;
+  $(".schedule-action-btn-remote").prop("disabled", true);
+}
+
+function unlockScheduleUIremote() {
+  scheduleUILockedremote = false;
+  $(".schedule-action-btn-remote").prop("disabled", false);
+}
+
+function showFolderToastremote(msg) {
+  const t = $('#folderToastremote');
+  t.stop(true, true);
+  t.text(msg).fadeIn(150);
+
+  setTimeout(() => {
+    t.fadeOut(400);
+  }, 2000);
+}
 
   function updateBackupStatus() {
     fetch('/plugins/flash-backup/helpers/backup_status_check.php')
@@ -2713,8 +2795,276 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
     loadSchedules();
 
     $(document).on('click', '#schedule-local-backup', function () { scheduleJob('local-backup'); });
-    $(document).on('click', '#schedule-remote-backup', function () { scheduleJob('remote-backup'); });
   });
+
+  // --- Global variable to track editing ---
+window.editingScheduleIdremote = null;
+
+// --- Load schedule list ---
+function loadSchedulesremote() {
+  return $.get(
+    '/plugins/flash-backup/helpers/schedule_list_remote.php',
+    function (html) {
+      $('#schedule-list-remote').html(html);
+    }
+  ).always(() => {
+    unlockScheduleUIremote();
+  });
+}
+
+// --- Build cron string from UI selections ---
+function validateCustomCronremote(expr) {
+  expr = expr.trim();
+  const parts = expr.split(/\s+/);
+  if (parts.length !== 5) return { valid: false };
+  if (parts[0] === '*') return { valid: false };
+  const m = parts[0].match(/^\*\/(\d+)$/);
+  if (m && parseInt(m[1], 10) < 2) return { valid: false };
+  return { valid: true, expression: expr };
+}
+
+function buildCronFromUIremote() {
+  const mode = $('#cron_mode_remote').val();
+  switch (mode) {
+    case 'minutes': {
+      const v = $('#minutes_frequency_remote').val();
+      return { valid: true, expression: `*/${v} * * * *` };
+    }
+    case 'hourly': {
+      const v = $('#hourly_frequency_remote').val();
+      return { valid: true, expression: `0 */${v} * * *` };
+    }
+    case 'daily': {
+      const h = $('#daily_time_remote').val().split(':')[0];
+      return { valid: true, expression: `0 ${h} * * *` };
+    }
+    case 'weekly': {
+      const dayMap = { Sunday: 0, Monday: 1, Tuesday: 2, Wednesday: 3, Thursday: 4, Friday: 5, Saturday: 6 };
+      const d = dayMap[$('#weekly_day_remote').val()];
+      const h = $('#weekly_time_remote').val().split(':')[0];
+      return { valid: true, expression: `0 ${h} * * ${d}` };
+    }
+    case 'monthly': {
+      const d = parseInt($('#monthly_day_remote').val(), 10);
+      const h = $('#monthly_time_remote').val().split(':')[0];
+      return { valid: true, expression: `0 ${h} ${d} * *` };
+    }
+    case 'custom':
+      return validateCustomCronremote($('#custom_cron_remote').val());
+    default:
+      return { valid: false };
+  }
+}
+
+// --- Create or update schedule ---
+async function scheduleJobremote(type) {
+
+  if (!validateBackupPrereqsremote()) {
+    return;
+  }
+
+  if (scheduleUILockedremote) return;
+  lockScheduleUIremote();
+
+  const cron = buildCronFromUIremote();
+  if (!cron.valid) {
+    unlockScheduleUIremote();
+    alert("Invalid cron expression");
+    return;
+  }
+
+const settings = {};
+$('input[name], select[name]').each(function () {
+  const key = this.name.replace(/\[\]$/, '');
+  if ($(this).is(':checkbox')) {
+    settings[key] = $(this).is(':checked') ? 'yes' : 'no';
+  } else {
+    const val = $(this).val();
+    settings[key] = Array.isArray(val) ? val.join(',') : val;
+  }
+});
+
+  const url = window.editingScheduleIdremote
+    ? 'schedule_update_remote.php'
+    : 'schedule_create_remote.php';
+
+  $.ajax({
+    type: 'POST',
+    url: `/plugins/flash-backup/helpers/${url}`,
+    data: {
+      id: window.editingScheduleIdremote,
+      type: type,
+      cron: cron.expression,
+      settings: settings
+    },
+    success: function (response) {
+      resetScheduleUIremote();
+      window.editingScheduleIdremote = null;
+      loadSchedulesremote();
+      showPopupremote("Schedule saved!");
+    },
+    error: function (xhr) {
+      unlockScheduleUIremote();
+
+      if (xhr.status === 409) {
+        alert('Duplicate remote schedule detected during create!');
+      } else {
+        alert('Error creating/updating remote schedule: ' + xhr.responseText);
+      }
+    }
+  });
+}
+
+// --- Edit a schedule ---
+function editScheduleremote(id) {
+  if (scheduleUILockedremote) return;
+  lockScheduleUIremote();
+
+  $.getJSON('/plugins/flash-backup/helpers/schedule_load_remote.php', { id }, function (s) {
+    const settings = s.SETTINGS || {};
+
+    if (s.TYPE) {
+      $('[name="type_remote"]').val(s.TYPE).trigger('change');
+    }
+
+    for (const k in settings) {
+      const el = $('[name="' + k + '"]');
+      if (!el.length) continue;
+
+      if (el.is(':checkbox')) {
+        const v = String(settings[k]).toLowerCase();
+        el.prop('checked', v === 'yes' || v === '1' || v === 'true');
+      } else if (el.is(':radio')) {
+        $('[name="' + k + '"][value="' + settings[k] + '"]').prop('checked', true);
+      } else {
+        el.val(settings[k]).trigger('change');
+      }
+    }
+
+    $('#cron_mode_remote')
+      .val(detectCronMode(s.CRON))
+      .trigger('change');
+
+    window.editingScheduleIdremote = id;
+
+    $('#schedule-remote-backup').text('Edit');
+
+    $('#cancelEditBtnremote').show();
+
+    unlockScheduleUIremote();
+  });
+}
+
+$('#cancelEditBtnremote').on('click', function () {
+  location.reload();
+});
+
+function showPopupremote(message) {
+  const popup = $('#popupMessageremote');
+
+  popup.text(message).fadeIn(150);
+
+  setTimeout(() => {
+    popup.fadeOut(200, () => {
+      popup.text('');
+      popup.hide();
+    });
+  }, 3000);
+}
+
+function resetScheduleUIremote() {
+  $('#schedule-remote-backup').text('Schedule It');
+  $('#cancelEditBtnremote').hide();
+  $('#popupMessageremote').stop(true, true).hide().text('');
+}
+
+// --- Delete a schedule ---
+function deleteScheduleremote(id) {
+  if (scheduleUILockedremote) return;
+
+  if (!confirm("Delete this remote schedule?")) return;
+
+  lockScheduleUIremote();
+
+  $.post(
+    '/plugins/flash-backup/helpers/schedule_delete_remote.php',
+    { id: id }
+  ).always(() => {
+    loadSchedulesremote();
+  });
+}
+
+// --- Run backup manually ---
+function runScheduleBackupremote(id, btn) {
+  if (scheduleUILockedremote) return;
+
+  if (!confirm("Are you sure you want to run this remote backup now?")) return;
+
+  lockScheduleUIremote();
+
+  btn.disabled = true;
+  const originalText = btn.textContent;
+  const originalTitle = btn.getAttribute('title');
+
+  btn.textContent = "Running";
+
+  $.post('/plugins/flash-backup/helpers/run_schedule_remote.php', { id })
+    .done(function (res) {
+      if (!res.started) {
+        alert("Failed to start remote backup");
+        btn.disabled = false;
+        btn.textContent = originalText;
+        btn.setAttribute('title', originalTitle);
+        unlockScheduleUIremote();
+        return;
+      }
+
+      const poll = setInterval(function () {
+        $.getJSON('/plugins/flash-backup/helpers/check_lock.php', function (res) {
+          if (!res.locked) {
+            clearInterval(poll);
+            btn.disabled = false;
+            btn.textContent = originalText;
+            unlockScheduleUIremote();
+          }
+        });
+      }, 1000);
+    })
+    .fail(function (xhr, status, err) {
+      alert("Failed to start remote backup: " + (xhr.responseJSON?.error || err));
+      btn.disabled = false;
+      btn.textContent = originalText;
+      btn.setAttribute('title', originalTitle);
+      unlockScheduleUIremote();
+    });
+}
+
+// --- Toggle enable/disable ---
+function toggleScheduleremote(id, isEnabled) {
+  if (scheduleUILockedremote) return;
+
+  const msg = isEnabled
+    ? "Disable this remote schedule?"
+    : "Enable this remote schedule?";
+
+  if (!confirm(msg)) return;
+
+  lockScheduleUIremote();
+
+  $.post(
+    '/plugins/flash-backup/helpers/schedule_toggle_remote.php',
+    { id: id }
+  ).always(() => {
+    loadSchedulesremote();
+  });
+}
+
+// --- Button click handlers ---
+$(document).ready(function () {
+  loadSchedulesremote();
+
+  $(document).on('click', '#schedule-remote-backup', function () { scheduleJobremote('remote-backup'); });
+});
 </script>
 
 <script>
