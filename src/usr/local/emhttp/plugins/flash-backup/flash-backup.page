@@ -723,54 +723,6 @@ if (file_exists("/etc/unraid-version")) {
     color: #fff;
   }
 
-  /* Anchor buttons to log */
-  #log-wrapper {
-    position: relative;
-  }
-
-  /* Scrollable log */
-  #last-run-log {
-    white-space: pre-wrap;
-  }
-
-  /* Buttons pinned inside log */
-  #log-scroll-buttons {
-    position: absolute;
-    right: 24px;
-    bottom: 198px;
-    display: none;
-    /* JS controls visibility */
-    flex-direction: column;
-    gap: 6px;
-    z-index: 10;
-  }
-
-  /* Compact button style (Unraid-safe override) */
-  #log-scroll-buttons>button {
-    width: 24px;
-    min-width: 24px;
-    max-width: 24px;
-    height: 24px;
-    padding: 0;
-    border-radius: 4px;
-    border: 1px solid #444;
-    background: #111;
-    color: #ccc;
-    font-size: 12px;
-    line-height: 1;
-    cursor: pointer;
-    opacity: 0.85;
-  }
-
-  #log-scroll-buttons>button:hover {
-    opacity: 1;
-  }
-
-  #log-scroll-buttons>button:disabled {
-    opacity: 0.25;
-    cursor: default;
-  }
-
   .flash-backup-schedules-table td {
     padding-top: 2px !important;
     padding-bottom: 2px !important;
@@ -915,7 +867,8 @@ if (is_file($plg)) {
                 >Minutes</option>
               <option value="hourly" <?php echo (($settings['CRON_MODE'] ?? '' )==='hourly' ) ? 'selected' : '' ; ?>
                 >Hourly</option>
-              <option value="daily" <?php echo (($settings['CRON_MODE'] ?? '' )==='daily' ) ? 'selected' : '' ; ?>>Daily
+              <option value="daily" <?php echo (($settings['CRON_MODE'] ?? 'daily' )==='daily' ) ? 'selected' : '' ; ?>
+                >Daily
               </option>
               <option value="weekly" <?php echo (($settings['CRON_MODE'] ?? '' )==='weekly' ) ? 'selected' : '' ; ?>
                 >Weekly</option>
@@ -986,18 +939,38 @@ if (is_file($plg)) {
       <div id="daily-options" style="display:none; margin-top:10px;">
         <div class="form-pair">
           <label for="daily_time">
-            <span class="flash-backuptip" title="Select the time of day for daily execution">
-              Time Of Day:
+            <span class="flash-backuptip" title="Select the hour for daily execution">
+              Hour:
             </span>
           </label>
           <div class="input-wrapper">
-            <span class="flash-backuptip" title="Select the time of day for daily execution">
+            <span class="flash-backuptip" title="Select the hour for daily execution">
               <select id="daily_time" name="DAILY_TIME" class="short-input">
-                <?php for ($h = 0; $h < 24; $h++): 
-            $time = str_pad($h, 2, "0", STR_PAD_LEFT) . ":00"; ?>
-                <option value="<?php echo $time; ?>" <?php echo (($settings['DAILY_TIME'] ?? '' )===$time) ? 'selected'
-                  : '' ; ?>>
-                  <?php echo $time; ?>
+                <?php for ($h = 0; $h < 24; $h++):
+                $hour = str_pad($h, 2, "0", STR_PAD_LEFT); ?>
+                <option value="<?php echo $hour; ?>" <?php echo (($settings['DAILY_TIME'] ?? '00' )===$hour)
+                  ? 'selected' : '' ; ?>>
+                  <?php echo $hour; ?>
+                </option>
+                <?php endfor; ?>
+              </select>
+            </span>
+          </div>
+        </div>
+        <div class="form-pair">
+          <label for="daily_minute">
+            <span class="flash-backuptip" title="Select the minute for daily execution">
+              Minute:
+            </span>
+          </label>
+          <div class="input-wrapper">
+            <span class="flash-backuptip" title="Select the minute for daily execution">
+              <select id="daily_minute" name="DAILY_MINUTE" class="short-input">
+                <?php for ($m = 0; $m < 60; $m++):
+                $min = str_pad($m, 2, "0", STR_PAD_LEFT); ?>
+                <option value="<?php echo $min; ?>" <?php echo (($settings['DAILY_MINUTE'] ?? '00' )===$min)
+                  ? 'selected' : '' ; ?>>
+                  <?php echo $min; ?>
                 </option>
                 <?php endfor; ?>
               </select>
@@ -1029,21 +1002,40 @@ if (is_file($plg)) {
             </span>
           </div>
         </div>
-
         <div class="form-pair">
           <label for="weekly_time">
-            <span class="flash-backuptip" title="Select time of day for weekly execution">
-              Time Of Day:
+            <span class="flash-backuptip" title="Select the hour for weekly execution">
+              Hour:
             </span>
           </label>
           <div class="input-wrapper">
-            <span class="flash-backuptip" title="Select time of day for weekly execution">
+            <span class="flash-backuptip" title="Select the hour for weekly execution">
               <select id="weekly_time" name="WEEKLY_TIME" class="short-input">
-                <?php for ($h = 0; $h < 24; $h++): 
-            $time = str_pad($h, 2, "0", STR_PAD_LEFT) . ":00"; ?>
-                <option value="<?php echo $time; ?>" <?php echo (($settings['WEEKLY_TIME'] ?? '' )===$time) ? 'selected'
-                  : '' ; ?>>
-                  <?php echo $time; ?>
+                <?php for ($h = 0; $h < 24; $h++):
+                $hour = str_pad($h, 2, "0", STR_PAD_LEFT); ?>
+                <option value="<?php echo $hour; ?>" <?php echo (($settings['WEEKLY_TIME'] ?? '00' )===$hour)
+                  ? 'selected' : '' ; ?>>
+                  <?php echo $hour; ?>
+                </option>
+                <?php endfor; ?>
+              </select>
+            </span>
+          </div>
+        </div>
+        <div class="form-pair">
+          <label for="weekly_minute">
+            <span class="flash-backuptip" title="Select the minute for weekly execution">
+              Minute:
+            </span>
+          </label>
+          <div class="input-wrapper">
+            <span class="flash-backuptip" title="Select the minute for weekly execution">
+              <select id="weekly_minute" name="WEEKLY_MINUTE" class="short-input">
+                <?php for ($m = 0; $m < 60; $m++):
+                $min = str_pad($m, 2, "0", STR_PAD_LEFT); ?>
+                <option value="<?php echo $min; ?>" <?php echo (($settings['WEEKLY_MINUTE'] ?? '00' )===$min)
+                  ? 'selected' : '' ; ?>>
+                  <?php echo $min; ?>
                 </option>
                 <?php endfor; ?>
               </select>
@@ -1074,21 +1066,40 @@ if (is_file($plg)) {
             </span>
           </div>
         </div>
-
         <div class="form-pair">
           <label for="monthly_time">
-            <span class="flash-backuptip" title="Select time of day for monthly execution">
-              Time Of Day:
+            <span class="flash-backuptip" title="Select the hour for monthly execution">
+              Hour:
             </span>
           </label>
           <div class="input-wrapper">
-            <span class="flash-backuptip" title="Select time of day for monthly execution">
+            <span class="flash-backuptip" title="Select the hour for monthly execution">
               <select id="monthly_time" name="MONTHLY_TIME" class="short-input">
-                <?php for ($h = 0; $h < 24; $h++): 
-            $time = str_pad($h, 2, "0", STR_PAD_LEFT) . ":00"; ?>
-                <option value="<?php echo $time; ?>" <?php echo (($settings['MONTHLY_TIME'] ?? '' )===$time)
+                <?php for ($h = 0; $h < 24; $h++):
+                $hour = str_pad($h, 2, "0", STR_PAD_LEFT); ?>
+                <option value="<?php echo $hour; ?>" <?php echo (($settings['MONTHLY_TIME'] ?? '00' )===$hour)
                   ? 'selected' : '' ; ?>>
-                  <?php echo $time; ?>
+                  <?php echo $hour; ?>
+                </option>
+                <?php endfor; ?>
+              </select>
+            </span>
+          </div>
+        </div>
+        <div class="form-pair">
+          <label for="monthly_minute">
+            <span class="flash-backuptip" title="Select the minute for monthly execution">
+              Minute:
+            </span>
+          </label>
+          <div class="input-wrapper">
+            <span class="flash-backuptip" title="Select the minute for monthly execution">
+              <select id="monthly_minute" name="MONTHLY_MINUTE" class="short-input">
+                <?php for ($m = 0; $m < 60; $m++):
+                $min = str_pad($m, 2, "0", STR_PAD_LEFT); ?>
+                <option value="<?php echo $min; ?>" <?php echo (($settings['MONTHLY_MINUTE'] ?? '00' )===$min)
+                  ? 'selected' : '' ; ?>>
+                  <?php echo $min; ?>
                 </option>
                 <?php endfor; ?>
               </select>
@@ -1339,7 +1350,8 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
               <option value="hourly" <?=(($remotesettings['CRON_MODE_REMOTE'] ?? '' )==='hourly' ) ? 'selected' : '' ?>
                 >Hourly
               </option>
-              <option value="daily" <?=(($remotesettings['CRON_MODE_REMOTE'] ?? '' )==='daily' ) ? 'selected' : '' ?>
+              <option value="daily" <?=(($remotesettings['CRON_MODE_REMOTE'] ?? 'daily' )==='daily' ) ? 'selected' : ''
+                ?>
                 >Daily
               </option>
               <option value="weekly" <?=(($remotesettings['CRON_MODE_REMOTE'] ?? '' )==='weekly' ) ? 'selected' : '' ?>
@@ -1414,18 +1426,38 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
       <div id="daily-options-remote" style="display:none; margin-top:10px;">
         <div class="form-pair">
           <label for="daily_time_remote">
-            <span class="flash-backuptip" title="Select the time of day for daily execution">
-              Time Of Day:
+            <span class="flash-backuptip" title="Select the hour for daily execution">
+              Hour:
             </span>
           </label>
           <div class="input-wrapper">
-            <span class="flash-backuptip" title="Select the time of day for daily execution">
+            <span class="flash-backuptip" title="Select the hour for daily execution">
               <select id="daily_time_remote" name="DAILY_TIME_REMOTE" class="short-input">
                 <?php for ($h = 0; $h < 24; $h++):
-                $time = str_pad($h, 2, "0", STR_PAD_LEFT) . ":00"; ?>
-                <option value="<?php echo $time; ?>" <?php echo (($remotesettings['DAILY_TIME_REMOTE'] ?? '' )===$time)
-                  ? 'selected' : '' ; ?>>
-                  <?php echo $time; ?>
+                $hour = str_pad($h, 2, "0", STR_PAD_LEFT); ?>
+                <option value="<?php echo $hour; ?>" <?php echo (($remotesettings['DAILY_TIME_REMOTE'] ?? '00'
+                  )===$hour) ? 'selected' : '' ; ?>>
+                  <?php echo $hour; ?>
+                </option>
+                <?php endfor; ?>
+              </select>
+            </span>
+          </div>
+        </div>
+        <div class="form-pair">
+          <label for="daily_minute_remote">
+            <span class="flash-backuptip" title="Select the minute for daily execution">
+              Minute:
+            </span>
+          </label>
+          <div class="input-wrapper">
+            <span class="flash-backuptip" title="Select the minute for daily execution">
+              <select id="daily_minute_remote" name="DAILY_MINUTE_REMOTE" class="short-input">
+                <?php for ($m = 0; $m < 60; $m++):
+                $min = str_pad($m, 2, "0", STR_PAD_LEFT); ?>
+                <option value="<?php echo $min; ?>" <?php echo (($remotesettings['DAILY_MINUTE_REMOTE'] ?? '00'
+                  )===$min) ? 'selected' : '' ; ?>>
+                  <?php echo $min; ?>
                 </option>
                 <?php endfor; ?>
               </select>
@@ -1457,21 +1489,40 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
             </span>
           </div>
         </div>
-
         <div class="form-pair">
           <label for="weekly_time_remote">
-            <span class="flash-backuptip" title="Select time of day for weekly execution">
-              Time Of Day:
+            <span class="flash-backuptip" title="Select the hour for weekly execution">
+              Hour:
             </span>
           </label>
           <div class="input-wrapper">
-            <span class="flash-backuptip" title="Select time of day for weekly execution">
+            <span class="flash-backuptip" title="Select the hour for weekly execution">
               <select id="weekly_time_remote" name="WEEKLY_TIME_REMOTE" class="short-input">
                 <?php for ($h = 0; $h < 24; $h++):
-                $time = str_pad($h, 2, "0", STR_PAD_LEFT) . ":00"; ?>
-                <option value="<?php echo $time; ?>" <?php echo (($remotesettings['WEEKLY_TIME_REMOTE'] ?? '' )===$time)
-                  ? 'selected' : '' ; ?>>
-                  <?php echo $time; ?>
+                $hour = str_pad($h, 2, "0", STR_PAD_LEFT); ?>
+                <option value="<?php echo $hour; ?>" <?php echo (($remotesettings['WEEKLY_TIME_REMOTE'] ?? '00'
+                  )===$hour) ? 'selected' : '' ; ?>>
+                  <?php echo $hour; ?>
+                </option>
+                <?php endfor; ?>
+              </select>
+            </span>
+          </div>
+        </div>
+        <div class="form-pair">
+          <label for="weekly_minute_remote">
+            <span class="flash-backuptip" title="Select the minute for weekly execution">
+              Minute:
+            </span>
+          </label>
+          <div class="input-wrapper">
+            <span class="flash-backuptip" title="Select the minute for weekly execution">
+              <select id="weekly_minute_remote" name="WEEKLY_MINUTE_REMOTE" class="short-input">
+                <?php for ($m = 0; $m < 60; $m++):
+                $min = str_pad($m, 2, "0", STR_PAD_LEFT); ?>
+                <option value="<?php echo $min; ?>" <?php echo (($remotesettings['WEEKLY_MINUTE_REMOTE'] ?? '00'
+                  )===$min) ? 'selected' : '' ; ?>>
+                  <?php echo $min; ?>
                 </option>
                 <?php endfor; ?>
               </select>
@@ -1502,21 +1553,40 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
             </span>
           </div>
         </div>
-
         <div class="form-pair">
           <label for="monthly_time_remote">
-            <span class="flash-backuptip" title="Select time of day for monthly execution">
-              Time Of Day:
+            <span class="flash-backuptip" title="Select the hour for monthly execution">
+              Hour:
             </span>
           </label>
           <div class="input-wrapper">
-            <span class="flash-backuptip" title="Select time of day for monthly execution">
+            <span class="flash-backuptip" title="Select the hour for monthly execution">
               <select id="monthly_time_remote" name="MONTHLY_TIME_REMOTE" class="short-input">
                 <?php for ($h = 0; $h < 24; $h++):
-                $time = str_pad($h, 2, "0", STR_PAD_LEFT) . ":00"; ?>
-                <option value="<?php echo $time; ?>" <?php echo (($remotesettings['MONTHLY_TIME_REMOTE'] ?? ''
-                  )===$time) ? 'selected' : '' ; ?>>
-                  <?php echo $time; ?>
+                $hour = str_pad($h, 2, "0", STR_PAD_LEFT); ?>
+                <option value="<?php echo $hour; ?>" <?php echo (($remotesettings['MONTHLY_TIME_REMOTE'] ?? '00'
+                  )===$hour) ? 'selected' : '' ; ?>>
+                  <?php echo $hour; ?>
+                </option>
+                <?php endfor; ?>
+              </select>
+            </span>
+          </div>
+        </div>
+        <div class="form-pair">
+          <label for="monthly_minute_remote">
+            <span class="flash-backuptip" title="Select the minute for monthly execution">
+              Minute:
+            </span>
+          </label>
+          <div class="input-wrapper">
+            <span class="flash-backuptip" title="Select the minute for monthly execution">
+              <select id="monthly_minute_remote" name="MONTHLY_MINUTE_REMOTE" class="short-input">
+                <?php for ($m = 0; $m < 60; $m++):
+                $min = str_pad($m, 2, "0", STR_PAD_LEFT); ?>
+                <option value="<?php echo $min; ?>" <?php echo (($remotesettings['MONTHLY_MINUTE_REMOTE'] ?? '00'
+                  )===$min) ? 'selected' : '' ; ?>>
+                  <?php echo $min; ?>
                 </option>
                 <?php endfor; ?>
               </select>
@@ -1565,31 +1635,31 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
         Local or Remote backup in progress!
       </div>
 
-<!-- Remote Backup Button-->
-<div class="backup-actions">
-  <span title="Run remote backup" class="flash-backuptip">
-    <button type="button" id="backupbtn_remote">Backup Now</button>
-  </span>
+      <!-- Remote Backup Button-->
+      <div class="backup-actions">
+        <span title="Run remote backup" class="flash-backuptip">
+          <button type="button" id="backupbtn_remote">Backup Now</button>
+        </span>
 
-  <span title="Create/update a remote backup schedule using the settings shown in the fields above"
-    class="flash-backuptip">
-    <button type="button" id="schedule-remote-backup" class="button schedule-button">Schedule It</button>
-  </span>
+        <span title="Create/update a remote backup schedule using the settings shown in the fields above"
+          class="flash-backuptip">
+          <button type="button" id="schedule-remote-backup" class="button schedule-button">Schedule It</button>
+        </span>
 
-  <span title="Cancel editing of remote schedule" class="flash-backuptip">
-    <button type="button" id="cancelEditBtnremote" style="display:none;">Cancel</button>
-  </span>
+        <span title="Cancel editing of remote schedule" class="flash-backuptip">
+          <button type="button" id="cancelEditBtnremote" style="display:none;">Cancel</button>
+        </span>
 
-  <!-- Minimal Backup Checkbox -->
-  <label class="minimal-backup-label flash-backuptip"
-    title="Enable to have the remote backup only include the config and extra folders, and the syslinux.cfg file">
-    <input type="checkbox" id="minimal_backup_remote" name="MINIMAL_BACKUP_REMOTE" value="yes" <?php echo
-      (($settings['MINIMAL_BACKUP_REMOTE'] ?? 'no')==='yes') ? 'checked' : ''; ?>>
-    Minimal Backup
-  </label>
-</div>
+        <!-- Minimal Backup Checkbox -->
+        <label class="minimal-backup-label flash-backuptip"
+          title="Enable to have the remote backup only include the config and extra folders, and the syslinux.cfg file">
+          <input type="checkbox" id="minimal_backup_remote" name="MINIMAL_BACKUP_REMOTE" value="yes" <?php echo
+            (($settings['MINIMAL_BACKUP_REMOTE'] ?? 'no' )==='yes' ) ? 'checked' : '' ; ?>>
+          Minimal Backup
+        </label>
+      </div>
 
-<div id="popupMessageremote"></div>
+      <div id="popupMessageremote"></div>
 
     </form>
   </div>
@@ -1608,19 +1678,13 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
       </div>
 
       <pre id="last-run-log">Flash backup log not found</pre>
-      <div id="log-scroll-buttons">
-        <button type="button" id="scroll-log-top">↑</button>
-        <button type="button" id="scroll-log-bottom">↓</button>
-      </div>
   </div>
 
   </form>
 </div>
 
-<h3>📅 Scheduled Local Backup Jobs</h3>
 <div id="schedule-list"></div>
 
-<h3>📅 Scheduled Remote Backup Jobs</h3>
 <div id="schedule-list-remote"></div>
 
 </div>
@@ -1714,72 +1778,72 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
     }, 2000);
   }
 
-let scheduleUILockedremote = false;
-let rebuildTokenremote = 0;
+  let scheduleUILockedremote = false;
+  let rebuildTokenremote = 0;
 
-function validateBackupPrereqsremote() {
-  const cronExprRemote = $('#cron_expression_hidden_remote').val() || '';
+  function validateBackupPrereqsremote() {
+    const cronExprRemote = $('#cron_expression_hidden_remote').val() || '';
 
-  // --- Check that at least one rclone remote is selected ---
-  const selectedRemotes = $('#rclone_config_remote_hidden').val() || [];
-  if (!selectedRemotes.length) {
-    alert('Please select at least one rclone config');
-    return false;
-  }
+    // --- Check that at least one rclone remote is selected ---
+    const selectedRemotes = $('#rclone_config_remote_hidden').val() || [];
+    if (!selectedRemotes.length) {
+      alert('Please select at least one rclone config');
+      return false;
+    }
 
-  // --- Validate Path In Config ---
-  const remotePath = $('#remote_path_in_config').val().trim();
+    // --- Validate Path In Config ---
+    const remotePath = $('#remote_path_in_config').val().trim();
 
-  if (remotePath !== '' && !remotePath.startsWith('/')) {
-    alert('Path In Config must start with a "/" or be left blank to use default /Flash_Backups');
-    return false;
-  }
+    if (remotePath !== '' && !remotePath.startsWith('/')) {
+      alert('Path In Config must start with a "/" or be left blank to use default /Flash_Backups');
+      return false;
+    }
 
-  if (remotePath !== '' && !remotePath.endsWith('/')) {
-    alert('Path In Config must end with a "/" or be left blank to use default /Flash_Backups');
-    return false;
-  }
+    if (remotePath !== '' && !remotePath.endsWith('/')) {
+      alert('Path In Config must end with a "/" or be left blank to use default /Flash_Backups');
+      return false;
+    }
 
-  // --- Validate allowed characters for each folder segment ---
-  if (remotePath !== '') {
-    const inner = remotePath.replace(/^\/+|\/+$/g, '');
-    const parts = inner.split('/');
+    // --- Validate allowed characters for each folder segment ---
+    if (remotePath !== '') {
+      const inner = remotePath.replace(/^\/+|\/+$/g, '');
+      const parts = inner.split('/');
 
-    const validName = /^[A-Za-z0-9._+\-@ ]+$/;
+      const validName = /^[A-Za-z0-9._+\-@ ]+$/;
 
-    for (const p of parts) {
-      if (!validName.test(p)) {
-        alert(
-          'Invalid character detected in folder name: "' + p + '"\n\n' +
-          'Allowed characters:\nletters, numbers, space, _ - . + @'
-        );
-        return false;
+      for (const p of parts) {
+        if (!validName.test(p)) {
+          alert(
+            'Invalid character detected in folder name: "' + p + '"\n\n' +
+            'Allowed characters:\nletters, numbers, space, _ - . + @'
+          );
+          return false;
+        }
       }
     }
+
+    return true;
   }
 
-  return true;
-}
+  function lockScheduleUIremote() {
+    scheduleUILockedremote = true;
+    $(".schedule-action-btn-remote").prop("disabled", true);
+  }
 
-function lockScheduleUIremote() {
-  scheduleUILockedremote = true;
-  $(".schedule-action-btn-remote").prop("disabled", true);
-}
+  function unlockScheduleUIremote() {
+    scheduleUILockedremote = false;
+    $(".schedule-action-btn-remote").prop("disabled", false);
+  }
 
-function unlockScheduleUIremote() {
-  scheduleUILockedremote = false;
-  $(".schedule-action-btn-remote").prop("disabled", false);
-}
+  function showFolderToastremote(msg) {
+    const t = $('#folderToastremote');
+    t.stop(true, true);
+    t.text(msg).fadeIn(150);
 
-function showFolderToastremote(msg) {
-  const t = $('#folderToastremote');
-  t.stop(true, true);
-  t.text(msg).fadeIn(150);
-
-  setTimeout(() => {
-    t.fadeOut(400);
-  }, 2000);
-}
+    setTimeout(() => {
+      t.fadeOut(400);
+    }, 2000);
+  }
 
   function updateBackupStatus() {
     fetch('/plugins/flash-backup/helpers/backup_status_check.php')
@@ -2511,6 +2575,91 @@ function showFolderToastremote(msg) {
       });
   }
 
+  function cronToMinutesOfWeek(expr) {
+    // Returns array of [minuteOfWeek, ...] that a cron fires on
+    // Handles: */N, hourly, daily, weekly, monthly (best-effort for conflict detection)
+    const parts = expr.trim().split(/\s+/);
+    if (parts.length !== 5) return [];
+
+    const [min, hour, dom, month, dow] = parts;
+    const minutes = [];
+
+    const MINS_IN_WEEK = 7 * 24 * 60;
+
+    // */N minutes
+    const mInterval = min.match(/^\*\/(\d+)$/);
+    if (mInterval && hour === '*' && dom === '*' && month === '*' && dow === '*') {
+      const n = parseInt(mInterval[1], 10);
+      for (let i = 0; i < MINS_IN_WEEK; i += n) minutes.push(i);
+      return minutes;
+    }
+
+    // Hourly: 0 */N * * *
+    const hInterval = hour.match(/^\*\/(\d+)$/);
+    if (min === '0' && hInterval && dom === '*' && month === '*' && dow === '*') {
+      const n = parseInt(hInterval[1], 10);
+      for (let h = 0; h < 7 * 24; h += n) minutes.push(h * 60);
+      return minutes;
+    }
+
+    // Daily: 0 H * * *
+    if (min === '0' && /^\d+$/.test(hour) && dom === '*' && month === '*' && dow === '*') {
+      const h = parseInt(hour, 10);
+      for (let d = 0; d < 7; d++) minutes.push(d * 24 * 60 + h * 60);
+      return minutes;
+    }
+
+    // Weekly: 0 H * * D
+    if (min === '0' && /^\d+$/.test(hour) && dom === '*' && month === '*' && /^\d+$/.test(dow)) {
+      const h = parseInt(hour, 10);
+      const d = parseInt(dow, 10);
+      minutes.push(d * 24 * 60 + h * 60);
+      return minutes;
+    }
+
+    // Monthly: 0 H D * * — treat as weekly on day-of-month mod 7 (best effort)
+    if (min === '0' && /^\d+$/.test(hour) && /^\d+$/.test(dom) && month === '*' && dow === '*') {
+      const h = parseInt(hour, 10);
+      const d = (parseInt(dom, 10) - 1) % 7;
+      minutes.push(d * 24 * 60 + h * 60);
+      return minutes;
+    }
+
+    return [];
+  }
+
+  function checkCronConflicts(newCron, existingCrons, excludeId, thresholdMinutes) {
+    const newTimes = cronToMinutesOfWeek(newCron);
+    if (!newTimes.length) return null;
+
+    const MINS_IN_WEEK = 7 * 24 * 60;
+
+    for (const entry of existingCrons) {
+      if (entry.id === excludeId) continue;
+
+      const existingTimes = cronToMinutesOfWeek(entry.cron);
+
+      for (const nt of newTimes) {
+        for (const et of existingTimes) {
+          // Circular distance to handle week wrap-around
+          const diff = Math.min(
+            Math.abs(nt - et),
+            MINS_IN_WEEK - Math.abs(nt - et)
+          );
+          if (diff < thresholdMinutes) {
+            return entry.cron;
+          }
+        }
+      }
+    }
+
+    return null;
+  }
+
+  async function fetchExistingCrons() {
+    return $.getJSON('/plugins/flash-backup/helpers/schedule_cron_check.php');
+  }
+
   // --- Global variable to track editing ---
   window.editingScheduleId = null;
 
@@ -2541,27 +2690,30 @@ function showFolderToastremote(msg) {
     const mode = $('#cron_mode').val();
     switch (mode) {
       case 'minutes': {
-        const v = $('#minutes_frequency').val();
+        const v = parseInt($('#minutes_frequency').val(), 10);
         return { valid: true, expression: `*/${v} * * * *` };
       }
       case 'hourly': {
-        const v = $('#hourly_frequency').val();
+        const v = parseInt($('#hourly_frequency').val(), 10);
         return { valid: true, expression: `0 */${v} * * *` };
       }
       case 'daily': {
-        const h = $('#daily_time').val().split(':')[0];
-        return { valid: true, expression: `0 ${h} * * *` };
+        const h = parseInt($('#daily_time').val(), 10);
+        const m = parseInt($('#daily_minute').val(), 10);
+        return { valid: true, expression: `${m} ${h} * * *` };
       }
       case 'weekly': {
         const dayMap = { Sunday: 0, Monday: 1, Tuesday: 2, Wednesday: 3, Thursday: 4, Friday: 5, Saturday: 6 };
         const d = dayMap[$('#weekly_day').val()];
-        const h = $('#weekly_time').val().split(':')[0];
-        return { valid: true, expression: `0 ${h} * * ${d}` };
+        const h = parseInt($('#weekly_time').val(), 10);
+        const m = parseInt($('#weekly_minute').val(), 10);
+        return { valid: true, expression: `${m} ${h} * * ${d}` };
       }
       case 'monthly': {
         const d = parseInt($('#monthly_day').val(), 10);
-        const h = $('#monthly_time').val().split(':')[0];
-        return { valid: true, expression: `0 ${h} ${d} * *` };
+        const h = parseInt($('#monthly_time').val(), 10);
+        const m = parseInt($('#monthly_minute').val(), 10);
+        return { valid: true, expression: `${m} ${h} ${d} * *` };
       }
       case 'custom':
         return validateCustomCron($('#custom_cron').val());
@@ -2574,7 +2726,7 @@ function showFolderToastremote(msg) {
   async function scheduleJob(type) {
 
     if (!validateBackupPrereqs()) {
-      return; // block saving schedule
+      return;
     }
 
     if (scheduleUILocked) return;
@@ -2584,6 +2736,14 @@ function showFolderToastremote(msg) {
     if (!cron.valid) {
       unlockScheduleUI();
       alert("Invalid cron expression");
+      return;
+    }
+
+    const existingCrons = await fetchExistingCrons();
+    const conflict = checkCronConflicts(cron.expression, existingCrons, window.editingScheduleId, 15);
+    if (conflict) {
+      unlockScheduleUI();
+      alert('This schedule is within 15 minutes of an existing schedule (' + conflict + '). Please choose a different time.');
       return;
     }
 
@@ -2798,273 +2958,284 @@ function showFolderToastremote(msg) {
   });
 
   // --- Global variable to track editing ---
-window.editingScheduleIdremote = null;
+  window.editingScheduleIdremote = null;
 
-// --- Load schedule list ---
-function loadSchedulesremote() {
-  return $.get(
-    '/plugins/flash-backup/helpers/schedule_list_remote.php',
-    function (html) {
-      $('#schedule-list-remote').html(html);
-    }
-  ).always(() => {
-    unlockScheduleUIremote();
-  });
-}
-
-// --- Build cron string from UI selections ---
-function validateCustomCronremote(expr) {
-  expr = expr.trim();
-  const parts = expr.split(/\s+/);
-  if (parts.length !== 5) return { valid: false };
-  if (parts[0] === '*') return { valid: false };
-  const m = parts[0].match(/^\*\/(\d+)$/);
-  if (m && parseInt(m[1], 10) < 2) return { valid: false };
-  return { valid: true, expression: expr };
-}
-
-function buildCronFromUIremote() {
-  const mode = $('#cron_mode_remote').val();
-  switch (mode) {
-    case 'minutes': {
-      const v = $('#minutes_frequency_remote').val();
-      return { valid: true, expression: `*/${v} * * * *` };
-    }
-    case 'hourly': {
-      const v = $('#hourly_frequency_remote').val();
-      return { valid: true, expression: `0 */${v} * * *` };
-    }
-    case 'daily': {
-      const h = $('#daily_time_remote').val().split(':')[0];
-      return { valid: true, expression: `0 ${h} * * *` };
-    }
-    case 'weekly': {
-      const dayMap = { Sunday: 0, Monday: 1, Tuesday: 2, Wednesday: 3, Thursday: 4, Friday: 5, Saturday: 6 };
-      const d = dayMap[$('#weekly_day_remote').val()];
-      const h = $('#weekly_time_remote').val().split(':')[0];
-      return { valid: true, expression: `0 ${h} * * ${d}` };
-    }
-    case 'monthly': {
-      const d = parseInt($('#monthly_day_remote').val(), 10);
-      const h = $('#monthly_time_remote').val().split(':')[0];
-      return { valid: true, expression: `0 ${h} ${d} * *` };
-    }
-    case 'custom':
-      return validateCustomCronremote($('#custom_cron_remote').val());
-    default:
-      return { valid: false };
-  }
-}
-
-// --- Create or update schedule ---
-async function scheduleJobremote(type) {
-
-  if (!validateBackupPrereqsremote()) {
-    return;
-  }
-
-  if (scheduleUILockedremote) return;
-  lockScheduleUIremote();
-
-  const cron = buildCronFromUIremote();
-  if (!cron.valid) {
-    unlockScheduleUIremote();
-    alert("Invalid cron expression");
-    return;
-  }
-
-const settings = {};
-$('input[name], select[name]').each(function () {
-  const key = this.name.replace(/\[\]$/, '');
-  if ($(this).is(':checkbox')) {
-    settings[key] = $(this).is(':checked') ? 'yes' : 'no';
-  } else {
-    const val = $(this).val();
-    settings[key] = Array.isArray(val) ? val.join(',') : val;
-  }
-});
-
-  const url = window.editingScheduleIdremote
-    ? 'schedule_update_remote.php'
-    : 'schedule_create_remote.php';
-
-  $.ajax({
-    type: 'POST',
-    url: `/plugins/flash-backup/helpers/${url}`,
-    data: {
-      id: window.editingScheduleIdremote,
-      type: type,
-      cron: cron.expression,
-      settings: settings
-    },
-    success: function (response) {
-      resetScheduleUIremote();
-      window.editingScheduleIdremote = null;
-      loadSchedulesremote();
-      showPopupremote("Schedule saved!");
-    },
-    error: function (xhr) {
+  // --- Load schedule list ---
+  function loadSchedulesremote() {
+    return $.get(
+      '/plugins/flash-backup/helpers/schedule_list_remote.php',
+      function (html) {
+        $('#schedule-list-remote').html(html);
+      }
+    ).always(() => {
       unlockScheduleUIremote();
-
-      if (xhr.status === 409) {
-        alert('Duplicate remote schedule detected during create!');
-      } else {
-        alert('Error creating/updating remote schedule: ' + xhr.responseText);
-      }
-    }
-  });
-}
-
-// --- Edit a schedule ---
-function editScheduleremote(id) {
-  if (scheduleUILockedremote) return;
-  lockScheduleUIremote();
-
-  $.getJSON('/plugins/flash-backup/helpers/schedule_load_remote.php', { id }, function (s) {
-    const settings = s.SETTINGS || {};
-
-    if (s.TYPE) {
-      $('[name="type_remote"]').val(s.TYPE).trigger('change');
-    }
-
-    for (const k in settings) {
-      const el = $('[name="' + k + '"]');
-      if (!el.length) continue;
-
-      if (el.is(':checkbox')) {
-        const v = String(settings[k]).toLowerCase();
-        el.prop('checked', v === 'yes' || v === '1' || v === 'true');
-      } else if (el.is(':radio')) {
-        $('[name="' + k + '"][value="' + settings[k] + '"]').prop('checked', true);
-      } else {
-        el.val(settings[k]).trigger('change');
-      }
-    }
-
-    $('#cron_mode_remote')
-      .val(detectCronMode(s.CRON))
-      .trigger('change');
-
-    window.editingScheduleIdremote = id;
-
-    $('#schedule-remote-backup').text('Edit');
-
-    $('#cancelEditBtnremote').show();
-
-    unlockScheduleUIremote();
-  });
-}
-
-$('#cancelEditBtnremote').on('click', function () {
-  location.reload();
-});
-
-function showPopupremote(message) {
-  const popup = $('#popupMessageremote');
-
-  popup.text(message).fadeIn(150);
-
-  setTimeout(() => {
-    popup.fadeOut(200, () => {
-      popup.text('');
-      popup.hide();
     });
-  }, 3000);
-}
+  }
 
-function resetScheduleUIremote() {
-  $('#schedule-remote-backup').text('Schedule It');
-  $('#cancelEditBtnremote').hide();
-  $('#popupMessageremote').stop(true, true).hide().text('');
-}
+  // --- Build cron string from UI selections ---
+  function validateCustomCronremote(expr) {
+    expr = expr.trim();
+    const parts = expr.split(/\s+/);
+    if (parts.length !== 5) return { valid: false };
+    if (parts[0] === '*') return { valid: false };
+    const m = parts[0].match(/^\*\/(\d+)$/);
+    if (m && parseInt(m[1], 10) < 2) return { valid: false };
+    return { valid: true, expression: expr };
+  }
 
-// --- Delete a schedule ---
-function deleteScheduleremote(id) {
-  if (scheduleUILockedremote) return;
+  function buildCronFromUIremote() {
+    const mode = $('#cron_mode_remote').val();
+    switch (mode) {
+      case 'minutes': {
+        const v = parseInt($('#minutes_frequency_remote').val(), 10);
+        return { valid: true, expression: `*/${v} * * * *` };
+      }
+      case 'hourly': {
+        const v = parseInt($('#hourly_frequency_remote').val(), 10);
+        return { valid: true, expression: `0 */${v} * * *` };
+      }
+      case 'daily': {
+        const h = parseInt($('#daily_time_remote').val(), 10);
+        const m = parseInt($('#daily_minute_remote').val(), 10);
+        return { valid: true, expression: `${m} ${h} * * *` };
+      }
+      case 'weekly': {
+        const dayMap = { Sunday: 0, Monday: 1, Tuesday: 2, Wednesday: 3, Thursday: 4, Friday: 5, Saturday: 6 };
+        const d = dayMap[$('#weekly_day_remote').val()];
+        const h = parseInt($('#weekly_time_remote').val(), 10);
+        const m = parseInt($('#weekly_minute_remote').val(), 10);
+        return { valid: true, expression: `${m} ${h} * * ${d}` };
+      }
+      case 'monthly': {
+        const d = parseInt($('#monthly_day_remote').val(), 10);
+        const h = parseInt($('#monthly_time_remote').val(), 10);
+        const m = parseInt($('#monthly_minute_remote').val(), 10);
+        return { valid: true, expression: `${m} ${h} ${d} * *` };
+      }
+      case 'custom':
+        return validateCustomCronremote($('#custom_cron_remote').val());
+      default:
+        return { valid: false };
+    }
+  }
 
-  if (!confirm("Delete this remote schedule?")) return;
+  // --- Create or update schedule ---
+  async function scheduleJobremote(type) {
 
-  lockScheduleUIremote();
+    if (!validateBackupPrereqsremote()) {
+      return;
+    }
 
-  $.post(
-    '/plugins/flash-backup/helpers/schedule_delete_remote.php',
-    { id: id }
-  ).always(() => {
-    loadSchedulesremote();
+    if (scheduleUILockedremote) return;
+    lockScheduleUIremote();
+
+    const cron = buildCronFromUIremote();
+    if (!cron.valid) {
+      unlockScheduleUIremote();
+      alert("Invalid cron expression");
+      return;
+    }
+
+    const existingCrons = await fetchExistingCrons();
+    const conflict = checkCronConflicts(cron.expression, existingCrons, window.editingScheduleIdremote, 15);
+    if (conflict) {
+      unlockScheduleUIremote();
+      alert('This remote schedule is within 15 minutes of an existing schedule (' + conflict + '). Please choose a different time.');
+      return;
+    }
+
+    const settings = {};
+    $('input[name], select[name]').each(function () {
+      const key = this.name.replace(/\[\]$/, '');
+      if ($(this).is(':checkbox')) {
+        settings[key] = $(this).is(':checked') ? 'yes' : 'no';
+      } else {
+        const val = $(this).val();
+        settings[key] = Array.isArray(val) ? val.join(',') : val;
+      }
+    });
+
+    const url = window.editingScheduleIdremote
+      ? 'schedule_update_remote.php'
+      : 'schedule_create_remote.php';
+
+    $.ajax({
+      type: 'POST',
+      url: `/plugins/flash-backup/helpers/${url}`,
+      data: {
+        id: window.editingScheduleIdremote,
+        type: type,
+        cron: cron.expression,
+        settings: settings
+      },
+      success: function (response) {
+        resetScheduleUIremote();
+        window.editingScheduleIdremote = null;
+        loadSchedulesremote();
+        showPopupremote("Schedule saved!");
+      },
+      error: function (xhr) {
+        unlockScheduleUIremote();
+
+        if (xhr.status === 409) {
+          alert('Duplicate remote schedule detected during create!');
+        } else {
+          alert('Error creating/updating remote schedule: ' + xhr.responseText);
+        }
+      }
+    });
+  }
+
+  // --- Edit a schedule ---
+  function editScheduleremote(id) {
+    if (scheduleUILockedremote) return;
+    lockScheduleUIremote();
+
+    $.getJSON('/plugins/flash-backup/helpers/schedule_load_remote.php', { id }, function (s) {
+      const settings = s.SETTINGS || {};
+
+      if (s.TYPE) {
+        $('[name="type_remote"]').val(s.TYPE).trigger('change');
+      }
+
+      for (const k in settings) {
+        const el = $('[name="' + k + '"]');
+        if (!el.length) continue;
+
+        if (el.is(':checkbox')) {
+          const v = String(settings[k]).toLowerCase();
+          el.prop('checked', v === 'yes' || v === '1' || v === 'true');
+        } else if (el.is(':radio')) {
+          $('[name="' + k + '"][value="' + settings[k] + '"]').prop('checked', true);
+        } else {
+          el.val(settings[k]).trigger('change');
+        }
+      }
+
+      $('#cron_mode_remote')
+        .val(detectCronMode(s.CRON))
+        .trigger('change');
+
+      window.editingScheduleIdremote = id;
+
+      $('#schedule-remote-backup').text('Edit');
+
+      $('#cancelEditBtnremote').show();
+
+      unlockScheduleUIremote();
+    });
+  }
+
+  $('#cancelEditBtnremote').on('click', function () {
+    location.reload();
   });
-}
 
-// --- Run backup manually ---
-function runScheduleBackupremote(id, btn) {
-  if (scheduleUILockedremote) return;
+  function showPopupremote(message) {
+    const popup = $('#popupMessageremote');
 
-  if (!confirm("Are you sure you want to run this remote backup now?")) return;
+    popup.text(message).fadeIn(150);
 
-  lockScheduleUIremote();
+    setTimeout(() => {
+      popup.fadeOut(200, () => {
+        popup.text('');
+        popup.hide();
+      });
+    }, 3000);
+  }
 
-  btn.disabled = true;
-  const originalText = btn.textContent;
-  const originalTitle = btn.getAttribute('title');
+  function resetScheduleUIremote() {
+    $('#schedule-remote-backup').text('Schedule It');
+    $('#cancelEditBtnremote').hide();
+    $('#popupMessageremote').stop(true, true).hide().text('');
+  }
 
-  btn.textContent = "Running";
+  // --- Delete a schedule ---
+  function deleteScheduleremote(id) {
+    if (scheduleUILockedremote) return;
 
-  $.post('/plugins/flash-backup/helpers/run_schedule_remote.php', { id })
-    .done(function (res) {
-      if (!res.started) {
-        alert("Failed to start remote backup");
+    if (!confirm("Delete this remote schedule?")) return;
+
+    lockScheduleUIremote();
+
+    $.post(
+      '/plugins/flash-backup/helpers/schedule_delete_remote.php',
+      { id: id }
+    ).always(() => {
+      loadSchedulesremote();
+    });
+  }
+
+  // --- Run backup manually ---
+  function runScheduleBackupremote(id, btn) {
+    if (scheduleUILockedremote) return;
+
+    if (!confirm("Are you sure you want to run this remote backup now?")) return;
+
+    lockScheduleUIremote();
+
+    btn.disabled = true;
+    const originalText = btn.textContent;
+    const originalTitle = btn.getAttribute('title');
+
+    btn.textContent = "Running";
+
+    $.post('/plugins/flash-backup/helpers/run_schedule_remote.php', { id })
+      .done(function (res) {
+        if (!res.started) {
+          alert("Failed to start remote backup");
+          btn.disabled = false;
+          btn.textContent = originalText;
+          btn.setAttribute('title', originalTitle);
+          unlockScheduleUIremote();
+          return;
+        }
+
+        const poll = setInterval(function () {
+          $.getJSON('/plugins/flash-backup/helpers/check_lock.php', function (res) {
+            if (!res.locked) {
+              clearInterval(poll);
+              btn.disabled = false;
+              btn.textContent = originalText;
+              unlockScheduleUIremote();
+            }
+          });
+        }, 1000);
+      })
+      .fail(function (xhr, status, err) {
+        alert("Failed to start remote backup: " + (xhr.responseJSON?.error || err));
         btn.disabled = false;
         btn.textContent = originalText;
         btn.setAttribute('title', originalTitle);
         unlockScheduleUIremote();
-        return;
-      }
+      });
+  }
 
-      const poll = setInterval(function () {
-        $.getJSON('/plugins/flash-backup/helpers/check_lock.php', function (res) {
-          if (!res.locked) {
-            clearInterval(poll);
-            btn.disabled = false;
-            btn.textContent = originalText;
-            unlockScheduleUIremote();
-          }
-        });
-      }, 1000);
-    })
-    .fail(function (xhr, status, err) {
-      alert("Failed to start remote backup: " + (xhr.responseJSON?.error || err));
-      btn.disabled = false;
-      btn.textContent = originalText;
-      btn.setAttribute('title', originalTitle);
-      unlockScheduleUIremote();
+  // --- Toggle enable/disable ---
+  function toggleScheduleremote(id, isEnabled) {
+    if (scheduleUILockedremote) return;
+
+    const msg = isEnabled
+      ? "Disable this remote schedule?"
+      : "Enable this remote schedule?";
+
+    if (!confirm(msg)) return;
+
+    lockScheduleUIremote();
+
+    $.post(
+      '/plugins/flash-backup/helpers/schedule_toggle_remote.php',
+      { id: id }
+    ).always(() => {
+      loadSchedulesremote();
     });
-}
+  }
 
-// --- Toggle enable/disable ---
-function toggleScheduleremote(id, isEnabled) {
-  if (scheduleUILockedremote) return;
-
-  const msg = isEnabled
-    ? "Disable this remote schedule?"
-    : "Enable this remote schedule?";
-
-  if (!confirm(msg)) return;
-
-  lockScheduleUIremote();
-
-  $.post(
-    '/plugins/flash-backup/helpers/schedule_toggle_remote.php',
-    { id: id }
-  ).always(() => {
+  // --- Button click handlers ---
+  $(document).ready(function () {
     loadSchedulesremote();
+
+    $(document).on('click', '#schedule-remote-backup', function () { scheduleJobremote('remote-backup'); });
   });
-}
-
-// --- Button click handlers ---
-$(document).ready(function () {
-  loadSchedulesremote();
-
-  $(document).on('click', '#schedule-remote-backup', function () { scheduleJobremote('remote-backup'); });
-});
 </script>
 
 <script>
@@ -3554,46 +3725,6 @@ $(document).ready(function () {
       btn.disabled = false;
     }, 1200);
   }
-</script>
-
-<script>
-  const logEl = document.getElementById('last-run-log');
-  const btnTop = document.getElementById('scroll-log-top');
-  const btnBottom = document.getElementById('scroll-log-bottom');
-  const btnContainer = document.getElementById('log-scroll-buttons');
-
-  function updateScrollButtons() {
-    const hasOverflow = logEl.scrollHeight > logEl.clientHeight + 5;
-
-    // Only show buttons if scrolling is possible
-    btnContainer.style.display = hasOverflow ? 'flex' : 'none';
-
-    if (!hasOverflow) return;
-
-    const atTop = logEl.scrollTop <= 0;
-    const atBottom = logEl.scrollTop + logEl.clientHeight >= logEl.scrollHeight - 1;
-
-    btnTop.disabled = atTop;
-    btnBottom.disabled = atBottom;
-  }
-
-  btnTop.addEventListener('click', () => {
-    logEl.scrollTo({ top: 0, behavior: 'smooth' });
-  });
-
-  btnBottom.addEventListener('click', () => {
-    logEl.scrollTo({ top: logEl.scrollHeight, behavior: 'smooth' });
-  });
-
-  // Update on scroll
-  logEl.addEventListener('scroll', updateScrollButtons);
-
-  // Update when log content changes
-  const observer = new MutationObserver(updateScrollButtons);
-  observer.observe(logEl, { childList: true, subtree: true });
-
-  // Initial evaluation
-  updateScrollButtons();
 </script>
 
 <script>

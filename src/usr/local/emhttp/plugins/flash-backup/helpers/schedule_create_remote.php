@@ -21,25 +21,24 @@ if (file_exists($cfg)) {
     $schedules = parse_ini_file($cfg, true, INI_SCANNER_RAW);
 }
 
-$newFingerprint = [
-    'BACKUP_DESTINATION' => $settings['BACKUP_DESTINATION'] ?? '',
-];
-ksort($newFingerprint);
-$newHash = hash('sha256', json_encode($newFingerprint));
+// ---- Compute new fingerprint based on RCLONE_CONFIG_REMOTE ----
+$newRemote = trim($settings['RCLONE_CONFIG_REMOTE'] ?? '');
 
+if ($newRemote === '') {
+    http_response_code(400);
+    exit("Rclone config is required");
+}
+
+// ---- Check for duplicates based on RCLONE_CONFIG_REMOTE ----
 foreach ($schedules as $existingId => $s) {
     if (empty($s['SETTINGS'])) continue;
 
     $existingSettings = json_decode(stripslashes($s['SETTINGS']), true);
     if (!is_array($existingSettings)) continue;
 
-    $existingFingerprint = [
-        'BACKUP_DESTINATION' => $existingSettings['BACKUP_DESTINATION'] ?? '',
-    ];
-    ksort($existingFingerprint);
-    $existingHash = hash('sha256', json_encode($existingFingerprint));
+    $existingRemote = trim($existingSettings['RCLONE_CONFIG_REMOTE'] ?? '');
 
-    if ($existingHash === $newHash) {
+    if ($existingRemote !== '' && $existingRemote === $newRemote) {
         http_response_code(409);
         echo json_encode([
             'error'       => 'Duplicate remote schedule detected',

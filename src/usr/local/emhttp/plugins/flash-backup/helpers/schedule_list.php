@@ -32,20 +32,20 @@ function humanCron($cron) {
         return "Runs every $n hour" . ($n !== 1 ? 's' : '');
     }
 
-    if ($min === '0' && preg_match('/^\d+$/', $hour) && $dom === '*' && $month === '*' && $dow === '*') {
-        $t = date('g:i A', mktime((int)$hour, 0));
+    if (preg_match('/^\d+$/', $min) && preg_match('/^\d+$/', $hour) && $dom === '*' && $month === '*' && $dow === '*') {
+        $t = date('g:i A', mktime((int)$hour, (int)$min));
         return "Runs daily at $t";
     }
 
-    if ($min === '0' && preg_match('/^\d+$/', $hour) && $dom === '*' && $month === '*' && preg_match('/^\d+$/', $dow)) {
+    if (preg_match('/^\d+$/', $min) && preg_match('/^\d+$/', $hour) && $dom === '*' && $month === '*' && preg_match('/^\d+$/', $dow)) {
         $days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-        $t = date('g:i A', mktime((int)$hour, 0));
+        $t = date('g:i A', mktime((int)$hour, (int)$min));
         $d = $days[(int)$dow] ?? $dow;
         return "Runs every $d at $t";
     }
 
-    if ($min === '0' && preg_match('/^\d+$/', $hour) && preg_match('/^\d+$/', $dom) && $month === '*' && $dow === '*') {
-        $t = date('g:i A', mktime((int)$hour, 0));
+    if (preg_match('/^\d+$/', $min) && preg_match('/^\d+$/', $hour) && preg_match('/^\d+$/', $dom) && $month === '*' && $dow === '*') {
+        $t = date('g:i A', mktime((int)$hour, (int)$min));
         $suffix = match((int)$dom % 10) {
             1 => ((int)$dom === 11) ? 'th' : 'st',
             2 => ((int)$dom === 12) ? 'th' : 'nd',
@@ -58,6 +58,10 @@ function humanCron($cron) {
     return $cron;
 }
 ?>
+
+<?php if (!empty($schedules)): ?>
+
+<h3>📅 Scheduled Local Backup Jobs</h3>
 
 <table class="flash-backup-schedules-table"
        style="width:100%; border-collapse: collapse; margin-top:20px; border:1px solid #ccc; table-layout:fixed;">
@@ -78,16 +82,6 @@ function humanCron($cron) {
 </thead>
 
 <tbody>
-
-<?php if (empty($schedules)): ?>
-
-    <tr style="border-bottom:1px solid #ccc;">
-        <td style="padding:12px; text-align:center; vertical-align:middle;" colspan="9">
-            No schedules found
-        </td>
-    </tr>
-
-<?php else: ?>
 
     <?php foreach ($schedules as $id => $s): ?>
 
@@ -121,10 +115,9 @@ function humanCron($cron) {
             else                 $backupsToKeep = $btk;
         }
 
-        $backupOwner = $settings['BACKUP_OWNER'] ?? '—';
-
-        $dryRun = !isset($settings['DRY_RUN']) ? '—' : yesNo($settings['DRY_RUN']);
-        $notify = !isset($settings['NOTIFICATIONS']) ? '—' : yesNo($settings['NOTIFICATIONS']);
+        $backupOwner   = $settings['BACKUP_OWNER'] ?? '—';
+        $dryRun        = !isset($settings['DRY_RUN'])       ? '—' : yesNo($settings['DRY_RUN']);
+        $notify        = !isset($settings['NOTIFICATIONS'])  ? '—' : yesNo($settings['NOTIFICATIONS']);
         $minimalBackup = !isset($settings['MINIMAL_BACKUP']) ? '—' : yesNo($settings['MINIMAL_BACKUP']);
         ?>
 
@@ -211,7 +204,7 @@ function humanCron($cron) {
 
     <?php endforeach; ?>
 
-<?php endif; ?>
-
 </tbody>
 </table>
+
+<?php endif; ?>

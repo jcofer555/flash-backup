@@ -24,30 +24,27 @@ if (file_exists($cfg)) {
     $schedules = parse_ini_file($cfg, true, INI_SCANNER_RAW);
 }
 
-// ---- Compute new fingerprint (ONLY VMS_TO_BACKUP + BACKUP_DESTINATION) ----
-$newFingerprint = [
-    'BACKUP_DESTINATION' => $settings['BACKUP_DESTINATION'] ?? '',
-];
-ksort($newFingerprint);
-$newHash = hash('sha256', json_encode($newFingerprint));
+// ---- Compute new fingerprint ----
+$newDest = trim($settings['BACKUP_DESTINATION'] ?? '');
 
-// ---- Check for duplicates based ONLY on VMS_TO_BACKUP + BACKUP_DESTINATION ----
+if ($newDest === '') {
+    http_response_code(400);
+    exit("Backup destination is required");
+}
+
+// ---- Check for duplicates ----
 foreach ($schedules as $existingId => $s) {
     if (empty($s['SETTINGS'])) continue;
 
     $existingSettings = json_decode(stripslashes($s['SETTINGS']), true);
     if (!is_array($existingSettings)) continue;
 
-    $existingFingerprint = [
-        'BACKUP_DESTINATION' => $existingSettings['BACKUP_DESTINATION'] ?? '',
-    ];
-    ksort($existingFingerprint);
-    $existingHash = hash('sha256', json_encode($existingFingerprint));
+    $existingDest = trim($existingSettings['BACKUP_DESTINATION'] ?? '');
 
-    if ($existingHash === $newHash) {
+    if ($existingDest !== '' && $existingDest === $newDest) {
         http_response_code(409);
         echo json_encode([
-            'error' => 'Duplicate schedule detected',
+            'error'       => 'Duplicate schedule detected',
             'conflict_id' => $existingId
         ]);
         exit;
