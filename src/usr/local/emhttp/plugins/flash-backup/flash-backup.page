@@ -46,6 +46,7 @@ $remoteCfgPath = '/boot/config/plugins/flash-backup/settings_remote.cfg';
 $remoteDefaults = [
     'MINIMAL_BACKUP_REMOTE' => 'no',
     'RCLONE_CONFIG_REMOTE' => '',
+    'B2_BUCKET_NAME' => '',
     'REMOTE_PATH_IN_CONFIG' => '/Flash_Backups',
     'BACKUPS_TO_KEEP_REMOTE' => '0',
     'DRY_RUN_REMOTE' => 'no',
@@ -1191,12 +1192,26 @@ if (is_file($plg)) {
 $rcloneConfig = '/boot/config/plugins/rclone/.rclone.conf';
 $rcloneIni = [];
 $rcloneRemotes = [];
+$remoteTypes = [];
 
 if (file_exists($rcloneConfig)) {
     $rcloneIni = parse_ini_file($rcloneConfig, true, INI_SCANNER_RAW);
     if (is_array($rcloneIni)) {
         $rcloneRemotes = array_keys($rcloneIni);
         sort($rcloneRemotes, SORT_NATURAL | SORT_FLAG_CASE);
+        foreach ($rcloneRemotes as $remote) {
+            $type = $rcloneIni[$remote]['type'] ?? 'unknown';
+            $remoteTypes[$remote] = $type;
+
+            // If crypt, check if its underlying remote is b2
+            if ($type === 'crypt') {
+                $underlying = $rcloneIni[$remote]['remote'] ?? '';
+                $underlyingRemote = explode(':', $underlying)[0];
+                if (($rcloneIni[$underlyingRemote]['type'] ?? '') === 'b2') {
+                    $remoteTypes[$remote] = 'crypt-b2';
+                }
+            }
+        }
     }
 }
 
@@ -1249,6 +1264,19 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
 
             </div>
           </div>
+        </span>
+      </div>
+
+      <!-- B2 BUCKET NAME -->
+      <div class="form-pair" id="b2_bucket_row" style="display:none;">
+        <label>
+          <span class="flash-backuptip" title="Required for Backblaze B2 remotes — the bucket name to upload into">
+            B2 Bucketname:
+          </span>
+        </label>
+        <span class="form-input">
+          <input type="text" id="b2_bucket_name" name="B2_BUCKET_NAME" placeholder="/folder/" autocomplete="off"
+            value="<?= htmlspecialchars($remotesettings['B2_BUCKET_NAME'] ?? '') ?>">
         </span>
       </div>
 
@@ -1778,8 +1806,21 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
     }, 2000);
   }
 
+  const remoteTypes = JSON.parse('<?= addslashes(json_encode($remoteTypes)) ?>');
+
   let scheduleUILockedremote = false;
   let rebuildTokenremote = 0;
+
+  function updateB2BucketVisibility() {
+    const selected = $('#rclone_config_remote_hidden').val() || [];
+    const anyB2 = selected.some(r => remoteTypes[r] === 'b2' || remoteTypes[r] === 'crypt-b2');
+    if (anyB2) {
+      $('#b2_bucket_row').show();
+    } else {
+      $('#b2_bucket_row').hide();
+      $('#b2_bucket_name').val('');
+    }
+  }
 
   function validateBackupPrereqsremote() {
     const cronExprRemote = $('#cron_expression_hidden_remote').val() || '';
@@ -1819,6 +1860,21 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
           );
           return false;
         }
+      }
+    }
+
+    // --- Validate B2 Bucket Name if any B2 remote selected ---
+    const anyB2 = selectedRemotes.some(r => remoteTypes[r] === 'b2' || remoteTypes[r] === 'crypt-b2');
+    if (anyB2) {
+      const b2Bucket = $('#b2_bucket_name').val().trim();
+      if (!b2Bucket) {
+        alert('B2 Bucketname is required when a Backblaze B2 config is selected');
+        return false;
+      }
+      const validBucket = /^[A-Za-z0-9._\-]+$/;
+      if (!validBucket.test(b2Bucket)) {
+        alert('Invalid B2 bucket name: "' + b2Bucket + '"\n\nAllowed characters:\nletters, numbers, - . _');
+        return false;
       }
     }
 
@@ -2463,6 +2519,12 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
 
   });
 
+  $('#b2_bucket_name').on('blur', function () {
+    let val = $(this).val().trim().toLowerCase();
+    val = val.replace(/^\/+|\/+$/g, '');
+    $(this).val(val);
+  });
+
   $('#backupbtn_remote').on('click', async function () {
 
     if (backupRequestInProgressRemote) {
@@ -2511,12 +2573,29 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
       }
     }
 
+    // --- Validate B2 Bucket Name if any B2 remote selected ---
+    const anyB2 = selectedRemotes.some(r => remoteTypes[r] === 'b2' || remoteTypes[r] === 'crypt-b2');
+    if (anyB2) {
+      const b2Bucket = $('#b2_bucket_name').val().trim();
+      if (!b2Bucket) {
+        alert('B2 Bucketname is required when a Backblaze B2 config is selected');
+        return;
+      }
+      const validBucket = /^[A-Za-z0-9._\-]+$/;
+      if (!validBucket.test(b2Bucket)) {
+        alert('Invalid B2 bucket name: "' + b2Bucket + '"\n\nAllowed characters:\nletters, numbers, - . _');
+        return;
+      }
+    }
+
     backupRequestInProgressRemote = true;
     let finalPath = remotePath === '' ? '/Flash_Backups/' : remotePath;
+    const b2Bucket = $('#b2_bucket_name').val().trim();
 
     const params = $.param({
       MINIMAL_BACKUP_REMOTE: $('#minimal_backup_remote').is(':checked') ? 'yes' : 'no',
       RCLONE_CONFIG_REMOTE: selectedRemotes,
+      B2_BUCKET_NAME: b2Bucket,
       BACKUPS_TO_KEEP_REMOTE: $('#backups_to_keep_remote').val(),
       DRY_RUN_REMOTE: $('#dry_run_remote').val(),
       NOTIFICATIONS_REMOTE: $('#notifications_remote').val(),
@@ -3605,6 +3684,7 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
       });
 
       updatePlaceholder();
+      updateB2BucketVisibility();
     });
 
     /* Clear all */
@@ -3615,6 +3695,7 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
       [...hiddenSelect.options].forEach(o => o.selected = false);
 
       updatePlaceholder();
+      updateB2BucketVisibility();
     });
 
     multiselect.addEventListener('click', () => {
@@ -3649,12 +3730,16 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
 
         // Update placeholder
         const selectedValues = [...hiddenSelect.options].filter(o => o.selected).map(o => o.value);
-        placeholder.textContent = selectedValues.length ? selectedValues.join(', ') : 'Select remote(s)';
+        placeholder.textContent = selectedValues.length ? selectedValues.join(', ') : 'Select config(s)';
 
         // Optional: keep hiddenSelect values synced for AJAX
         hiddenSelect.dispatchEvent(new Event('change'));
+
+        updateB2BucketVisibility();
       });
     });
+
+    updateB2BucketVisibility();
   });
 </script>
 

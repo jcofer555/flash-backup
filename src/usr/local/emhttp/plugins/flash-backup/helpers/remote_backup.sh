@@ -11,6 +11,7 @@ if [[ -n "${RCLONE_CONFIG_REMOTE:-}" ]]; then
     BACKUPS_TO_KEEP_REMOTE="${BACKUPS_TO_KEEP_REMOTE:-0}"
     NOTIFICATIONS_REMOTE="${NOTIFICATIONS_REMOTE:-no}"
     REMOTE_PATH_IN_CONFIG="${REMOTE_PATH_IN_CONFIG:-}"
+    B2_BUCKET_NAME="${B2_BUCKET_NAME:-}"
 fi
 
 # Remove accidental quotes
@@ -20,6 +21,7 @@ MINIMAL_BACKUP_REMOTE="${MINIMAL_BACKUP_REMOTE//\"/}"
 BACKUPS_TO_KEEP_REMOTE="${BACKUPS_TO_KEEP_REMOTE//\"/}"
 NOTIFICATIONS_REMOTE="${NOTIFICATIONS_REMOTE//\"/}"
 REMOTE_PATH_IN_CONFIG="${REMOTE_PATH_IN_CONFIG//\"/}"
+B2_BUCKET_NAME="${B2_BUCKET_NAME//\"/}"
 
 SCRIPT_START_EPOCH=$(date +%s)
 
@@ -235,12 +237,20 @@ for REMOTE in "${REMOTE_ARRAY[@]}"; do
 
     [[ -z "$REMOTE" ]] && continue
 
-    DEST="${REMOTE}:${REMOTE_SUBPATH}"
+    REMOTE_TYPE=$(rclone config show "$REMOTE" 2>/dev/null | awk -F' *= *' '/^[[:space:]]*type/{print $2; exit}')
+
+    if [[ "$REMOTE_TYPE" == "b2" ]]; then
+        DEST="${REMOTE}:${B2_BUCKET_NAME}${REMOTE_SUBPATH}"
+    else
+        DEST="${REMOTE}:${REMOTE_SUBPATH}"
+    fi
 
     set_status "Uploading flash backup to config $REMOTE"
 
-    # Ensure remote folder exists
-    if [[ "$DRY_RUN_REMOTE" == "yes" ]]; then
+# Ensure remote folder exists (skip for b2, it doesn't support empty dirs)
+    if [[ "$REMOTE_TYPE" == "b2" ]]; then
+        :
+    elif [[ "$DRY_RUN_REMOTE" == "yes" ]]; then
         echo "[DRY RUN] Would ensure remote folder exists -> $DEST"
     else
         if ! rclone mkdir "$DEST"; then

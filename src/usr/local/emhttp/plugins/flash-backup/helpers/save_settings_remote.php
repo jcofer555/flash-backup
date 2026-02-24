@@ -6,6 +6,7 @@ $cmd = '/usr/local/emhttp/plugins/flash-backup/helpers/save_settings_remote.sh';
 // --- Grab raw values ---
 $minimal_backup_remote       = $_GET['MINIMAL_BACKUP_REMOTE'] ?? '';
 $rclone_config_remote        = $_GET['RCLONE_CONFIG_REMOTE'] ?? '';
+$b2_bucket_name              = $_GET['B2_BUCKET_NAME'] ?? '';
 $remote_path_in_config       = $_GET['REMOTE_PATH_IN_CONFIG'] ?? '';
 $backups_to_keep_remote      = $_GET['BACKUPS_TO_KEEP_REMOTE'] ?? '';
 $dry_run_remote              = $_GET['DRY_RUN_REMOTE'] ?? '';
@@ -33,6 +34,20 @@ if ($remote_path_in_config !== '') {
     }
 }
 
+// --- Normalize B2 bucket name ---
+$b2_bucket_name = trim($b2_bucket_name);
+
+if ($b2_bucket_name !== '') {
+
+    // Remove leading slash
+    $b2_bucket_name = ltrim($b2_bucket_name, '/');
+
+    // Ensure trailing slash
+    if (substr($b2_bucket_name, -1) !== '/') {
+        $b2_bucket_name .= '/';
+    }
+}
+
 if (is_array($rclone_config_remote)) {
     $rclone_config_remote = array_map('trim', $rclone_config_remote);
     $rclone_config_remote = implode(',', $rclone_config_remote);
@@ -42,6 +57,7 @@ if (is_array($rclone_config_remote)) {
 $args = [
     $minimal_backup_remote,
     $rclone_config_remote,
+    $b2_bucket_name,
     $remote_path_in_config,
     $backups_to_keep_remote,
     $dry_run_remote,
