@@ -9,5 +9,5 @@
 - Ability to set how many backups you want to keep
 - Dry run support
 - Basic Notification support
-- Ability to set an owner for your backups for local backups
+- Ability to set an owner for your local backups
 - Logging available in the webui and at /tmp/flash-backup/flash-backup.log
