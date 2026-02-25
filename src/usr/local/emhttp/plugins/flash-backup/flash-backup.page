@@ -2534,7 +2534,7 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
     }, 2000);
   });
   // Final safety net on blur
-$('#b2_bucket_name').on('blur', function () {
+  $('#b2_bucket_name').on('blur', function () {
     let val = $(this).val().trim().toLowerCase();
     if (val === '') return;
     val = val.replace(/\/+/g, '/');
@@ -2610,7 +2610,8 @@ $('#b2_bucket_name').on('blur', function () {
         return;
       }
       const validBucket = /^[A-Za-z0-9._\-]+$/;
-      if (!validBucket.test(b2Bucket)) {
+      const b2BucketStripped = b2Bucket.replace(/\/+$/, '');
+      if (!validBucket.test(b2BucketStripped)) {
         alert('Invalid B2 bucket name: "' + b2Bucket + '"\n\nAllowed characters:\nletters, numbers, - . _');
         return;
       }
