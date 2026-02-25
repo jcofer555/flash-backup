@@ -2519,10 +2519,38 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
 
   });
 
-  $('#b2_bucket_name').on('blur', function () {
-    let val = $(this).val().trim().toLowerCase();
-    val = val.replace(/^\/+|\/+$/g, '');
+  $('#b2_bucket_name').on('input', function () {
+    let val = $(this).val();
+    // Collapse multiple slashes
+    val = val.replace(/\/+/g, '/');
     $(this).val(val);
+    // Debounce trailing slash normalization (2 seconds)
+    clearTimeout(b2BucketNameTimer);
+    b2BucketNameTimer = setTimeout(() => {
+      let v = $('#b2_bucket_name').val().trim();
+      if (v !== '' && !v.endsWith('/')) {
+        $('#b2_bucket_name').val(v + '/');
+      }
+    }, 2000);
+  });
+  // Final safety net on blur
+$('#b2_bucket_name').on('blur', function () {
+    let val = $(this).val().trim().toLowerCase();
+    if (val === '') return;
+    val = val.replace(/\/+/g, '/');
+    if (!val.endsWith('/')) val = val + '/';
+    $(this).val(val);
+  });
+  $(function () {
+    let val = $('#b2_bucket_name').val().trim();
+    if (val === '') return;
+    // Collapse multiple slashes
+    val = val.replace(/\/+/g, '/');
+    // Ensure trailing slash
+    if (!val.endsWith('/')) {
+      val = val + '/';
+    }
+    $('#b2_bucket_name').val(val);
   });
 
   $('#backupbtn_remote').on('click', async function () {
@@ -3584,6 +3612,7 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
   });
 
   let remotePathTimer = null;
+  let b2BucketNameTimer;
 
   $('#remote_path_in_config').on('input', function () {
     let val = $(this).val();

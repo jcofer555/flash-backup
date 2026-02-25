@@ -41,6 +41,11 @@ if ($b2_bucket_name !== '') {
 
     // Remove leading slash
     $b2_bucket_name = ltrim($b2_bucket_name, '/');
+
+    // Ensure trailing slash
+    if (substr($b2_bucket_name, -1) !== '/') {
+        $b2_bucket_name .= '/';
+    }
 }
 
 if (is_array($rclone_config_remote)) {
