@@ -121,7 +121,7 @@ function humanCronRemote($cron) {
         <tr style="border-bottom:1px solid #ccc; height: 3px; background:<?php echo $rowColor; ?>; color:<?php echo $textColor; ?>;">
 
             <td style="padding:8px; text-align:center;">
-                <span class="flash-backuptip" title="<?php echo htmlspecialchars($cron); ?>">
+                <span class="flash-backuptip" title="<?php echo htmlspecialchars(humanCronRemote($cron)); ?> - <?php echo htmlspecialchars($cron); ?>">
                     <?php echo htmlspecialchars(humanCronRemote($cron)); ?>
                 </span>
             </td>
