@@ -1154,8 +1154,8 @@ if (is_file($plg)) {
           <button type="button" id="backupbtn">Backup Now</button>
         </span>
 
-        <span title="Create/update a backup schedule using the settings shown in the fields above"
-          class="flash-backuptip">
+        <span class="flash-backuptip"
+          data-tooltip="Create a local backup schedule using the settings shown in the fields above">
           <button type="button" id="schedule-local-backup" class="button schedule-button">Schedule It</button>
         </span>
 
@@ -1669,7 +1669,7 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
           <button type="button" id="backupbtn_remote">Backup Now</button>
         </span>
 
-        <span title="Create/update a remote backup schedule using the settings shown in the fields above"
+        <span title="Create a remote backup schedule using the settings shown in the fields above"
           class="flash-backuptip">
           <button type="button" id="schedule-remote-backup" class="button schedule-button">Schedule It</button>
         </span>
@@ -1753,23 +1753,22 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
 </div>
 
 <script>
-  $(function () {
-    $(document).on('mouseenter', '.flash-backuptip', function () {
-      const $el = $(this);
+  $(document).on('mouseenter', '.flash-backuptip', function () {
+    const $el = $(this);
 
-      if (!$el.hasClass('tooltipstered')) {
-        $el.tooltipster({
-          maxWidth: 300
-        });
+    if (!$el.hasClass('tooltipstered')) {
+      $el.tooltipster({
+        maxWidth: 300,
+        content: $el.data('tooltip')
+      });
+      $el.removeAttr('title');
 
-        // Delay auto-open by 500ms
-        setTimeout(() => {
-          if ($el.is(':hover')) {
-            $el.tooltipster('open');
-          }
-        }, 500);
-      }
-    });
+      setTimeout(() => {
+        if ($el.is(':hover')) {
+          $el.tooltipster('open');
+        }
+      }, 500);
+    }
   });
 
   let scheduleUILocked = false;
@@ -2937,7 +2936,10 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
       window.editingScheduleId = id;
 
       // Switch Schedule It → Edit
-      $('#schedule-local-backup').text('Edit');
+      $('#schedule-local-backup').text('Update');
+      const $tip = $('#schedule-local-backup').closest('span');
+      $tip.data('tooltip', 'Update the local backup schedule using the settings shown in the fields above');
+      if ($tip.hasClass('tooltipstered')) $tip.tooltipster('content', 'Update the local backup schedule using the settings shown in the fields above');
 
       // Show Cancel button
       $('#cancelEditBtn').show();
@@ -2966,6 +2968,9 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
   function resetScheduleUI() {
     // Revert Edit → Schedule It
     $('#schedule-local-backup').text('Schedule It');
+    const $tip = $('#schedule-local-backup').closest('span');
+    $tip.data('tooltip', 'Create a backup schedule using the settings shown in the fields above');
+    if ($tip.hasClass('tooltipstered')) $tip.tooltipster('content', 'Create a backup schedule using the settings shown in the fields above');
 
     // Hide Cancel button
     $('#cancelEditBtn').hide();
@@ -3227,7 +3232,10 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
 
       window.editingScheduleIdremote = id;
 
-      $('#schedule-remote-backup').text('Edit');
+      $('#schedule-remote-backup').text('Update');
+      const $tip = $('#schedule-remote-backup').closest('span');
+      $tip.data('tooltip', 'Update the remote backup schedule using the settings shown in the fields above');
+      if ($tip.hasClass('tooltipstered')) $tip.tooltipster('content', 'Update the remote backup schedule using the settings shown in the fields above');
 
       $('#cancelEditBtnremote').show();
 
@@ -3254,6 +3262,9 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
 
   function resetScheduleUIremote() {
     $('#schedule-remote-backup').text('Schedule It');
+    const $tip = $('#schedule-remote-backup').closest('span');
+    $tip.data('tooltip', 'Create a remote backup schedule using the settings shown in the fields above');
+    if ($tip.hasClass('tooltipstered')) $tip.tooltipster('content', 'Create a remote backup schedule using the settings shown in the fields above');
     $('#cancelEditBtnremote').hide();
     $('#popupMessageremote').stop(true, true).hide().text('');
   }
@@ -3366,9 +3377,9 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
     if (!cron) return 'minutes';
     if (/^\*\/\d+ \* \* \* \*$/.test(cron)) return 'minutes';
     if (/^0 \*\/\d+ \* \* \*$/.test(cron)) return 'hourly';
-    if (/^0 \d+ \* \* \*$/.test(cron)) return 'daily';
-    if (/^0 \d+ \* \* [0-6]$/.test(cron)) return 'weekly';
-    if (/^0 \d+ \d+ \* \*$/.test(cron)) return 'monthly';
+    if (/^\d+ \d+ \* \* \*$/.test(cron)) return 'daily';
+    if (/^\d+ \d+ \* \* [0-6]$/.test(cron)) return 'weekly';
+    if (/^\d+ \d+ \d+ \* \*$/.test(cron)) return 'monthly';
     return 'custom';
   }
 </script>
