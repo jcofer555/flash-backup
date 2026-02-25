@@ -37,6 +37,89 @@ format_duration() {
     echo "$out"
 }
 
+format_bytes() {
+    local bytes=$1
+    local units=(B KB MB GB TB)
+    local i=0
+
+    while (( bytes >= 1024 && i < ${#units[@]}-1 )); do
+        bytes=$(( bytes / 1024 ))
+        ((i++))
+    done
+
+    echo "${bytes}${units[$i]}"
+}
+
+get_rclone_flags() {
+    local remote_type="$1"
+    local underlying_type="$2"
+
+    # For crypt remotes, use the underlying remote's flags + --fast-list if supported
+    if [[ "$remote_type" == "crypt" ]]; then
+        remote_type="$underlying_type"
+    fi
+
+    case "$remote_type" in
+        b2)
+            echo "--fast-list --transfers=32 --checkers=32 --b2-chunk-size=100M --retries=5 --low-level-retries=10"
+            ;;
+        drive)
+            echo "--fast-list --transfers=8 --checkers=8 --drive-chunk-size=64M --drive-skip-gdocs --retries=5 --low-level-retries=10"
+            ;;
+        s3)
+            echo "--fast-list --transfers=32 --checkers=32 --s3-upload-cutoff=100M --s3-chunk-size=100M --retries=5 --low-level-retries=10"
+            ;;
+        onedrive)
+            echo "--fast-list --transfers=10 --checkers=10 --onedrive-chunk-size=100M --retries=5 --low-level-retries=10"
+            ;;
+        dropbox)
+            echo "--transfers=8 --checkers=8 --dropbox-chunk-size=48M --retries=5 --low-level-retries=10"
+            ;;
+        sftp|ftp|ssh)
+            echo "--transfers=4 --checkers=4 --timeout=1m --contimeout=1m --retries=3 --low-level-retries=5"
+            ;;
+        s3idrive)
+            echo "--fast-list --transfers=16 --checkers=16 --s3-upload-cutoff=64M --s3-chunk-size=64M --retries=5 --low-level-retries=10"
+            ;;
+        box)
+            echo "--fast-list --transfers=6 --checkers=6 --retries=5 --low-level-retries=10"
+            ;;
+        gcs)
+            echo "--fast-list --transfers=32 --checkers=32 --gcs-chunk-size=100M --retries=5 --low-level-retries=10"
+            ;;
+        googlephotos)
+            echo "--transfers=4 --checkers=4 --retries=5 --low-level-retries=10"
+            ;;
+        koofr)
+            echo "--fast-list --transfers=8 --checkers=8 --retries=5 --low-level-retries=10"
+            ;;
+        mega)
+            echo "--transfers=6 --checkers=6 --mega-chunk-size=32M --retries=5 --low-level-retries=10"
+            ;;
+        azureblob)
+            echo "--fast-list --transfers=32 --checkers=32 --azureblob-chunk-size=100M --retries=5 --low-level-retries=10"
+            ;;
+        azurefiles)
+            echo "--transfers=16 --checkers=16 --azurefiles-chunk-size=64M --retries=5 --low-level-retries=10"
+            ;;
+        protondrive)
+            echo "--transfers=4 --checkers=4 --retries=5 --low-level-retries=10"
+            ;;
+        putio)
+            echo "--transfers=6 --checkers=6 --retries=5 --low-level-retries=10"
+            ;;
+        smb)
+            echo "--transfers=8 --checkers=8 --retries=3 --low-level-retries=5"
+            ;;
+        seafile)
+            echo "--fast-list --transfers=8 --checkers=8 --retries=5 --low-level-retries=10"
+            ;;
+        *)
+            echo "--transfers=4 --checkers=4 --retries=5 --low-level-retries=10"
+            ;;
+    esac
+}
+
 # ----------------------------
 # Config / Paths
 # ----------------------------
@@ -155,7 +238,6 @@ if [[ -n "$REMOTE_PATH_IN_CONFIG" ]]; then
     IFS='/' read -r -a parts <<< "$inner"
 
     for p in "${parts[@]}"; do
-        # Literal regex — safe, correct, portable
         if ! [[ "$p" =~ ^[A-Za-z0-9._+\-@[:space:]]+$ ]]; then
             echo "[ERROR] Invalid folder name $p"
             set_status "Invalid folder name"
@@ -226,6 +308,14 @@ else
 fi
 
 # ----------------------------
+# Backup size logging
+# ----------------------------
+backup_size_bytes=$(stat -c%s "$backup_file" 2>/dev/null || echo 0)
+backup_size_human=$(format_bytes "$backup_size_bytes")
+
+echo "Backup size is $backup_size_human"
+
+# ----------------------------
 # MAIN LOOP — upload to each remote
 # ----------------------------
 success_count=0
@@ -239,7 +329,16 @@ for REMOTE in "${REMOTE_ARRAY[@]}"; do
 
     REMOTE_TYPE=$(rclone config show "$REMOTE" 2>/dev/null | awk -F' *= *' '/^[[:space:]]*type/{print $2; exit}')
 
-    if [[ "$REMOTE_TYPE" == "b2" ]]; then
+    UNDERLYING_TYPE=""
+    if [[ "$REMOTE_TYPE" == "crypt" ]]; then
+        CRYPT_REMOTE=$(rclone config show "$REMOTE" 2>/dev/null | awk -F' *= *' '/^[[:space:]]*remote/{print $2; exit}')
+        CRYPT_REMOTE="${CRYPT_REMOTE%%:*}"
+        UNDERLYING_TYPE=$(rclone config show "$CRYPT_REMOTE" 2>/dev/null | awk -F' *= *' '/^[[:space:]]*type/{print $2; exit}')
+    fi
+
+    RCLONE_FLAGS=$(get_rclone_flags "$REMOTE_TYPE" "$UNDERLYING_TYPE")
+
+    if [[ "$REMOTE_TYPE" == "b2" || "$REMOTE_TYPE" == "crypt" ]]; then
         DEST="${REMOTE}:${B2_BUCKET_NAME}${REMOTE_SUBPATH}"
     else
         DEST="${REMOTE}:${REMOTE_SUBPATH}"
@@ -247,8 +346,8 @@ for REMOTE in "${REMOTE_ARRAY[@]}"; do
 
     set_status "Uploading flash backup to config $REMOTE"
 
-# Ensure remote folder exists (skip for b2, it doesn't support empty dirs)
-    if [[ "$REMOTE_TYPE" == "b2" ]]; then
+    # Ensure remote folder exists (skip for b2 and crypt, they don't support empty dirs)
+    if [[ "$REMOTE_TYPE" == "b2" || "$REMOTE_TYPE" == "crypt" ]]; then
         :
     elif [[ "$DRY_RUN_REMOTE" == "yes" ]]; then
         echo "[DRY RUN] Would ensure remote folder exists -> $DEST"
@@ -266,7 +365,7 @@ for REMOTE in "${REMOTE_ARRAY[@]}"; do
         echo "[DRY RUN] Would upload $backup_file to $DEST"
         ((success_count++))
     else
-        if ! rclone copy "$backup_file" "$DEST" --checksum --fast-list; then
+        if ! rclone copy "$backup_file" "$DEST" $RCLONE_FLAGS; then
             echo "[ERROR] Failed to upload remote backup to $REMOTE"
             set_status "Upload failed for $REMOTE"
             ((failure_count++))

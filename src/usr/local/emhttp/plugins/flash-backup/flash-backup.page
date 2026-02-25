@@ -1872,7 +1872,8 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
         return false;
       }
       const validBucket = /^[A-Za-z0-9._\-]+$/;
-      if (!validBucket.test(b2Bucket)) {
+      const b2BucketStripped = b2Bucket.replace(/\/+$/, '');
+      if (!validBucket.test(b2BucketStripped)) {
         alert('Invalid B2 bucket name: "' + b2Bucket + '"\n\nAllowed characters:\nletters, numbers, - . _');
         return false;
       }
@@ -2143,7 +2144,7 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
       .catch(() => { document.getElementById('last-run-log').textContent = 'Error loading flash backup log'; });
   }
   loadLastRunLog();
-  setInterval(loadLastRunLog, 5000);
+  setInterval(loadLastRunLog, 1000);
 
   // === Clear Log Button ===
   const clearLastRunBtn = document.getElementById("clear-last-run-log");
