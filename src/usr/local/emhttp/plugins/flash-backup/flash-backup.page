@@ -1682,7 +1682,7 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
         <label class="minimal-backup-label flash-backuptip"
           title="Enable to have the remote backup only include the config and extra folders, and the syslinux.cfg file">
           <input type="checkbox" id="minimal_backup_remote" name="MINIMAL_BACKUP_REMOTE" value="yes" <?php echo
-            (($settings['MINIMAL_BACKUP_REMOTE'] ?? 'no' )==='yes' ) ? 'checked' : '' ; ?>>
+            (($remotesettings['MINIMAL_BACKUP_REMOTE'] ?? 'no' )==='yes' ) ? 'checked' : '' ; ?>>
           Minimal Backup
         </label>
       </div>
