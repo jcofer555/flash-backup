@@ -4,12 +4,13 @@ header('Content-Type: application/json');
 $cmd = '/usr/local/emhttp/plugins/flash-backup/helpers/save_settings.sh';
 
 // --- Grab raw values ---
-$minimal_backup      = $_GET['MINIMAL_BACKUP'] ?? '';
-$backup_destination = $_GET['BACKUP_DESTINATION'] ?? '';
-$backups_to_keep    = $_GET['BACKUPS_TO_KEEP'] ?? '';
-$backup_owner       = $_GET['BACKUP_OWNER'] ?? '';
-$dry_run            = $_GET['DRY_RUN'] ?? '';
-$notifications      = $_GET['NOTIFICATIONS'] ?? '';
+$minimal_backup          = $_GET['MINIMAL_BACKUP'] ?? '';
+$backup_destination      = $_GET['BACKUP_DESTINATION'] ?? '';
+$backups_to_keep         = $_GET['BACKUPS_TO_KEEP'] ?? '';
+$backup_owner            = $_GET['BACKUP_OWNER'] ?? '';
+$dry_run                 = $_GET['DRY_RUN'] ?? '';
+$notifications           = $_GET['NOTIFICATIONS'] ?? '';
+$discord_webhook_url     = $_GET['DISCORD_WEBHOOK_URL'] ?? '';
 
 // --- Build args array ---
 $args = [
@@ -19,6 +20,7 @@ $args = [
     $backup_owner,
     $dry_run,
     $notifications,
+    $discord_webhook_url,
 ];
 
 // Escape each argument for safety

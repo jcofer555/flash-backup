@@ -15,7 +15,8 @@ $defaults = [
     'BACKUPS_TO_KEEP' => '0',
     'BACKUP_OWNER' => 'nobody',
     'DRY_RUN' => 'no',
-    'NOTIFICATIONS' => 'no'
+    'NOTIFICATIONS' => 'no',
+    'DISCORD_WEBHOOK_URL' => ''
 ];
 
 // Load existing config if present
@@ -50,7 +51,8 @@ $remoteDefaults = [
     'REMOTE_PATH_IN_CONFIG' => '/Flash_Backups',
     'BACKUPS_TO_KEEP_REMOTE' => '0',
     'DRY_RUN_REMOTE' => 'no',
-    'NOTIFICATIONS_REMOTE' => 'no'
+    'NOTIFICATIONS_REMOTE' => 'no',
+    'DISCORD_WEBHOOK_URL_REMOTE' => ''
 ];
 
 // Load existing remote config if present
@@ -854,6 +856,26 @@ if (is_file($plg)) {
         </span>
       </div>
 
+      <!-- DISCORD WEBHOOK URL -->
+      <div class="form-pair" id="discord-webhook-row" style="display:none;">
+        <label for="discord_webhook_url">
+          <span class="flash-backuptip"
+            title="Optional: Enter your Discord webhook URL to send notifications to Discord instead of Unraid">
+            Discord Webhook URL:
+          </span>
+        </label>
+        <div class="input-wrapper">
+          <span class="flash-backuptip"
+            title="Optional: Enter your Discord webhook URL to send notifications to Discord instead of Unraid">
+            <input type="text" id="discord_webhook_url" name="DISCORD_WEBHOOK_URL" class="short-input"
+              placeholder="https://discord.com/api/webhooks/..."
+              value="<?php echo htmlspecialchars($settings['DISCORD_WEBHOOK_URL'] ?? ''); ?>">
+          </span>
+          <div id="discord-webhook-error" style="color:yellow; font-size:1.00em; display:none;">* Must start with
+            https://discord.com/api/webhooks/</div>
+        </div>
+      </div>
+
       <!-- Scheduling Selection -->
       <div class="form-pair" id="cron-expression-row">
         <label for="cron_mode">
@@ -1283,11 +1305,13 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
       <!-- PATH IN CONFIG REMOTE -->
       <div class="form-pair">
         <label>
-          <span class="flash-backuptip" title="Optional path inside the remote where backups will be stored">
-            Path In Config:
+          <span class="flash-backuptip"
+            title="Optional: subfolder where backups will be stored. If left empty /Flash_Backups/ will be used">
+            Folder:
           </span>
         </label>
-        <span class="flash-backuptip" title="Optional path inside the remote where backups will be stored">
+        <span class="flash-backuptip"
+          title="Optional: subfolder where backups will be stored. If left empty /Flash_Backups/ will be used">
           <input type="text" name="REMOTE_PATH_IN_CONFIG" id="remote_path_in_config" placeholder="/folder/subfolder"
             value="<?= htmlspecialchars($remotesettings['REMOTE_PATH_IN_CONFIG'] ?? '') ?>">
         </span>
@@ -1360,6 +1384,25 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
             </option>
           </select>
         </span>
+      </div>
+
+      <!-- DISCORD WEBHOOK URL REMOTE -->
+      <div class="form-pair" id="discord-webhook-row-remote" style="display:none;">
+        <label for="discord_webhook_url_remote">
+          <span class="flash-backuptip"
+            title="Optional: Enter your Discord webhook URL to send notifications to Discord instead of Unraid">
+            Discord Webhook URL:
+          </span>
+        </label>
+        <div class="input-wrapper">
+          <span class="flash-backuptip"
+            title="Optional: Enter your Discord webhook URL to send notifications to Discord instead of Unraid">
+            <input type="text" id="discord_webhook_url_remote" name="DISCORD_WEBHOOK_URL_REMOTE" class="short-input"
+              placeholder="https://discord.com/api/webhooks/..."
+              value="<?php echo htmlspecialchars($remotesettings['DISCORD_WEBHOOK_URL_REMOTE'] ?? ''); ?>">
+          </span>
+          <div id="discord-webhook-error-remote" style="color:yellow; font-size:1.00em; display:none;">* Must start with https://discord.com/api/webhooks/</div>
+        </div>
       </div>
 
       <!-- Scheduling Selection -->
@@ -1771,6 +1814,53 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
     }
   });
 
+  function validateDiscordWebhook() {
+    const val = $('#discord_webhook_url').val().trim();
+    if (val !== '' && !val.startsWith('https://discord.com/api/webhooks/')) {
+      $('#discord-webhook-error').show();
+      return false;
+    }
+    $('#discord-webhook-error').hide();
+    return true;
+  }
+
+  // Show/hide webhook field based on NOTIFICATIONS
+  function toggleDiscordWebhookRow() {
+    if ($('#notifications').val() === 'yes') {
+      $('#discord-webhook-row').show();
+    } else {
+      $('#discord-webhook-row').hide();
+    }
+  }
+
+  $('#notifications').on('change', toggleDiscordWebhookRow);
+  toggleDiscordWebhookRow();
+
+  $('#discord_webhook_url').on('input', validateDiscordWebhook);
+
+  function validateDiscordWebhookRemote() {
+    const val = $('#discord_webhook_url_remote').val().trim();
+    if (val !== '' && !val.startsWith('https://discord.com/api/webhooks/')) {
+      $('#discord-webhook-error-remote').show();
+      return false;
+    }
+    $('#discord-webhook-error-remote').hide();
+    return true;
+  }
+
+  function toggleDiscordWebhookRowRemote() {
+    if ($('#notifications_remote').val() === 'yes') {
+      $('#discord-webhook-row-remote').show();
+    } else {
+      $('#discord-webhook-row-remote').hide();
+    }
+  }
+
+  $('#notifications_remote').on('change', toggleDiscordWebhookRowRemote);
+  toggleDiscordWebhookRowRemote();
+
+  $('#discord_webhook_url_remote').on('input', validateDiscordWebhookRemote);
+
   let scheduleUILocked = false;
   let rebuildToken = 0;
 
@@ -1779,6 +1869,11 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
 
     if (!dest) {
       alert("Please select a backup destination for the schedule");
+      return false;
+    }
+
+    if (!validateDiscordWebhook()) {
+      alert("Please enter a valid Discord webhook URL or leave it blank");
       return false;
     }
 
@@ -1876,6 +1971,11 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
         alert('Invalid B2 bucket name: "' + b2Bucket + '"\n\nAllowed characters:\nletters, numbers, - . _');
         return false;
       }
+    }
+
+if (!validateDiscordWebhookRemote()) {
+      alert("Please enter a valid Discord webhook URL or leave it blank");
+      return false;
     }
 
     return true;
@@ -2484,6 +2584,11 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
       return;
     }
 
+    if (!validateDiscordWebhook()) {
+      alert("Please enter a valid Discord webhook URL or leave it blank");
+      return;
+    }
+
     const destClass = backupclassifyPath(dest);
 
     backupRequestInProgress = true;
@@ -2497,6 +2602,7 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
       BACKUP_OWNER: $('#backup_owner').val(),
       DRY_RUN: $('#dry_run').val(),
       NOTIFICATIONS: $('#notifications').val(),
+      DISCORD_WEBHOOK_URL: $('#discord_webhook_url').val().trim(),
       csrf_token: csrfToken
     });
 
@@ -2617,17 +2723,23 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
       }
     }
 
+if (!validateDiscordWebhookRemote()) {
+      alert("Please enter a valid Discord webhook URL or leave it blank");
+      return;
+    }
+
     backupRequestInProgressRemote = true;
     let finalPath = remotePath === '' ? '/Flash_Backups/' : remotePath;
     const b2Bucket = $('#b2_bucket_name').val().trim();
 
-    const params = $.param({
+const params = $.param({
       MINIMAL_BACKUP_REMOTE: $('#minimal_backup_remote').is(':checked') ? 'yes' : 'no',
       RCLONE_CONFIG_REMOTE: selectedRemotes,
       B2_BUCKET_NAME: b2Bucket,
       BACKUPS_TO_KEEP_REMOTE: $('#backups_to_keep_remote').val(),
       DRY_RUN_REMOTE: $('#dry_run_remote').val(),
       NOTIFICATIONS_REMOTE: $('#notifications_remote').val(),
+      DISCORD_WEBHOOK_URL_REMOTE: $('#discord_webhook_url_remote').val().trim(),
       REMOTE_PATH_IN_CONFIG: finalPath,
       csrf_token: csrfToken
     });

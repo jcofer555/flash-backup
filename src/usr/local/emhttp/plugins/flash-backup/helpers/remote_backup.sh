@@ -22,6 +22,7 @@ BACKUPS_TO_KEEP_REMOTE="${BACKUPS_TO_KEEP_REMOTE//\"/}"
 NOTIFICATIONS_REMOTE="${NOTIFICATIONS_REMOTE//\"/}"
 REMOTE_PATH_IN_CONFIG="${REMOTE_PATH_IN_CONFIG//\"/}"
 B2_BUCKET_NAME="${B2_BUCKET_NAME//\"/}"
+DISCORD_WEBHOOK_URL_REMOTE="${DISCORD_WEBHOOK_URL_REMOTE//\"/}"
 
 SCRIPT_START_EPOCH=$(date +%s)
 
@@ -164,23 +165,35 @@ set_status "Starting remote backup"
 # ----------------------------
 # Notification helper
 # ----------------------------
-notify_unraid_remote() {
+notify_remote() {
   local level="$1"
   local subject="$2"
   local message="$3"
 
   [[ "$NOTIFICATIONS_REMOTE" != "yes" ]] && return 0
 
-  if [[ -x /usr/local/emhttp/webGui/scripts/notify ]]; then
-    /usr/local/emhttp/webGui/scripts/notify \
-      -e "Flash Backup (Remote)" \
-      -s "$subject" \
-      -d "$message" \
-      -i "$level"
+  if [[ -n "$DISCORD_WEBHOOK_URL_REMOTE" ]]; then
+    local color
+    case "$level" in
+      alert)   color=15158332 ;;  # red
+      warning) color=16776960 ;;  # yellow
+      *)       color=3066993  ;;  # green
+    esac
+    curl -sf -X POST "$DISCORD_WEBHOOK_URL_REMOTE" \
+      -H "Content-Type: application/json" \
+      -d "{\"embeds\":[{\"title\":\"$subject\",\"description\":\"$message\",\"color\":$color}]}" || true
+  else
+    if [[ -x /usr/local/emhttp/webGui/scripts/notify ]]; then
+      /usr/local/emhttp/webGui/scripts/notify \
+        -e "Flash Backup (Remote)" \
+        -s "$subject" \
+        -d "$message" \
+        -i "$level"
+    fi
   fi
 }
 
-notify_unraid_remote "normal" "Flash Backup" "Remote backup started"
+notify_remote "normal" "Flash Backup" "Remote backup started"
 
 sleep 5
 
@@ -201,8 +214,13 @@ cleanup() {
     echo "Backup duration: $SCRIPT_DURATION_HUMAN"
     echo "Remote backup session finished - $(date '+%Y-%m-%d %H:%M:%S')"
 
-    notify_unraid_remote "normal" "Flash Backup" \
-      "Remote backup finished - Duration: $SCRIPT_DURATION_HUMAN"
+    if (( failure_count > 0 )); then
+      notify_remote "warning" "Flash Backup" \
+        "Remote backup finished with errors - Duration: $SCRIPT_DURATION_HUMAN - Check logs for details"
+    else
+      notify_remote "normal" "Flash Backup" \
+        "Remote backup finished - Duration: $SCRIPT_DURATION_HUMAN"
+    fi
 
     rm -f "$STATUS_FILE"
 }
@@ -215,12 +233,14 @@ trap cleanup EXIT SIGTERM SIGINT SIGHUP SIGQUIT
 if [[ -z "$RCLONE_CONFIG_REMOTE" ]]; then
   echo "[ERROR] No rclone remotes selected"
   set_status "No rclone remotes selected"
+  notify_remote "alert" "Flash Backup Error" "No rclone remotes selected"
   exit 1
 fi
 
 if ! [[ "$BACKUPS_TO_KEEP_REMOTE" =~ ^[0-9]+$ ]]; then
   echo "[ERROR] Backups to keep is not numeric: $BACKUPS_TO_KEEP_REMOTE"
   set_status "Backups to keep invalid"
+  notify_remote "alert" "Flash Backup Error" "Backups to keep is not numeric: $BACKUPS_TO_KEEP_REMOTE"
   exit 1
 fi
 
@@ -228,6 +248,7 @@ IFS=',' read -r -a REMOTE_ARRAY <<< "$RCLONE_CONFIG_REMOTE"
 
 if (( ${#REMOTE_ARRAY[@]} == 0 )); then
   echo "[ERROR] No valid rclone remotes"
+  notify_remote "alert" "Flash Backup Error" "No valid rclone remotes"
   exit 1
 fi
 
@@ -241,6 +262,7 @@ if [[ -n "$REMOTE_PATH_IN_CONFIG" ]]; then
         if ! [[ "$p" =~ ^[A-Za-z0-9._+\-@[:space:]]+$ ]]; then
             echo "[ERROR] Invalid folder name $p"
             set_status "Invalid folder name"
+            notify_remote "alert" "Flash Backup Error" "Invalid folder name: $p"
             exit 1
         fi
     done
@@ -270,6 +292,7 @@ if [[ "$MINIMAL_BACKUP_REMOTE" == "yes" ]]; then
   (( ${#TAR_PATHS[@]} == 0 )) && {
     echo "[ERROR] No valid paths found"
     set_status "No valid paths found"
+    notify_remote "alert" "Flash Backup Error" "No valid paths found for minimal backup"
     exit 1
   }
 else
@@ -290,17 +313,20 @@ else
   if [[ "${TAR_PATHS[0]}" == "boot" ]]; then
     tar czf "$tmp_backup_file" -C / boot || {
       echo "[ERROR] Failed to create remote backup tar archive"
+      notify_remote "alert" "Flash Backup Error" "Failed to create backup tar archive"
       exit 1
     }
   else
     tar czf "$tmp_backup_file" -C / "${TAR_PATHS[@]}" || {
       echo "[ERROR] Failed to create remote backup tar archive"
+      notify_remote "alert" "Flash Backup Error" "Failed to create backup tar archive"
       exit 1
     }
   fi
 
   tar -tf "$tmp_backup_file" >/dev/null 2>&1 || {
     echo "[ERROR] Remote backup integrity check failed"
+    notify_remote "alert" "Flash Backup Error" "Backup integrity check failed"
     exit 1
   }
 

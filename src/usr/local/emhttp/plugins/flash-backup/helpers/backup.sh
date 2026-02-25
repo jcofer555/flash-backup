@@ -20,6 +20,7 @@ BACKUP_OWNER="${BACKUP_OWNER//\"/}"
 DRY_RUN="${DRY_RUN//\"/}"
 MINIMAL_BACKUP="${MINIMAL_BACKUP//\"/}"
 NOTIFICATIONS="${NOTIFICATIONS//\"/}"
+DISCORD_WEBHOOK_URL="${DISCORD_WEBHOOK_URL//\"/}"
 
 SCRIPT_START_EPOCH=$(date +%s)
 
@@ -80,23 +81,35 @@ set_status "Starting local backup"
 # ----------------------------
 # Notification helper
 # ----------------------------
-notify_unraid() {
+notify_local() {
   local level="$1"
   local subject="$2"
   local message="$3"
 
   [[ "$NOTIFICATIONS" != "yes" ]] && return 0
 
-  if [[ -x /usr/local/emhttp/webGui/scripts/notify ]]; then
-    /usr/local/emhttp/webGui/scripts/notify \
-      -e "Flash Backup" \
-      -s "$subject" \
-      -d "$message" \
-      -i "$level"
+  if [[ -n "$DISCORD_WEBHOOK_URL" ]]; then
+    local color
+    case "$level" in
+      alert)   color=15158332 ;;  # red
+      warning) color=16776960 ;;  # yellow
+      *)       color=3066993  ;;  # green
+    esac
+    curl -sf -X POST "$DISCORD_WEBHOOK_URL" \
+      -H "Content-Type: application/json" \
+      -d "{\"embeds\":[{\"title\":\"$subject\",\"description\":\"$message\",\"color\":$color}]}" || true
+  else
+    if [[ -x /usr/local/emhttp/webGui/scripts/notify ]]; then
+      /usr/local/emhttp/webGui/scripts/notify \
+        -e "Flash Backup" \
+        -s "$subject" \
+        -d "$message" \
+        -i "$level"
+    fi
   fi
 }
 
-notify_unraid "normal" "Flash Backup" "Local backup started"
+notify_local "normal" "Flash Backup" "Local backup started"
 
 sleep 5
 
@@ -116,8 +129,13 @@ cleanup() {
     echo "Backup duration: $SCRIPT_DURATION_HUMAN"
     echo "Local backup session finished - $(date '+%Y-%m-%d %H:%M:%S')"
 
-    notify_unraid "normal" "Flash Backup" \
-      "Local backup finished - Duration: $SCRIPT_DURATION_HUMAN"
+    if (( error_count > 0 )); then
+      notify_local "warning" "Flash Backup" \
+        "Local backup finished with errors - Duration: $SCRIPT_DURATION_HUMAN - Check logs for details"
+    else
+      notify_local "normal" "Flash Backup" \
+        "Local backup finished - Duration: $SCRIPT_DURATION_HUMAN"
+    fi
 
     rm -f "$STATUS_FILE"
 }
@@ -127,15 +145,19 @@ trap cleanup EXIT SIGTERM SIGINT SIGHUP SIGQUIT
 # ----------------------------
 # Validation
 # ----------------------------
+error_count=0
+
 if [[ -z "$BACKUP_DESTINATION" ]]; then
   echo "[ERROR] Backup destination is empty"
   set_status "Backup destination empty"
+  notify_local "alert" "Flash Backup Error" "Backup destination is empty"
   exit 1
 fi
 
 if ! [[ "$BACKUPS_TO_KEEP" =~ ^[0-9]+$ ]]; then
   echo "[ERROR] Backups to keep is not numeric: $BACKUPS_TO_KEEP"
   set_status "Backups to keep invalid"
+  notify_local "alert" "Flash Backup Error" "Backups to keep is not numeric: $BACKUPS_TO_KEEP"
   exit 1
 fi
 
@@ -144,6 +166,7 @@ IFS=',' read -r -a DEST_ARRAY <<< "$BACKUP_DESTINATION"
 
 if (( ${#DEST_ARRAY[@]} == 0 )); then
   echo "[ERROR] No valid backup destinations"
+  notify_local "alert" "Flash Backup Error" "No valid backup destinations"
   exit 1
 fi
 
@@ -160,6 +183,7 @@ if [[ "$MINIMAL_BACKUP" == "yes" ]]; then
   (( ${#TAR_PATHS[@]} == 0 )) && {
     echo "[ERROR] No valid paths found"
     set_status "No valid paths found"
+    notify_local "alert" "Flash Backup Error" "No valid paths found for minimal backup"
     exit 1
   }
 else
@@ -192,6 +216,7 @@ for DEST in "${DEST_ARRAY[@]}"; do
       else
         mkdir -p "$DEST" || {
           echo "[ERROR] Failed to create backup destination -> $DEST"
+          notify_local "alert" "Flash Backup Error" "Failed to create backup destination: $DEST"
           exit 1
         }
       fi
@@ -212,11 +237,13 @@ for DEST in "${DEST_ARRAY[@]}"; do
       if [[ "${TAR_PATHS[0]}" == "boot" ]]; then
         tar czf "$tmp_backup_file" -C / boot || {
           echo "[ERROR] Failed to create backup"
+          notify_local "alert" "Flash Backup Error" "Failed to create backup tar archive"
           exit 1
         }
       else
         tar czf "$tmp_backup_file" -C / "${TAR_PATHS[@]}" || {
           echo "[ERROR] Failed to create backup"
+          notify_local "alert" "Flash Backup Error" "Failed to create backup tar archive"
           exit 1
         }
       fi
@@ -228,6 +255,7 @@ for DEST in "${DEST_ARRAY[@]}"; do
     else
       tar -tf "$tmp_backup_file" >/dev/null 2>&1 || {
         echo "[ERROR] Backup integrity check failed"
+        notify_local "alert" "Flash Backup Error" "Backup integrity check failed"
         exit 1
       }
       mv "$tmp_backup_file" "$backup_file"

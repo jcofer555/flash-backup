@@ -13,6 +13,7 @@ REMOTE_PATH_IN_CONFIG="${4:-0}"
 BACKUPS_TO_KEEP_REMOTE="${5:-0}"
 DRY_RUN_REMOTE="${6:-no}"
 NOTIFICATIONS_REMOTE="${7:-no}"
+DISCORD_WEBHOOK_URL_REMOTE="${8:-}"
 
 # ==========================================================
 #  Write all settings
@@ -25,6 +26,7 @@ NOTIFICATIONS_REMOTE="${7:-no}"
   echo "BACKUPS_TO_KEEP_REMOTE=\"$BACKUPS_TO_KEEP_REMOTE\""
   echo "DRY_RUN_REMOTE=\"$DRY_RUN_REMOTE\""
   echo "NOTIFICATIONS_REMOTE=\"$NOTIFICATIONS_REMOTE\""
+  echo "DISCORD_WEBHOOK_URL_REMOTE=\"$DISCORD_WEBHOOK_URL_REMOTE\""
 } > "$TMP"
 
 mv "$TMP" "$CONFIG"
