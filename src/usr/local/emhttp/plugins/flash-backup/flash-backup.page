@@ -863,18 +863,18 @@ if (is_file($plg)) {
       <div class="form-pair" id="discord-webhook-row" style="display:none;">
         <label for="discord_webhook_url">
           <span class="flash-backuptip"
-            title="Optional: Enter a webhook URL (Discord, Slack, Teams, Gotify, or Ntfy) to send notifications instead of Unraid">
+            title="Optional: Enter a webhook URL (Discord, Slack, Teams, Gotify, pushover, or Ntfy) to send notifications instead of Unraid">
             Webhook URL:
           </span>
         </label>
         <div class="input-wrapper">
           <span class="flash-backuptip"
-            title="Optional: Enter a webhook URL (Discord, Slack, Teams, Gotify, or Ntfy) to send notifications instead of Unraid">
+            title="Optional: Enter a webhook URL (Discord, Slack, Teams, Gotify, pushover, or Ntfy) to send notifications instead of Unraid">
             <input type="text" id="discord_webhook_url" name="DISCORD_WEBHOOK_URL" class="short-input"
               placeholder="Webhook URL" value="<?php echo htmlspecialchars($settings['DISCORD_WEBHOOK_URL'] ?? ''); ?>">
           </span>
           <div id="discord-webhook-error" style="color:yellow; font-size:1.00em; display:none;">* Must be a valid
-            webhook URL (Discord, Slack, Teams, Gotify, or Ntfy)</div>
+            webhook URL (Discord, Slack, Teams, Gotify, pushover, or Ntfy)</div>
         </div>
       </div>
 
@@ -1410,19 +1410,19 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
       <div class="form-pair" id="discord-webhook-row-remote" style="display:none;">
         <label for="discord_webhook_url_remote">
           <span class="flash-backuptip"
-            title="Optional: Enter a webhook URL (Discord, Slack, Teams, Gotify, or Ntfy) to send notifications instead of Unraid">
+            title="Optional: Enter a webhook URL (Discord, Slack, Teams, Gotify, pushover, or Ntfy) to send notifications instead of Unraid">
             Webhook URL:
           </span>
         </label>
         <div class="input-wrapper">
           <span class="flash-backuptip"
-            title="Optional: Enter a webhook URL (Discord, Slack, Teams, Gotify, or Ntfy) to send notifications instead of Unraid">
+            title="Optional: Enter a webhook URL (Discord, Slack, Teams, Gotify, pushover, or Ntfy) to send notifications instead of Unraid">
             <input type="text" id="discord_webhook_url_remote" name="DISCORD_WEBHOOK_URL_REMOTE" class="short-input"
               placeholder="Webhook URL"
               value="<?php echo htmlspecialchars($remotesettings['DISCORD_WEBHOOK_URL_REMOTE'] ?? ''); ?>">
           </span>
           <div id="discord-webhook-error-remote" style="color:yellow; font-size:1.00em; display:none;">* Must be a valid
-            webhook URL (Discord, Slack, Teams, Gotify, or Ntfy)</div>
+            webhook URL (Discord, Slack, Teams, Gotify, pushover, or Ntfy)</div>
         </div>
       </div>
 
