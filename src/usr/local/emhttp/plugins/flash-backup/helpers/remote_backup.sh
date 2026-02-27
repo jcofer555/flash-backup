@@ -175,13 +175,45 @@ notify_remote() {
   if [[ -n "$DISCORD_WEBHOOK_URL_REMOTE" ]]; then
     local color
     case "$level" in
-      alert)   color=15158332 ;;  # red
-      warning) color=16776960 ;;  # yellow
-      *)       color=3066993  ;;  # green
+      alert)   color=15158332 ;;
+      warning) color=16776960 ;;
+      *)       color=3066993  ;;
     esac
-    curl -sf -X POST "$DISCORD_WEBHOOK_URL_REMOTE" \
-      -H "Content-Type: application/json" \
-      -d "{\"embeds\":[{\"title\":\"$subject\",\"description\":\"$message\",\"color\":$color}]}" || true
+
+    if [[ "$DISCORD_WEBHOOK_URL_REMOTE" == *"discord.com/api/webhooks"* ]]; then
+      curl -sf -X POST "$DISCORD_WEBHOOK_URL_REMOTE" \
+        -H "Content-Type: application/json" \
+        -d "{\"embeds\":[{\"title\":\"$subject\",\"description\":\"$message\",\"color\":$color}]}" || true
+
+    elif [[ "$DISCORD_WEBHOOK_URL_REMOTE" == *"hooks.slack.com"* ]]; then
+      curl -sf -X POST "$DISCORD_WEBHOOK_URL_REMOTE" \
+        -H "Content-Type: application/json" \
+        -d "{\"text\":\"*$subject*\n$message\"}" || true
+
+    elif [[ "$DISCORD_WEBHOOK_URL_REMOTE" == *"outlook.office.com/webhook"* ]]; then
+      curl -sf -X POST "$DISCORD_WEBHOOK_URL_REMOTE" \
+        -H "Content-Type: application/json" \
+        -d "{\"title\":\"$subject\",\"text\":\"$message\"}" || true
+
+    elif [[ "$DISCORD_WEBHOOK_URL_REMOTE" == *"/message"* ]]; then
+      curl -sf -X POST "$DISCORD_WEBHOOK_URL_REMOTE" \
+        -H "Content-Type: application/json" \
+        -d "{\"title\":\"$subject\",\"message\":\"$message\",\"priority\":5}" > /dev/null || true
+
+    elif [[ "$DISCORD_WEBHOOK_URL_REMOTE" == *"ntfy.sh"* || "$DISCORD_WEBHOOK_URL_REMOTE" == *"/ntfy/"* ]]; then
+      curl -sf -X POST "$DISCORD_WEBHOOK_URL_REMOTE" \
+        -H "Title: $subject" \
+        -d "$message" > /dev/null || true
+
+    elif [[ "$DISCORD_WEBHOOK_URL_REMOTE" == *"api.pushover.net"* ]]; then
+    local token="${DISCORD_WEBHOOK_URL_REMOTE##*/}"
+    curl -sf -X POST "https://api.pushover.net/1/messages.json" \
+        -d "token=${token}" \
+        -d "user=${PUSHOVER_USER_KEY_REMOTE}" \
+        -d "title=${title}" \
+        -d "message=${message}" > /dev/null || true
+
+    fi
   else
     if [[ -x /usr/local/emhttp/webGui/scripts/notify ]]; then
       /usr/local/emhttp/webGui/scripts/notify \

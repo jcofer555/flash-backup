@@ -12,6 +12,7 @@ $backups_to_keep_remote      = $_GET['BACKUPS_TO_KEEP_REMOTE'] ?? '';
 $dry_run_remote              = $_GET['DRY_RUN_REMOTE'] ?? '';
 $notifications_remote        = $_GET['NOTIFICATIONS_REMOTE'] ?? '';
 $discord_webhook_url_remote  = $_GET['DISCORD_WEBHOOK_URL_REMOTE'] ?? '';
+$pushover_user_key_remote    = $_GET['PUSHOVER_USER_KEY_REMOTE'] ?? '';
 
 // --- Normalize remote path in config ---
 $remote_path_in_config = trim($remote_path_in_config);
@@ -64,6 +65,7 @@ $args = [
     $dry_run_remote,
     $notifications_remote,
     $discord_webhook_url_remote,
+    $pushover_user_key_remote,
 ];
 
 // Escape each argument for safety

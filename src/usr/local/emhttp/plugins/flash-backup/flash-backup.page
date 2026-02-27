@@ -16,7 +16,8 @@ $defaults = [
     'BACKUP_OWNER' => 'nobody',
     'DRY_RUN' => 'no',
     'NOTIFICATIONS' => 'no',
-    'DISCORD_WEBHOOK_URL' => ''
+    'DISCORD_WEBHOOK_URL' => '',
+    'PUSHOVER_USER_KEY' => ''
 ];
 
 // Load existing config if present
@@ -52,7 +53,8 @@ $remoteDefaults = [
     'BACKUPS_TO_KEEP_REMOTE' => '0',
     'DRY_RUN_REMOTE' => 'no',
     'NOTIFICATIONS_REMOTE' => 'no',
-    'DISCORD_WEBHOOK_URL_REMOTE' => ''
+    'DISCORD_WEBHOOK_URL_REMOTE' => '',
+    'PUSHOVER_USER_KEY_REMOTE' => ''
 ];
 
 // Load existing remote config if present
@@ -610,6 +612,7 @@ if (file_exists("/etc/unraid-version")) {
     color: yellow;
   }
 
+  #logtoast,
   #popupMessageremote,
   #popupMessage {
     display: none;
@@ -860,19 +863,36 @@ if (is_file($plg)) {
       <div class="form-pair" id="discord-webhook-row" style="display:none;">
         <label for="discord_webhook_url">
           <span class="flash-backuptip"
-            title="Optional: Enter your Discord webhook URL to send notifications to Discord instead of Unraid">
-            Discord Webhook URL:
+            title="Optional: Enter a webhook URL (Discord, Slack, Teams, Gotify, or Ntfy) to send notifications instead of Unraid">
+            Webhook URL:
           </span>
         </label>
         <div class="input-wrapper">
           <span class="flash-backuptip"
-            title="Optional: Enter your Discord webhook URL to send notifications to Discord instead of Unraid">
+            title="Optional: Enter a webhook URL (Discord, Slack, Teams, Gotify, or Ntfy) to send notifications instead of Unraid">
             <input type="text" id="discord_webhook_url" name="DISCORD_WEBHOOK_URL" class="short-input"
-              placeholder="https://discord.com/api/webhooks/..."
-              value="<?php echo htmlspecialchars($settings['DISCORD_WEBHOOK_URL'] ?? ''); ?>">
+              placeholder="Webhook URL" value="<?php echo htmlspecialchars($settings['DISCORD_WEBHOOK_URL'] ?? ''); ?>">
           </span>
-          <div id="discord-webhook-error" style="color:yellow; font-size:1.00em; display:none;">* Must start with
-            https://discord.com/api/webhooks/</div>
+          <div id="discord-webhook-error" style="color:yellow; font-size:1.00em; display:none;">* Must be a valid
+            webhook URL (Discord, Slack, Teams, Gotify, or Ntfy)</div>
+        </div>
+      </div>
+
+      <!-- PUSHOVER USER KEY -->
+      <div class="form-pair" id="pushover-user-key-row" style="display:none;">
+        <label for="pushover_user_key">
+          <span class="flash-backuptip" title="Your Pushover user key from pushover.net/dashboard">
+            Pushover User Key:
+          </span>
+        </label>
+        <div class="input-wrapper">
+          <span class="flash-backuptip" title="Your Pushover user key from pushover.net/dashboard">
+            <input type="text" id="pushover_user_key" name="PUSHOVER_USER_KEY" class="short-input"
+              placeholder="user key from pushover.net"
+              value="<?php echo htmlspecialchars($settings['PUSHOVER_USER_KEY'] ?? ''); ?>">
+          </span>
+          <div id="pushover-user-key-error" style="color:yellow; font-size:1.00em; display:none;">* Pushover user key is
+            required</div>
         </div>
       </div>
 
@@ -1390,18 +1410,37 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
       <div class="form-pair" id="discord-webhook-row-remote" style="display:none;">
         <label for="discord_webhook_url_remote">
           <span class="flash-backuptip"
-            title="Optional: Enter your Discord webhook URL to send notifications to Discord instead of Unraid">
-            Discord Webhook URL:
+            title="Optional: Enter a webhook URL (Discord, Slack, Teams, Gotify, or Ntfy) to send notifications instead of Unraid">
+            Webhook URL:
           </span>
         </label>
         <div class="input-wrapper">
           <span class="flash-backuptip"
-            title="Optional: Enter your Discord webhook URL to send notifications to Discord instead of Unraid">
+            title="Optional: Enter a webhook URL (Discord, Slack, Teams, Gotify, or Ntfy) to send notifications instead of Unraid">
             <input type="text" id="discord_webhook_url_remote" name="DISCORD_WEBHOOK_URL_REMOTE" class="short-input"
-              placeholder="https://discord.com/api/webhooks/..."
+              placeholder="Webhook URL"
               value="<?php echo htmlspecialchars($remotesettings['DISCORD_WEBHOOK_URL_REMOTE'] ?? ''); ?>">
           </span>
-          <div id="discord-webhook-error-remote" style="color:yellow; font-size:1.00em; display:none;">* Must start with https://discord.com/api/webhooks/</div>
+          <div id="discord-webhook-error-remote" style="color:yellow; font-size:1.00em; display:none;">* Must be a valid
+            webhook URL (Discord, Slack, Teams, Gotify, or Ntfy)</div>
+        </div>
+      </div>
+
+      <!-- PUSHOVER USER KEY REMOTE -->
+      <div class="form-pair" id="pushover-user-key-row-remote" style="display:none;">
+        <label for="pushover_user_key_remote">
+          <span class="flash-backuptip" title="Your Pushover user key from pushover.net/dashboard">
+            Pushover User Key:
+          </span>
+        </label>
+        <div class="input-wrapper">
+          <span class="flash-backuptip" title="Your Pushover user key from pushover.net/dashboard">
+            <input type="text" id="pushover_user_key_remote" name="PUSHOVER_USER_KEY_REMOTE" class="short-input"
+              placeholder="user key from pushover.net"
+              value="<?php echo htmlspecialchars($remotesettings['PUSHOVER_USER_KEY_REMOTE'] ?? ''); ?>">
+          </span>
+          <div id="pushover-user-key-error-remote" style="color:yellow; font-size:1.00em; display:none;">* Pushover user
+            key is required</div>
         </div>
       </div>
 
@@ -1743,6 +1782,7 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
           <button type="button" id="clear-last-run-log">Clear Log</button>
         </span>
 
+        <div id="logtoast">Log copied</div>
         <span title="Copy flash backup log to clipboard" class="flash-backuptip">
           <button type="button" id="copy-last-run-log">Copy</button>
         </span>
@@ -1814,52 +1854,97 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
     }
   });
 
+  document.getElementById('copy-last-run-log').addEventListener('click', () => {
+    const toast = document.getElementById('logtoast');
+    toast.style.display = 'block';
+    setTimeout(() => toast.style.display = 'none', 2000);
+  });
+
+  function isValidWebhookUrl(url) {
+    if (url.startsWith('https://discord.com/api/webhooks/')) return true;
+    if (url.startsWith('https://hooks.slack.com/')) return true;
+    if (url.startsWith('https://outlook.office.com/webhook')) return true;
+    if (url.startsWith('https://api.pushover.net/')) return true;
+    if (url.includes('ntfy.sh')) return true;
+    if (url.includes('/ntfy/')) return true;
+    if (url.includes('/message') && url.startsWith('https://')) return true;
+    return false;
+  }
+
   function validateDiscordWebhook() {
     const val = $('#discord_webhook_url').val().trim();
-    if (val !== '' && !val.startsWith('https://discord.com/api/webhooks/')) {
-      $('#discord-webhook-error').show();
-      return false;
+    const valid = val === '' || isValidWebhookUrl(val);
+    $('#discord-webhook-error').toggle(!valid);
+    togglePushoverUserKeyRow();
+    return valid;
+  }
+
+  function togglePushoverUserKeyRow() {
+    const val = $('#discord_webhook_url').val().trim();
+    if (val.startsWith('https://api.pushover.net/')) {
+      $('#pushover-user-key-row').show();
+    } else {
+      $('#pushover-user-key-row').hide();
+      $('#pushover_user_key').val('');
     }
-    $('#discord-webhook-error').hide();
-    return true;
+  }
+
+  function togglePushoverUserKeyRowRemote() {
+    const val = $('#discord_webhook_url_remote').val().trim();
+    if (val.startsWith('https://api.pushover.net/')) {
+      $('#pushover-user-key-row-remote').show();
+    } else {
+      $('#pushover-user-key-row-remote').hide();
+      $('#pushover_user_key_remote').val('');
+    }
   }
 
   // Show/hide webhook field based on NOTIFICATIONS
   function toggleDiscordWebhookRow() {
     if ($('#notifications').val() === 'yes') {
       $('#discord-webhook-row').show();
+      togglePushoverUserKeyRow();
     } else {
       $('#discord-webhook-row').hide();
+      $('#pushover-user-key-row').hide();
+      $('#pushover_user_key').val('');
+    }
+  }
+
+  function toggleDiscordWebhookRowRemote() {
+    if ($('#notifications_remote').val() === 'yes') {
+      $('#discord-webhook-row-remote').show();
+      togglePushoverUserKeyRowRemote();
+    } else {
+      $('#discord-webhook-row-remote').hide();
+      $('#pushover-user-key-row-remote').hide();
+      $('#pushover_user_key_remote').val('');
     }
   }
 
   $('#notifications').on('change', toggleDiscordWebhookRow);
   toggleDiscordWebhookRow();
 
-  $('#discord_webhook_url').on('input', validateDiscordWebhook);
+  $('#discord_webhook_url').on('input', function () {
+    validateDiscordWebhook();
+    togglePushoverUserKeyRow();
+  });
 
   function validateDiscordWebhookRemote() {
     const val = $('#discord_webhook_url_remote').val().trim();
-    if (val !== '' && !val.startsWith('https://discord.com/api/webhooks/')) {
-      $('#discord-webhook-error-remote').show();
-      return false;
-    }
-    $('#discord-webhook-error-remote').hide();
-    return true;
-  }
-
-  function toggleDiscordWebhookRowRemote() {
-    if ($('#notifications_remote').val() === 'yes') {
-      $('#discord-webhook-row-remote').show();
-    } else {
-      $('#discord-webhook-row-remote').hide();
-    }
+    const valid = val === '' || isValidWebhookUrl(val);
+    $('#discord-webhook-error-remote').toggle(!valid);
+    togglePushoverUserKeyRowRemote();
+    return valid;
   }
 
   $('#notifications_remote').on('change', toggleDiscordWebhookRowRemote);
   toggleDiscordWebhookRowRemote();
 
-  $('#discord_webhook_url_remote').on('input', validateDiscordWebhookRemote);
+  $('#discord_webhook_url_remote').on('input', function () {
+    validateDiscordWebhookRemote();
+    togglePushoverUserKeyRowRemote();
+  });
 
   let scheduleUILocked = false;
   let rebuildToken = 0;
@@ -1875,6 +1960,14 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
     if (!validateDiscordWebhook()) {
       alert("Please enter a valid Discord webhook URL or leave it blank");
       return false;
+    }
+
+    const webhookVal = $('#discord_webhook_url').val().trim();
+    if (webhookVal.startsWith('https://api.pushover.net/')) {
+      if (!$('#pushover_user_key').val().trim()) {
+        alert('Please enter your Pushover user key');
+        return false;
+      }
     }
 
     return true;
@@ -1973,9 +2066,17 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
       }
     }
 
-if (!validateDiscordWebhookRemote()) {
+    if (!validateDiscordWebhookRemote()) {
       alert("Please enter a valid Discord webhook URL or leave it blank");
       return false;
+    }
+
+    const webhookValRemote = $('#discord_webhook_url_remote').val().trim();
+    if (webhookValRemote.startsWith('https://api.pushover.net/')) {
+      if (!$('#pushover_user_key_remote').val().trim()) {
+        alert('Please enter your Pushover user key');
+        return false;
+      }
     }
 
     return true;
@@ -2603,6 +2704,7 @@ if (!validateDiscordWebhookRemote()) {
       DRY_RUN: $('#dry_run').val(),
       NOTIFICATIONS: $('#notifications').val(),
       DISCORD_WEBHOOK_URL: $('#discord_webhook_url').val().trim(),
+      PUSHOVER_USER_KEY: $('#pushover_user_key').val().trim(),
       csrf_token: csrfToken
     });
 
@@ -2723,7 +2825,7 @@ if (!validateDiscordWebhookRemote()) {
       }
     }
 
-if (!validateDiscordWebhookRemote()) {
+    if (!validateDiscordWebhookRemote()) {
       alert("Please enter a valid Discord webhook URL or leave it blank");
       return;
     }
@@ -2732,15 +2834,16 @@ if (!validateDiscordWebhookRemote()) {
     let finalPath = remotePath === '' ? '/Flash_Backups/' : remotePath;
     const b2Bucket = $('#b2_bucket_name').val().trim();
 
-const params = $.param({
+    const params = $.param({
       MINIMAL_BACKUP_REMOTE: $('#minimal_backup_remote').is(':checked') ? 'yes' : 'no',
       RCLONE_CONFIG_REMOTE: selectedRemotes,
+      REMOTE_PATH_IN_CONFIG: finalPath,
       B2_BUCKET_NAME: b2Bucket,
       BACKUPS_TO_KEEP_REMOTE: $('#backups_to_keep_remote').val(),
       DRY_RUN_REMOTE: $('#dry_run_remote').val(),
       NOTIFICATIONS_REMOTE: $('#notifications_remote').val(),
       DISCORD_WEBHOOK_URL_REMOTE: $('#discord_webhook_url_remote').val().trim(),
-      REMOTE_PATH_IN_CONFIG: finalPath,
+      PUSHOVER_USER_KEY_REMOTE: $('#pushover_user_key_remote').val().trim(),
       csrf_token: csrfToken
     });
 
@@ -3997,4 +4100,22 @@ const params = $.param({
     // Poll continuously
     setInterval(pollLock, CHECK_INTERVAL);
   })();
+
+  function debounceButton(btn, delay = 1000) {
+    let cooling = false;
+    btn.addEventListener('click', function () {
+      if (cooling) return;
+      cooling = true;
+      setTimeout(() => cooling = false, delay);
+    });
+  }
+
+  ['backupbtn', 'restorebtn', 'schedule-backup', 'cancelEditBtn', 'clear-last-run-log', 'copy-last-run-log', 'confirmFolderSelection', 'closeFolderPicker',
+    // Flash Backup additions:
+    'backupbtn_remote', 'schedule-local-backup', 'schedule-remote-backup', 'cancelEditBtnremote',
+    'clearSelectedFolders'
+  ].forEach(id => {
+    const btn = document.getElementById(id);
+    if (btn) debounceButton(btn);
+  });
 </script>
