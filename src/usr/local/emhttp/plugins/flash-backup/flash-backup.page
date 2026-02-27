@@ -1831,1851 +1831,1852 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
    ">
         </div>
 
-     <button type="button" id="createFolderBtn">Create Folder</button>
-      <span id="newFolderInputWrap" style="display:none;">
-        <input type="text" id="newFolderName" placeholder="Folder name">
-        <button type="button" id="newFolderOk">OK</button>
-        <button type="button" id="newFolderCancel">Cancel</button>
-      </span>
-      <button type="button" id="confirmFolderSelection">Select</button>
-    </div>
-
+        <button type="button" id="createFolderBtn">Create Folder</button>
+        <span id="newFolderInputWrap" style="display:none;">
+          <input type="text" id="newFolderName" placeholder="Folder name">
+          <button type="button" id="newFolderOk">OK</button>
+          <button type="button" id="newFolderCancel">Cancel</button>
+        </span>
+        <button type="button" id="clearSelectedFolders">Clear Selected</button>
+        <button type="button" id="confirmFolderSelection">Done</button>
       </div>
+
     </div>
+  </div>
 
-    <script>
-      $(document).on('mouseenter', '.flash-backuptip', function () {
-        const $el = $(this);
+  <script>
+    $(document).on('mouseenter', '.flash-backuptip', function () {
+      const $el = $(this);
 
-        if (!$el.hasClass('tooltipstered')) {
-          $el.tooltipster({
-            maxWidth: 300,
-            content: $el.data('tooltip')
-          });
-          $el.removeAttr('title');
+      if (!$el.hasClass('tooltipstered')) {
+        $el.tooltipster({
+          maxWidth: 300,
+          content: $el.data('tooltip')
+        });
+        $el.removeAttr('title');
 
-          setTimeout(() => {
-            if ($el.is(':hover')) {
-              $el.tooltipster('open');
-            }
-          }, 500);
-        }
-      });
+        setTimeout(() => {
+          if ($el.is(':hover')) {
+            $el.tooltipster('open');
+          }
+        }, 500);
+      }
+    });
 
-      document.getElementById('copy-last-run-log').addEventListener('click', () => {
-        const toast = document.getElementById('logtoast');
-        toast.style.display = 'block';
-        setTimeout(() => toast.style.display = 'none', 2000);
-      });
+    document.getElementById('copy-last-run-log').addEventListener('click', () => {
+      const toast = document.getElementById('logtoast');
+      toast.style.display = 'block';
+      setTimeout(() => toast.style.display = 'none', 2000);
+    });
 
-      function isValidWebhookUrl(url) {
-        if (url.startsWith('https://discord.com/api/webhooks/')) return true;
-        if (url.startsWith('https://hooks.slack.com/')) return true;
-        if (url.startsWith('https://outlook.office.com/webhook')) return true;
-        if (url.startsWith('https://api.pushover.net/')) return true;
-        if (url.includes('ntfy.sh')) return true;
-        if (url.includes('/ntfy/')) return true;
-        if (url.includes('/message') && url.startsWith('https://')) return true;
+    function isValidWebhookUrl(url) {
+      if (url.startsWith('https://discord.com/api/webhooks/')) return true;
+      if (url.startsWith('https://hooks.slack.com/')) return true;
+      if (url.startsWith('https://outlook.office.com/webhook')) return true;
+      if (url.startsWith('https://api.pushover.net/')) return true;
+      if (url.includes('ntfy.sh')) return true;
+      if (url.includes('/ntfy/')) return true;
+      if (url.includes('/message') && url.startsWith('https://')) return true;
+      return false;
+    }
+
+    function validateDiscordWebhook() {
+      const val = $('#discord_webhook_url').val().trim();
+      const valid = val === '' || isValidWebhookUrl(val);
+      $('#discord-webhook-error').toggle(!valid);
+      togglePushoverUserKeyRow();
+      return valid;
+    }
+
+    function togglePushoverUserKeyRow() {
+      const val = $('#discord_webhook_url').val().trim();
+      if (val.startsWith('https://api.pushover.net/')) {
+        $('#pushover-user-key-row').show();
+      } else {
+        $('#pushover-user-key-row').hide();
+        $('#pushover_user_key').val('');
+      }
+    }
+
+    function togglePushoverUserKeyRowRemote() {
+      const val = $('#discord_webhook_url_remote').val().trim();
+      if (val.startsWith('https://api.pushover.net/')) {
+        $('#pushover-user-key-row-remote').show();
+      } else {
+        $('#pushover-user-key-row-remote').hide();
+        $('#pushover_user_key_remote').val('');
+      }
+    }
+
+    // Show/hide webhook field based on NOTIFICATIONS
+    function toggleDiscordWebhookRow() {
+      if ($('#notifications').val() === 'yes') {
+        $('#discord-webhook-row').show();
+        togglePushoverUserKeyRow();
+      } else {
+        $('#discord-webhook-row').hide();
+        $('#pushover-user-key-row').hide();
+        $('#pushover_user_key').val('');
+      }
+    }
+
+    function toggleDiscordWebhookRowRemote() {
+      if ($('#notifications_remote').val() === 'yes') {
+        $('#discord-webhook-row-remote').show();
+        togglePushoverUserKeyRowRemote();
+      } else {
+        $('#discord-webhook-row-remote').hide();
+        $('#pushover-user-key-row-remote').hide();
+        $('#pushover_user_key_remote').val('');
+      }
+    }
+
+    $('#notifications').on('change', toggleDiscordWebhookRow);
+    toggleDiscordWebhookRow();
+
+    $('#discord_webhook_url').on('input', function () {
+      validateDiscordWebhook();
+      togglePushoverUserKeyRow();
+    });
+
+    function validateDiscordWebhookRemote() {
+      const val = $('#discord_webhook_url_remote').val().trim();
+      const valid = val === '' || isValidWebhookUrl(val);
+      $('#discord-webhook-error-remote').toggle(!valid);
+      togglePushoverUserKeyRowRemote();
+      return valid;
+    }
+
+    $('#notifications_remote').on('change', toggleDiscordWebhookRowRemote);
+    toggleDiscordWebhookRowRemote();
+
+    $('#discord_webhook_url_remote').on('input', function () {
+      validateDiscordWebhookRemote();
+      togglePushoverUserKeyRowRemote();
+    });
+
+    let scheduleUILocked = false;
+    let rebuildToken = 0;
+
+    function validateBackupPrereqs() {
+      const dest = $('#backup_destination').val()?.trim();
+
+      if (!dest) {
+        alert("Please select a backup destination for the schedule");
         return false;
       }
 
-      function validateDiscordWebhook() {
-        const val = $('#discord_webhook_url').val().trim();
-        const valid = val === '' || isValidWebhookUrl(val);
-        $('#discord-webhook-error').toggle(!valid);
-        togglePushoverUserKeyRow();
-        return valid;
+      if (!validateDiscordWebhook()) {
+        alert("Please enter a valid Discord webhook URL or leave it blank");
+        return false;
       }
 
-      function togglePushoverUserKeyRow() {
-        const val = $('#discord_webhook_url').val().trim();
-        if (val.startsWith('https://api.pushover.net/')) {
-          $('#pushover-user-key-row').show();
-        } else {
-          $('#pushover-user-key-row').hide();
-          $('#pushover_user_key').val('');
-        }
-      }
-
-      function togglePushoverUserKeyRowRemote() {
-        const val = $('#discord_webhook_url_remote').val().trim();
-        if (val.startsWith('https://api.pushover.net/')) {
-          $('#pushover-user-key-row-remote').show();
-        } else {
-          $('#pushover-user-key-row-remote').hide();
-          $('#pushover_user_key_remote').val('');
-        }
-      }
-
-      // Show/hide webhook field based on NOTIFICATIONS
-      function toggleDiscordWebhookRow() {
-        if ($('#notifications').val() === 'yes') {
-          $('#discord-webhook-row').show();
-          togglePushoverUserKeyRow();
-        } else {
-          $('#discord-webhook-row').hide();
-          $('#pushover-user-key-row').hide();
-          $('#pushover_user_key').val('');
-        }
-      }
-
-      function toggleDiscordWebhookRowRemote() {
-        if ($('#notifications_remote').val() === 'yes') {
-          $('#discord-webhook-row-remote').show();
-          togglePushoverUserKeyRowRemote();
-        } else {
-          $('#discord-webhook-row-remote').hide();
-          $('#pushover-user-key-row-remote').hide();
-          $('#pushover_user_key_remote').val('');
-        }
-      }
-
-      $('#notifications').on('change', toggleDiscordWebhookRow);
-      toggleDiscordWebhookRow();
-
-      $('#discord_webhook_url').on('input', function () {
-        validateDiscordWebhook();
-        togglePushoverUserKeyRow();
-      });
-
-      function validateDiscordWebhookRemote() {
-        const val = $('#discord_webhook_url_remote').val().trim();
-        const valid = val === '' || isValidWebhookUrl(val);
-        $('#discord-webhook-error-remote').toggle(!valid);
-        togglePushoverUserKeyRowRemote();
-        return valid;
-      }
-
-      $('#notifications_remote').on('change', toggleDiscordWebhookRowRemote);
-      toggleDiscordWebhookRowRemote();
-
-      $('#discord_webhook_url_remote').on('input', function () {
-        validateDiscordWebhookRemote();
-        togglePushoverUserKeyRowRemote();
-      });
-
-      let scheduleUILocked = false;
-      let rebuildToken = 0;
-
-      function validateBackupPrereqs() {
-        const dest = $('#backup_destination').val()?.trim();
-
-        if (!dest) {
-          alert("Please select a backup destination for the schedule");
+      const webhookVal = $('#discord_webhook_url').val().trim();
+      if (webhookVal.startsWith('https://api.pushover.net/')) {
+        if (!$('#pushover_user_key').val().trim()) {
+          alert('Please enter your Pushover user key');
           return false;
         }
+      }
 
-        if (!validateDiscordWebhook()) {
-          alert("Please enter a valid Discord webhook URL or leave it blank");
-          return false;
-        }
+      return true;
+    }
 
-        const webhookVal = $('#discord_webhook_url').val().trim();
-        if (webhookVal.startsWith('https://api.pushover.net/')) {
-          if (!$('#pushover_user_key').val().trim()) {
-            alert('Please enter your Pushover user key');
+    function lockScheduleUI() {
+      scheduleUILocked = true;
+      $(".schedule-action-btn").prop("disabled", true);
+    }
+
+    function unlockScheduleUI() {
+      scheduleUILocked = false;
+      $(".schedule-action-btn").prop("disabled", false);
+    }
+
+    function showFolderToast(msg) {
+      const t = $('#folderToast');
+      t.stop(true, true);        // cancel any fade timers
+      t.text(msg).fadeIn(150);
+
+      setTimeout(() => {
+        t.fadeOut(400);
+      }, 2000);
+    }
+
+    const remoteTypes = JSON.parse('<?= addslashes(json_encode($remoteTypes)) ?>');
+
+    let scheduleUILockedremote = false;
+    let rebuildTokenremote = 0;
+
+    function updateB2BucketVisibility() {
+      const selected = $('#rclone_config_remote_hidden').val() || [];
+      const anyB2 = selected.some(r => remoteTypes[r] === 'b2' || remoteTypes[r] === 'crypt-b2');
+      if (anyB2) {
+        $('#b2_bucket_row').show();
+      } else {
+        $('#b2_bucket_row').hide();
+        $('#b2_bucket_name').val('');
+      }
+    }
+
+    function validateBackupPrereqsremote() {
+      const cronExprRemote = $('#cron_expression_hidden_remote').val() || '';
+
+      // --- Check that at least one rclone remote is selected ---
+      const selectedRemotes = $('#rclone_config_remote_hidden').val() || [];
+      if (!selectedRemotes.length) {
+        alert('Please select at least one rclone config');
+        return false;
+      }
+
+      // --- Validate Path In Config ---
+      const remotePath = $('#remote_path_in_config').val().trim();
+
+      if (remotePath !== '' && !remotePath.startsWith('/')) {
+        alert('Path In Config must start with a "/" or be left blank to use default /Flash_Backups');
+        return false;
+      }
+
+      if (remotePath !== '' && !remotePath.endsWith('/')) {
+        alert('Path In Config must end with a "/" or be left blank to use default /Flash_Backups');
+        return false;
+      }
+
+      // --- Validate allowed characters for each folder segment ---
+      if (remotePath !== '') {
+        const inner = remotePath.replace(/^\/+|\/+$/g, '');
+        const parts = inner.split('/');
+
+        const validName = /^[A-Za-z0-9._+\-@ ]+$/;
+
+        for (const p of parts) {
+          if (!validName.test(p)) {
+            alert(
+              'Invalid character detected in folder name: "' + p + '"\n\n' +
+              'Allowed characters:\nletters, numbers, space, _ - . + @'
+            );
             return false;
           }
         }
+      }
+
+      // --- Validate B2 Bucket Name if any B2 remote selected ---
+      const anyB2 = selectedRemotes.some(r => remoteTypes[r] === 'b2' || remoteTypes[r] === 'crypt-b2');
+      if (anyB2) {
+        const b2Bucket = $('#b2_bucket_name').val().trim();
+        if (!b2Bucket) {
+          alert('B2 Bucketname is required when a Backblaze B2 config is selected');
+          return false;
+        }
+        const validBucket = /^[A-Za-z0-9._\-]+$/;
+        const b2BucketStripped = b2Bucket.replace(/\/+$/, '');
+        if (!validBucket.test(b2BucketStripped)) {
+          alert('Invalid B2 bucket name: "' + b2Bucket + '"\n\nAllowed characters:\nletters, numbers, - . _');
+          return false;
+        }
+      }
+
+      if (!validateDiscordWebhookRemote()) {
+        alert("Please enter a valid Discord webhook URL or leave it blank");
+        return false;
+      }
+
+      const webhookValRemote = $('#discord_webhook_url_remote').val().trim();
+      if (webhookValRemote.startsWith('https://api.pushover.net/')) {
+        if (!$('#pushover_user_key_remote').val().trim()) {
+          alert('Please enter your Pushover user key');
+          return false;
+        }
+      }
+
+      return true;
+    }
+
+    function lockScheduleUIremote() {
+      scheduleUILockedremote = true;
+      $(".schedule-action-btn-remote").prop("disabled", true);
+    }
+
+    function unlockScheduleUIremote() {
+      scheduleUILockedremote = false;
+      $(".schedule-action-btn-remote").prop("disabled", false);
+    }
+
+    function showFolderToastremote(msg) {
+      const t = $('#folderToastremote');
+      t.stop(true, true);
+      t.text(msg).fadeIn(150);
+
+      setTimeout(() => {
+        t.fadeOut(400);
+      }, 2000);
+    }
+
+    function updateBackupStatus() {
+      fetch('/plugins/flash-backup/helpers/backup_status_check.php')
+        .then(res => res.json())
+        .then(data => {
+          document.getElementById('status-text').textContent = data.status;
+        })
+        .catch(() => {
+          document.getElementById('status-text').textContent = 'Local Backup Not Running';
+        });
+    }
+
+    updateBackupStatus();
+    setInterval(updateBackupStatus, 1000);
+
+    function updateRestoreStatus() {
+      fetch('/plugins/flash-backup/helpers/remote_status_check.php')
+        .then(res => res.json())
+        .then(data => {
+          document.getElementById('status-text-remote').textContent = data.status;
+        })
+        .catch(() => {
+          document.getElementById('status-text-remote').textContent = 'Remote Backup Not Running';
+        });
+    }
+
+    updateRestoreStatus();
+    setInterval(updateRestoreStatus, 1000);
+
+    // --- Scheduling Dropdown Toggle (LOCAL) ---
+    (function waitForSchedulingToggle() {
+      function initSchedulingToggle() {
+        const cronModeSelect = document.getElementById('cron_mode');
+
+        // Option rows
+        const minutesOptions = document.getElementById('minutes-options');
+        const hourlyOptions = document.getElementById('hourly-options');
+        const dailyOptions = document.getElementById('daily-options');
+        const weeklyOptions = document.getElementById('weekly-options');
+        const monthlyOptions = document.getElementById('monthly-options');
+        const customOptions = document.getElementById('custom-options');
+
+        // Inputs
+        const minutesFreq = document.getElementById('minutes_frequency');
+        const hourlyFreq = document.getElementById('hourly_frequency');
+        const dailyTime = document.getElementById('daily_time');
+        const weeklyDay = document.getElementById('weekly_day');
+        const weeklyTime = document.getElementById('weekly_time');
+        const monthlyDay = document.getElementById('monthly_day');
+        const monthlyTime = document.getElementById('monthly_time');
+        const customCron = document.getElementById('custom_cron');
+
+        if (!cronModeSelect) return false;
+
+        // Toggle which sub-options are visible
+        function toggleCronOptions(value) {
+          minutesOptions.style.display = (value === 'minutes') ? 'block' : 'none';
+          hourlyOptions.style.display = (value === 'hourly') ? 'block' : 'none';
+          dailyOptions.style.display = (value === 'daily') ? 'block' : 'none';
+          weeklyOptions.style.display = (value === 'weekly') ? 'block' : 'none';
+          monthlyOptions.style.display = (value === 'monthly') ? 'block' : 'none';
+          customOptions.style.display = (value === 'custom') ? 'block' : 'none';
+          updateCronExpression();
+        }
+
+        // Build cron string from dropdowns
+        function updateCronExpression() {
+          let cronString = "";
+
+          if (cronModeSelect.value === "minutes" && minutesFreq) {
+            const freq = parseInt(minutesFreq.value, 10);
+            cronString = `*/${freq} * * * *`;
+          }
+          else if (cronModeSelect.value === "hourly" && hourlyFreq) {
+            const freq = parseInt(hourlyFreq.value, 10);
+            cronString = `0 */${freq} * * *`;
+          }
+          else if (cronModeSelect.value === "daily" && dailyTime) {
+            const [hour, minute] = dailyTime.value.split(":");
+            cronString = `0 ${parseInt(hour, 10)} * * *`;
+          }
+          else if (cronModeSelect.value === "weekly" && weeklyDay && weeklyTime) {
+            const [hour, minute] = weeklyTime.value.split(":");
+            const dayMap = {
+              Sunday: 0, Monday: 1, Tuesday: 2, Wednesday: 3,
+              Thursday: 4, Friday: 5, Saturday: 6
+            };
+            cronString = `0 ${parseInt(hour, 10)} * * ${dayMap[weeklyDay.value]}`;
+          }
+          else if (cronModeSelect.value === "monthly" && monthlyDay && monthlyTime) {
+            const [hour, minute] = monthlyTime.value.split(":");
+            const day = parseInt(monthlyDay.value, 10);
+            cronString = `0 ${parseInt(hour, 10)} ${day} * *`;
+          }
+          else if (cronModeSelect.value === "custom" && customCron) {
+            cronString = customCron.value.trim();
+          }
+
+          // Store cron string in hidden input
+          let hidden = document.getElementById("cron_expression_hidden");
+          if (!hidden) {
+            hidden = document.createElement("input");
+            hidden.type = "hidden";
+            hidden.id = "cron_expression_hidden";
+            hidden.name = "CRON_EXPRESSION";
+            cronModeSelect.closest(".form-pair").appendChild(hidden);
+          }
+          hidden.value = cronString;
+        }
+
+        // Initialize visibility
+        toggleCronOptions(cronModeSelect.value);
+
+        // Event listeners
+        cronModeSelect.addEventListener('change', (e) => toggleCronOptions(e.target.value));
+        minutesFreq?.addEventListener('change', updateCronExpression);
+        hourlyFreq?.addEventListener('change', updateCronExpression);
+        dailyTime?.addEventListener('change', updateCronExpression);
+        weeklyDay?.addEventListener('change', updateCronExpression);
+        weeklyTime?.addEventListener('change', updateCronExpression);
+        monthlyDay?.addEventListener('change', updateCronExpression);
+        monthlyTime?.addEventListener('change', updateCronExpression);
+        customCron?.addEventListener('input', updateCronExpression);
 
         return true;
       }
 
-      function lockScheduleUI() {
-        scheduleUILocked = true;
-        $(".schedule-action-btn").prop("disabled", true);
+      if (!initSchedulingToggle()) {
+        const observer = new MutationObserver(() => {
+          if (initSchedulingToggle()) observer.disconnect();
+        });
+        observer.observe(document.body, { childList: true, subtree: true });
       }
+    })();
 
-      function unlockScheduleUI() {
-        scheduleUILocked = false;
-        $(".schedule-action-btn").prop("disabled", false);
-      }
+    // --- Scheduling Dropdown Toggle (REMOTE) ---
+    (function waitForSchedulingToggleRemote() {
+      function initSchedulingToggleRemote() {
+        const cronModeSelect = document.getElementById('cron_mode_remote');
 
-      function showFolderToast(msg) {
-        const t = $('#folderToast');
-        t.stop(true, true);        // cancel any fade timers
-        t.text(msg).fadeIn(150);
+        // Option rows
+        const minutesOptions = document.getElementById('minutes-options-remote');
+        const hourlyOptions = document.getElementById('hourly-options-remote');
+        const dailyOptions = document.getElementById('daily-options-remote');
+        const weeklyOptions = document.getElementById('weekly-options-remote');
+        const monthlyOptions = document.getElementById('monthly-options-remote');
+        const customOptions = document.getElementById('custom-options-remote');
 
-        setTimeout(() => {
-          t.fadeOut(400);
-        }, 2000);
-      }
+        // Inputs
+        const minutesFreq = document.getElementById('minutes_frequency_remote');
+        const hourlyFreq = document.getElementById('hourly_frequency_remote');
+        const dailyTime = document.getElementById('daily_time_remote');
+        const weeklyDay = document.getElementById('weekly_day_remote');
+        const weeklyTime = document.getElementById('weekly_time_remote');
+        const monthlyDay = document.getElementById('monthly_day_remote');
+        const monthlyTime = document.getElementById('monthly_time_remote');
+        const customCron = document.getElementById('custom_cron_remote');
 
-      const remoteTypes = JSON.parse('<?= addslashes(json_encode($remoteTypes)) ?>');
+        if (!cronModeSelect) return false;
 
-      let scheduleUILockedremote = false;
-      let rebuildTokenremote = 0;
-
-      function updateB2BucketVisibility() {
-        const selected = $('#rclone_config_remote_hidden').val() || [];
-        const anyB2 = selected.some(r => remoteTypes[r] === 'b2' || remoteTypes[r] === 'crypt-b2');
-        if (anyB2) {
-          $('#b2_bucket_row').show();
-        } else {
-          $('#b2_bucket_row').hide();
-          $('#b2_bucket_name').val('');
-        }
-      }
-
-      function validateBackupPrereqsremote() {
-        const cronExprRemote = $('#cron_expression_hidden_remote').val() || '';
-
-        // --- Check that at least one rclone remote is selected ---
-        const selectedRemotes = $('#rclone_config_remote_hidden').val() || [];
-        if (!selectedRemotes.length) {
-          alert('Please select at least one rclone config');
-          return false;
+        function toggleCronOptions(value) {
+          minutesOptions.style.display = (value === 'minutes') ? 'block' : 'none';
+          hourlyOptions.style.display = (value === 'hourly') ? 'block' : 'none';
+          dailyOptions.style.display = (value === 'daily') ? 'block' : 'none';
+          weeklyOptions.style.display = (value === 'weekly') ? 'block' : 'none';
+          monthlyOptions.style.display = (value === 'monthly') ? 'block' : 'none';
+          customOptions.style.display = (value === 'custom') ? 'block' : 'none';
+          updateCronExpressionRemote();
         }
 
-        // --- Validate Path In Config ---
-        const remotePath = $('#remote_path_in_config').val().trim();
+        function updateCronExpressionRemote() {
+          let cronString = "";
 
-        if (remotePath !== '' && !remotePath.startsWith('/')) {
-          alert('Path In Config must start with a "/" or be left blank to use default /Flash_Backups');
-          return false;
-        }
-
-        if (remotePath !== '' && !remotePath.endsWith('/')) {
-          alert('Path In Config must end with a "/" or be left blank to use default /Flash_Backups');
-          return false;
-        }
-
-        // --- Validate allowed characters for each folder segment ---
-        if (remotePath !== '') {
-          const inner = remotePath.replace(/^\/+|\/+$/g, '');
-          const parts = inner.split('/');
-
-          const validName = /^[A-Za-z0-9._+\-@ ]+$/;
-
-          for (const p of parts) {
-            if (!validName.test(p)) {
-              alert(
-                'Invalid character detected in folder name: "' + p + '"\n\n' +
-                'Allowed characters:\nletters, numbers, space, _ - . + @'
-              );
-              return false;
-            }
+          if (cronModeSelect.value === "minutes" && minutesFreq) {
+            const freq = parseInt(minutesFreq.value, 10);
+            cronString = `*/${freq} * * * *`;
           }
+          else if (cronModeSelect.value === "hourly" && hourlyFreq) {
+            const freq = parseInt(hourlyFreq.value, 10);
+            cronString = `0 */${freq} * * *`;
+          }
+          else if (cronModeSelect.value === "daily" && dailyTime) {
+            const [hour, minute] = dailyTime.value.split(":");
+            cronString = `0 ${parseInt(hour, 10)} * * *`;
+          }
+          else if (cronModeSelect.value === "weekly" && weeklyDay && weeklyTime) {
+            const [hour, minute] = weeklyTime.value.split(":");
+            const dayMap = {
+              Sunday: 0, Monday: 1, Tuesday: 2, Wednesday: 3,
+              Thursday: 4, Friday: 5, Saturday: 6
+            };
+            cronString = `0 ${parseInt(hour, 10)} * * ${dayMap[weeklyDay.value]}`;
+          }
+          else if (cronModeSelect.value === "monthly" && monthlyDay && monthlyTime) {
+            const [hour, minute] = monthlyTime.value.split(":");
+            const day = parseInt(monthlyDay.value, 10);
+            cronString = `0 ${parseInt(hour, 10)} ${day} * *`;
+          }
+          else if (cronModeSelect.value === "custom" && customCron) {
+            cronString = customCron.value.trim();
+          }
+
+          let hidden = document.getElementById("cron_expression_hidden_remote");
+          if (!hidden) {
+            hidden = document.createElement("input");
+            hidden.type = "hidden";
+            hidden.id = "cron_expression_hidden_remote";
+            hidden.name = "CRON_EXPRESSION_REMOTE";
+            cronModeSelect.closest(".form-pair").appendChild(hidden);
+          }
+          hidden.value = cronString;
         }
 
-        // --- Validate B2 Bucket Name if any B2 remote selected ---
-        const anyB2 = selectedRemotes.some(r => remoteTypes[r] === 'b2' || remoteTypes[r] === 'crypt-b2');
-        if (anyB2) {
-          const b2Bucket = $('#b2_bucket_name').val().trim();
-          if (!b2Bucket) {
-            alert('B2 Bucketname is required when a Backblaze B2 config is selected');
-            return false;
-          }
-          const validBucket = /^[A-Za-z0-9._\-]+$/;
-          const b2BucketStripped = b2Bucket.replace(/\/+$/, '');
-          if (!validBucket.test(b2BucketStripped)) {
-            alert('Invalid B2 bucket name: "' + b2Bucket + '"\n\nAllowed characters:\nletters, numbers, - . _');
-            return false;
-          }
-        }
+        toggleCronOptions(cronModeSelect.value);
 
-        if (!validateDiscordWebhookRemote()) {
-          alert("Please enter a valid Discord webhook URL or leave it blank");
-          return false;
-        }
-
-        const webhookValRemote = $('#discord_webhook_url_remote').val().trim();
-        if (webhookValRemote.startsWith('https://api.pushover.net/')) {
-          if (!$('#pushover_user_key_remote').val().trim()) {
-            alert('Please enter your Pushover user key');
-            return false;
-          }
-        }
+        cronModeSelect.addEventListener('change', (e) => toggleCronOptions(e.target.value));
+        minutesFreq?.addEventListener('change', updateCronExpressionRemote);
+        hourlyFreq?.addEventListener('change', updateCronExpressionRemote);
+        dailyTime?.addEventListener('change', updateCronExpressionRemote);
+        weeklyDay?.addEventListener('change', updateCronExpressionRemote);
+        weeklyTime?.addEventListener('change', updateCronExpressionRemote);
+        monthlyDay?.addEventListener('change', updateCronExpressionRemote);
+        monthlyTime?.addEventListener('change', updateCronExpressionRemote);
+        customCron?.addEventListener('input', updateCronExpressionRemote);
 
         return true;
       }
 
-      function lockScheduleUIremote() {
-        scheduleUILockedremote = true;
-        $(".schedule-action-btn-remote").prop("disabled", true);
+      if (!initSchedulingToggleRemote()) {
+        const observer = new MutationObserver(() => {
+          if (initSchedulingToggleRemote()) observer.disconnect();
+        });
+        observer.observe(document.body, { childList: true, subtree: true });
       }
+    })();
 
-      function unlockScheduleUIremote() {
-        scheduleUILockedremote = false;
-        $(".schedule-action-btn-remote").prop("disabled", false);
-      }
+    function loadLastRunLog() {
+      fetch('/plugins/flash-backup/helpers/fetch_last_run_log.php')
+        .then(res => res.text())
+        .then(data => { document.getElementById('last-run-log').textContent = data || 'Flash backup log not found'; })
+        .catch(() => { document.getElementById('last-run-log').textContent = 'Error loading flash backup log'; });
+    }
+    loadLastRunLog();
+    setInterval(loadLastRunLog, 1000);
 
-      function showFolderToastremote(msg) {
-        const t = $('#folderToastremote');
-        t.stop(true, true);
-        t.text(msg).fadeIn(150);
+    // === Clear Log Button ===
+    const clearLastRunBtn = document.getElementById("clear-last-run-log");
 
-        setTimeout(() => {
-          t.fadeOut(400);
-        }, 2000);
-      }
-
-      function updateBackupStatus() {
-        fetch('/plugins/flash-backup/helpers/backup_status_check.php')
-          .then(res => res.json())
-          .then(data => {
-            document.getElementById('status-text').textContent = data.status;
+    if (clearLastRunBtn) {
+      clearLastRunBtn.addEventListener("click", function () {
+        if (confirm("Are you sure you want to clear the flash backup Log?")) {
+          fetch("/plugins/flash-backup/helpers/clear_log.php", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded",
+              "X-CSRF-TOKEN": csrfToken
+            },
+            body: "log=last&csrf_token=" + encodeURIComponent(csrfToken)
           })
-          .catch(() => {
-            document.getElementById('status-text').textContent = 'Local Backup Not Running';
-          });
-      }
-
-      updateBackupStatus();
-      setInterval(updateBackupStatus, 1000);
-
-      function updateRestoreStatus() {
-        fetch('/plugins/flash-backup/helpers/remote_status_check.php')
-          .then(res => res.json())
-          .then(data => {
-            document.getElementById('status-text-remote').textContent = data.status;
-          })
-          .catch(() => {
-            document.getElementById('status-text-remote').textContent = 'Remote Backup Not Running';
-          });
-      }
-
-      updateRestoreStatus();
-      setInterval(updateRestoreStatus, 1000);
-
-      // --- Scheduling Dropdown Toggle (LOCAL) ---
-      (function waitForSchedulingToggle() {
-        function initSchedulingToggle() {
-          const cronModeSelect = document.getElementById('cron_mode');
-
-          // Option rows
-          const minutesOptions = document.getElementById('minutes-options');
-          const hourlyOptions = document.getElementById('hourly-options');
-          const dailyOptions = document.getElementById('daily-options');
-          const weeklyOptions = document.getElementById('weekly-options');
-          const monthlyOptions = document.getElementById('monthly-options');
-          const customOptions = document.getElementById('custom-options');
-
-          // Inputs
-          const minutesFreq = document.getElementById('minutes_frequency');
-          const hourlyFreq = document.getElementById('hourly_frequency');
-          const dailyTime = document.getElementById('daily_time');
-          const weeklyDay = document.getElementById('weekly_day');
-          const weeklyTime = document.getElementById('weekly_time');
-          const monthlyDay = document.getElementById('monthly_day');
-          const monthlyTime = document.getElementById('monthly_time');
-          const customCron = document.getElementById('custom_cron');
-
-          if (!cronModeSelect) return false;
-
-          // Toggle which sub-options are visible
-          function toggleCronOptions(value) {
-            minutesOptions.style.display = (value === 'minutes') ? 'block' : 'none';
-            hourlyOptions.style.display = (value === 'hourly') ? 'block' : 'none';
-            dailyOptions.style.display = (value === 'daily') ? 'block' : 'none';
-            weeklyOptions.style.display = (value === 'weekly') ? 'block' : 'none';
-            monthlyOptions.style.display = (value === 'monthly') ? 'block' : 'none';
-            customOptions.style.display = (value === 'custom') ? 'block' : 'none';
-            updateCronExpression();
-          }
-
-          // Build cron string from dropdowns
-          function updateCronExpression() {
-            let cronString = "";
-
-            if (cronModeSelect.value === "minutes" && minutesFreq) {
-              const freq = parseInt(minutesFreq.value, 10);
-              cronString = `*/${freq} * * * *`;
-            }
-            else if (cronModeSelect.value === "hourly" && hourlyFreq) {
-              const freq = parseInt(hourlyFreq.value, 10);
-              cronString = `0 */${freq} * * *`;
-            }
-            else if (cronModeSelect.value === "daily" && dailyTime) {
-              const [hour, minute] = dailyTime.value.split(":");
-              cronString = `0 ${parseInt(hour, 10)} * * *`;
-            }
-            else if (cronModeSelect.value === "weekly" && weeklyDay && weeklyTime) {
-              const [hour, minute] = weeklyTime.value.split(":");
-              const dayMap = {
-                Sunday: 0, Monday: 1, Tuesday: 2, Wednesday: 3,
-                Thursday: 4, Friday: 5, Saturday: 6
-              };
-              cronString = `0 ${parseInt(hour, 10)} * * ${dayMap[weeklyDay.value]}`;
-            }
-            else if (cronModeSelect.value === "monthly" && monthlyDay && monthlyTime) {
-              const [hour, minute] = monthlyTime.value.split(":");
-              const day = parseInt(monthlyDay.value, 10);
-              cronString = `0 ${parseInt(hour, 10)} ${day} * *`;
-            }
-            else if (cronModeSelect.value === "custom" && customCron) {
-              cronString = customCron.value.trim();
-            }
-
-            // Store cron string in hidden input
-            let hidden = document.getElementById("cron_expression_hidden");
-            if (!hidden) {
-              hidden = document.createElement("input");
-              hidden.type = "hidden";
-              hidden.id = "cron_expression_hidden";
-              hidden.name = "CRON_EXPRESSION";
-              cronModeSelect.closest(".form-pair").appendChild(hidden);
-            }
-            hidden.value = cronString;
-          }
-
-          // Initialize visibility
-          toggleCronOptions(cronModeSelect.value);
-
-          // Event listeners
-          cronModeSelect.addEventListener('change', (e) => toggleCronOptions(e.target.value));
-          minutesFreq?.addEventListener('change', updateCronExpression);
-          hourlyFreq?.addEventListener('change', updateCronExpression);
-          dailyTime?.addEventListener('change', updateCronExpression);
-          weeklyDay?.addEventListener('change', updateCronExpression);
-          weeklyTime?.addEventListener('change', updateCronExpression);
-          monthlyDay?.addEventListener('change', updateCronExpression);
-          monthlyTime?.addEventListener('change', updateCronExpression);
-          customCron?.addEventListener('input', updateCronExpression);
-
-          return true;
-        }
-
-        if (!initSchedulingToggle()) {
-          const observer = new MutationObserver(() => {
-            if (initSchedulingToggle()) observer.disconnect();
-          });
-          observer.observe(document.body, { childList: true, subtree: true });
-        }
-      })();
-
-      // --- Scheduling Dropdown Toggle (REMOTE) ---
-      (function waitForSchedulingToggleRemote() {
-        function initSchedulingToggleRemote() {
-          const cronModeSelect = document.getElementById('cron_mode_remote');
-
-          // Option rows
-          const minutesOptions = document.getElementById('minutes-options-remote');
-          const hourlyOptions = document.getElementById('hourly-options-remote');
-          const dailyOptions = document.getElementById('daily-options-remote');
-          const weeklyOptions = document.getElementById('weekly-options-remote');
-          const monthlyOptions = document.getElementById('monthly-options-remote');
-          const customOptions = document.getElementById('custom-options-remote');
-
-          // Inputs
-          const minutesFreq = document.getElementById('minutes_frequency_remote');
-          const hourlyFreq = document.getElementById('hourly_frequency_remote');
-          const dailyTime = document.getElementById('daily_time_remote');
-          const weeklyDay = document.getElementById('weekly_day_remote');
-          const weeklyTime = document.getElementById('weekly_time_remote');
-          const monthlyDay = document.getElementById('monthly_day_remote');
-          const monthlyTime = document.getElementById('monthly_time_remote');
-          const customCron = document.getElementById('custom_cron_remote');
-
-          if (!cronModeSelect) return false;
-
-          function toggleCronOptions(value) {
-            minutesOptions.style.display = (value === 'minutes') ? 'block' : 'none';
-            hourlyOptions.style.display = (value === 'hourly') ? 'block' : 'none';
-            dailyOptions.style.display = (value === 'daily') ? 'block' : 'none';
-            weeklyOptions.style.display = (value === 'weekly') ? 'block' : 'none';
-            monthlyOptions.style.display = (value === 'monthly') ? 'block' : 'none';
-            customOptions.style.display = (value === 'custom') ? 'block' : 'none';
-            updateCronExpressionRemote();
-          }
-
-          function updateCronExpressionRemote() {
-            let cronString = "";
-
-            if (cronModeSelect.value === "minutes" && minutesFreq) {
-              const freq = parseInt(minutesFreq.value, 10);
-              cronString = `*/${freq} * * * *`;
-            }
-            else if (cronModeSelect.value === "hourly" && hourlyFreq) {
-              const freq = parseInt(hourlyFreq.value, 10);
-              cronString = `0 */${freq} * * *`;
-            }
-            else if (cronModeSelect.value === "daily" && dailyTime) {
-              const [hour, minute] = dailyTime.value.split(":");
-              cronString = `0 ${parseInt(hour, 10)} * * *`;
-            }
-            else if (cronModeSelect.value === "weekly" && weeklyDay && weeklyTime) {
-              const [hour, minute] = weeklyTime.value.split(":");
-              const dayMap = {
-                Sunday: 0, Monday: 1, Tuesday: 2, Wednesday: 3,
-                Thursday: 4, Friday: 5, Saturday: 6
-              };
-              cronString = `0 ${parseInt(hour, 10)} * * ${dayMap[weeklyDay.value]}`;
-            }
-            else if (cronModeSelect.value === "monthly" && monthlyDay && monthlyTime) {
-              const [hour, minute] = monthlyTime.value.split(":");
-              const day = parseInt(monthlyDay.value, 10);
-              cronString = `0 ${parseInt(hour, 10)} ${day} * *`;
-            }
-            else if (cronModeSelect.value === "custom" && customCron) {
-              cronString = customCron.value.trim();
-            }
-
-            let hidden = document.getElementById("cron_expression_hidden_remote");
-            if (!hidden) {
-              hidden = document.createElement("input");
-              hidden.type = "hidden";
-              hidden.id = "cron_expression_hidden_remote";
-              hidden.name = "CRON_EXPRESSION_REMOTE";
-              cronModeSelect.closest(".form-pair").appendChild(hidden);
-            }
-            hidden.value = cronString;
-          }
-
-          toggleCronOptions(cronModeSelect.value);
-
-          cronModeSelect.addEventListener('change', (e) => toggleCronOptions(e.target.value));
-          minutesFreq?.addEventListener('change', updateCronExpressionRemote);
-          hourlyFreq?.addEventListener('change', updateCronExpressionRemote);
-          dailyTime?.addEventListener('change', updateCronExpressionRemote);
-          weeklyDay?.addEventListener('change', updateCronExpressionRemote);
-          weeklyTime?.addEventListener('change', updateCronExpressionRemote);
-          monthlyDay?.addEventListener('change', updateCronExpressionRemote);
-          monthlyTime?.addEventListener('change', updateCronExpressionRemote);
-          customCron?.addEventListener('input', updateCronExpressionRemote);
-
-          return true;
-        }
-
-        if (!initSchedulingToggleRemote()) {
-          const observer = new MutationObserver(() => {
-            if (initSchedulingToggleRemote()) observer.disconnect();
-          });
-          observer.observe(document.body, { childList: true, subtree: true });
-        }
-      })();
-
-      function loadLastRunLog() {
-        fetch('/plugins/flash-backup/helpers/fetch_last_run_log.php')
-          .then(res => res.text())
-          .then(data => { document.getElementById('last-run-log').textContent = data || 'Flash backup log not found'; })
-          .catch(() => { document.getElementById('last-run-log').textContent = 'Error loading flash backup log'; });
-      }
-      loadLastRunLog();
-      setInterval(loadLastRunLog, 1000);
-
-      // === Clear Log Button ===
-      const clearLastRunBtn = document.getElementById("clear-last-run-log");
-
-      if (clearLastRunBtn) {
-        clearLastRunBtn.addEventListener("click", function () {
-          if (confirm("Are you sure you want to clear the flash backup Log?")) {
-            fetch("/plugins/flash-backup/helpers/clear_log.php", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/x-www-form-urlencoded",
-                "X-CSRF-TOKEN": csrfToken
-              },
-              body: "log=last&csrf_token=" + encodeURIComponent(csrfToken)
+            .then(r => r.json())
+            .then(data => {
+              showToast(toastLast, data.message, data.ok ? "ok" : "err");
+              if (data.ok) document.getElementById("last-run-log").textContent = "";
             })
-              .then(r => r.json())
-              .then(data => {
-                showToast(toastLast, data.message, data.ok ? "ok" : "err");
-                if (data.ok) document.getElementById("last-run-log").textContent = "";
-              })
-              .catch(() => showToast(toastLast, "Failed to clear log", "err"));
-          }
-        });
-      }
+            .catch(() => showToast(toastLast, "Failed to clear log", "err"));
+        }
+      });
+    }
 
-      $(document).ready(function () {
-        const select = $('#backup_owner');
-        const selected = select.data('selected') || 'nobody';
+    $(document).ready(function () {
+      const select = $('#backup_owner');
+      const selected = select.data('selected') || 'nobody';
 
-        $.getJSON('/plugins/flash-backup/helpers/list_users_group100.php', function (data) {
-          select.empty();
+      $.getJSON('/plugins/flash-backup/helpers/list_users_group100.php', function (data) {
+        select.empty();
 
-          data.users.forEach(user => {
-            const opt = $('<option>', {
-              value: user,
-              text: user
-            });
-
-            if (user === selected) {
-              opt.prop('selected', true);
-            }
-
-            select.append(opt);
+        data.users.forEach(user => {
+          const opt = $('<option>', {
+            value: user,
+            text: user
           });
+
+          if (user === selected) {
+            opt.prop('selected', true);
+          }
+
+          select.append(opt);
         });
       });
+    });
 
-      // Force-close any Dynamix tooltip when dropdown opens
-      function closeTooltips() {
-        $('.flash-backuptip').trigger('mouseleave');
-      }
+    // Force-close any Dynamix tooltip when dropdown opens
+    function closeTooltips() {
+      $('.flash-backuptip').trigger('mouseleave');
+    }
 
-      $('select').on('click', closeTooltips);
-    </script>
+    $('select').on('click', closeTooltips);
+  </script>
 
-    <script>
-      // --- State ---
-      let cronValid = false;
-      let backupRunning = false;
+  <script>
+    // --- State ---
+    let cronValid = false;
+    let backupRunning = false;
 
-      let cronValidRemote = false;
-      let backupRunningRemote = false;
+    let cronValidRemote = false;
+    let backupRunningRemote = false;
 
-      // --- Elements (LOCAL) ---
-      const cronInput = document.getElementById('custom_cron');
-      const cronMode = document.getElementById('cron_mode');
-      const backupbtn = document.getElementById('backupbtn');
+    // --- Elements (LOCAL) ---
+    const cronInput = document.getElementById('custom_cron');
+    const cronMode = document.getElementById('cron_mode');
+    const backupbtn = document.getElementById('backupbtn');
 
-      const warnFields = document.getElementById('cron-warning-fields');
-      const warnSlash = document.getElementById('cron-warning-slash');
+    const warnFields = document.getElementById('cron-warning-fields');
+    const warnSlash = document.getElementById('cron-warning-slash');
 
-      // --- Elements (REMOTE) ---
-      const cronInputRemote = document.getElementById('custom_cron_remote');
-      const cronModeRemote = document.getElementById('cron_mode_remote');
-      const backupbtnRemote = document.getElementById('backupbtn_remote');
+    // --- Elements (REMOTE) ---
+    const cronInputRemote = document.getElementById('custom_cron_remote');
+    const cronModeRemote = document.getElementById('cron_mode_remote');
+    const backupbtnRemote = document.getElementById('backupbtn_remote');
 
-      const warnFieldsRemote = document.getElementById('cron-warning-fields-remote');
-      const warnSlashRemote = document.getElementById('cron-warning-slash-remote');
+    const warnFieldsRemote = document.getElementById('cron-warning-fields-remote');
+    const warnSlashRemote = document.getElementById('cron-warning-slash-remote');
 
-      // --- Unified button state controller (LOCAL) ---
-      function updateBackupButtonState() {
-        if (!backupbtn) return;
-        backupbtn.disabled = !(cronValid && !backupRunning);
-      }
+    // --- Unified button state controller (LOCAL) ---
+    function updateBackupButtonState() {
+      if (!backupbtn) return;
+      backupbtn.disabled = !(cronValid && !backupRunning);
+    }
 
-      // --- Unified button state controller (REMOTE) ---
-      function updateBackupButtonStateRemote() {
-        if (!backupbtnRemote) return;
-        backupbtnRemote.disabled = !(cronValidRemote && !backupRunningRemote);
-      }
+    // --- Unified button state controller (REMOTE) ---
+    function updateBackupButtonStateRemote() {
+      if (!backupbtnRemote) return;
+      backupbtnRemote.disabled = !(cronValidRemote && !backupRunningRemote);
+    }
 
-      // --- Live Cron Validator (LOCAL) ---
-      function validateCronLive() {
+    // --- Live Cron Validator (LOCAL) ---
+    function validateCronLive() {
 
-        if (!cronMode || !cronInput) return;
+      if (!cronMode || !cronInput) return;
 
-        // If NOT in custom mode → cron is automatically valid
-        if (cronMode.value !== "custom") {
-          cronValid = true;
-
-          [warnFields, warnSlash].forEach(w => { if (w) w.style.display = 'none'; });
-
-          updateBackupButtonState();
-          return;
-        }
-
-        const cronExpression = cronInput.value.trim();
-        const cronParts = cronExpression.split(/\s+/);
+      // If NOT in custom mode → cron is automatically valid
+      if (cronMode.value !== "custom") {
+        cronValid = true;
 
         [warnFields, warnSlash].forEach(w => { if (w) w.style.display = 'none'; });
 
-        cronValid = true;
+        updateBackupButtonState();
+        return;
+      }
 
-        if (cronExpression === "") {
-          cronValid = false;
-          updateBackupButtonState();
-          return;
-        }
+      const cronExpression = cronInput.value.trim();
+      const cronParts = cronExpression.split(/\s+/);
 
-        if (cronParts.length !== 5) {
-          cronValid = false;
-          if (warnFields) warnFields.style.display = 'block';
-        }
+      [warnFields, warnSlash].forEach(w => { if (w) w.style.display = 'none'; });
 
-        if (cronParts.length === 5) {
+      cronValid = true;
 
-          for (let i = 0; i < cronParts.length; i++) {
-            const field = cronParts[i];
+      if (cronExpression === "") {
+        cronValid = false;
+        updateBackupButtonState();
+        return;
+      }
 
-            if (!/^[\d*\/]+$/.test(field)) {
+      if (cronParts.length !== 5) {
+        cronValid = false;
+        if (warnFields) warnFields.style.display = 'block';
+      }
+
+      if (cronParts.length === 5) {
+
+        for (let i = 0; i < cronParts.length; i++) {
+          const field = cronParts[i];
+
+          if (!/^[\d*\/]+$/.test(field)) {
+            cronValid = false;
+            if (warnFields) warnFields.style.display = 'block';
+          }
+
+          if (field.includes('/')) {
+            const validStep = field.match(/^\*\/\d+$/);
+            if (!validStep) {
               cronValid = false;
-              if (warnFields) warnFields.style.display = 'block';
-            }
-
-            if (field.includes('/')) {
-              const validStep = field.match(/^\*\/\d+$/);
-              if (!validStep) {
-                cronValid = false;
-                if (warnSlash) warnSlash.style.display = 'block';
-              }
+              if (warnSlash) warnSlash.style.display = 'block';
             }
           }
         }
-
-        updateBackupButtonState();
       }
 
-      // --- Live Cron Validator (REMOTE) ---
-      function validateCronLiveRemote() {
+      updateBackupButtonState();
+    }
 
-        if (!cronModeRemote || !cronInputRemote) return;
+    // --- Live Cron Validator (REMOTE) ---
+    function validateCronLiveRemote() {
 
-        if (cronModeRemote.value !== "custom") {
-          cronValidRemote = true;
+      if (!cronModeRemote || !cronInputRemote) return;
 
-          [warnFieldsRemote, warnSlashRemote].forEach(w => { if (w) w.style.display = 'none'; });
-
-          updateBackupButtonStateRemote();
-          return;
-        }
-
-        const cronExpression = cronInputRemote.value.trim();
-        const cronParts = cronExpression.split(/\s+/);
+      if (cronModeRemote.value !== "custom") {
+        cronValidRemote = true;
 
         [warnFieldsRemote, warnSlashRemote].forEach(w => { if (w) w.style.display = 'none'; });
 
-        cronValidRemote = true;
-
-        if (cronExpression === "") {
-          cronValidRemote = false;
-          updateBackupButtonStateRemote();
-          return;
-        }
-
-        if (cronParts.length !== 5) {
-          cronValidRemote = false;
-          if (warnFieldsRemote) warnFieldsRemote.style.display = 'block';
-        }
-
-        if (cronParts.length === 5) {
-
-          for (let i = 0; i < cronParts.length; i++) {
-            const field = cronParts[i];
-
-            if (!/^[\d*\/]+$/.test(field)) {
-              cronValidRemote = false;
-              if (warnFieldsRemote) warnFieldsRemote.style.display = 'block';
-            }
-
-            if (field.includes('/')) {
-              const validStep = field.match(/^\*\/\d+$/);
-              if (!validStep) {
-                cronValidRemote = false;
-                if (warnSlashRemote) warnSlashRemote.style.display = 'block';
-              }
-            }
-          }
-        }
-
         updateBackupButtonStateRemote();
+        return;
       }
 
-      // --- Attach listeners ---
-      if (cronInput) cronInput.addEventListener('input', validateCronLive);
-      if (cronMode) cronMode.addEventListener('change', validateCronLive);
-      validateCronLive();
+      const cronExpression = cronInputRemote.value.trim();
+      const cronParts = cronExpression.split(/\s+/);
 
-      if (cronInputRemote) cronInputRemote.addEventListener('input', validateCronLiveRemote);
-      if (cronModeRemote) cronModeRemote.addEventListener('change', validateCronLiveRemote);
-      validateCronLiveRemote();
+      [warnFieldsRemote, warnSlashRemote].forEach(w => { if (w) w.style.display = 'none'; });
 
-      let backupStartTime = 0;
-      const MIN_DURATION = 5000;
+      cronValidRemote = true;
 
-      let backupStartTimeRemote = 0;
-      const MIN_DURATION_REMOTE = 5000;
+      if (cronExpression === "") {
+        cronValidRemote = false;
+        updateBackupButtonStateRemote();
+        return;
+      }
 
-      function updateBackupUI(running) {
-        const status = $('#backup-status');
-        const btn = $('#backupbtn');
+      if (cronParts.length !== 5) {
+        cronValidRemote = false;
+        if (warnFieldsRemote) warnFieldsRemote.style.display = 'block';
+      }
 
-        if (running) {
-          if (!backupStartTime) {
-            backupStartTime = Date.now();
+      if (cronParts.length === 5) {
+
+        for (let i = 0; i < cronParts.length; i++) {
+          const field = cronParts[i];
+
+          if (!/^[\d*\/]+$/.test(field)) {
+            cronValidRemote = false;
+            if (warnFieldsRemote) warnFieldsRemote.style.display = 'block';
           }
 
-          btn.text('Backup running...');
-          status.show();
-
-          return;
+          if (field.includes('/')) {
+            const validStep = field.match(/^\*\/\d+$/);
+            if (!validStep) {
+              cronValidRemote = false;
+              if (warnSlashRemote) warnSlashRemote.style.display = 'block';
+            }
+          }
         }
+      }
 
+      updateBackupButtonStateRemote();
+    }
+
+    // --- Attach listeners ---
+    if (cronInput) cronInput.addEventListener('input', validateCronLive);
+    if (cronMode) cronMode.addEventListener('change', validateCronLive);
+    validateCronLive();
+
+    if (cronInputRemote) cronInputRemote.addEventListener('input', validateCronLiveRemote);
+    if (cronModeRemote) cronModeRemote.addEventListener('change', validateCronLiveRemote);
+    validateCronLiveRemote();
+
+    let backupStartTime = 0;
+    const MIN_DURATION = 5000;
+
+    let backupStartTimeRemote = 0;
+    const MIN_DURATION_REMOTE = 5000;
+
+    function updateBackupUI(running) {
+      const status = $('#backup-status');
+      const btn = $('#backupbtn');
+
+      if (running) {
         if (!backupStartTime) {
-          btn.text('Backup Now');
-          status.hide();
-          return;
+          backupStartTime = Date.now();
         }
 
-        const elapsed = Date.now() - backupStartTime;
+        btn.text('Backup running...');
+        status.show();
 
-        if (elapsed < MIN_DURATION) {
-          setTimeout(() => updateBackupUI(false), MIN_DURATION - elapsed);
-          return;
-        }
-
-        backupStartTime = 0;
-        btn.text('Backup Now');
-        status.hide();
+        return;
       }
 
-      function updateBackupUIRemote(running) {
-        const status = $('#backup-status-remote');
-        const btn = $('#backupbtn_remote');
+      if (!backupStartTime) {
+        btn.text('Backup Now');
+        status.hide();
+        return;
+      }
 
-        if (running) {
-          if (!backupStartTimeRemote) {
-            backupStartTimeRemote = Date.now();
-          }
+      const elapsed = Date.now() - backupStartTime;
 
-          btn.text('Backup running...');
-          status.show();
+      if (elapsed < MIN_DURATION) {
+        setTimeout(() => updateBackupUI(false), MIN_DURATION - elapsed);
+        return;
+      }
 
-          return;
-        }
+      backupStartTime = 0;
+      btn.text('Backup Now');
+      status.hide();
+    }
 
+    function updateBackupUIRemote(running) {
+      const status = $('#backup-status-remote');
+      const btn = $('#backupbtn_remote');
+
+      if (running) {
         if (!backupStartTimeRemote) {
-          btn.text('Backup Now');
-          status.hide();
-          return;
+          backupStartTimeRemote = Date.now();
         }
 
-        const elapsed = Date.now() - backupStartTimeRemote;
+        btn.text('Backup running...');
+        status.show();
 
-        if (elapsed < MIN_DURATION_REMOTE) {
-          setTimeout(() => updateBackupUIRemote(false), MIN_DURATION_REMOTE - elapsed);
-          return;
-        }
+        return;
+      }
 
-        backupStartTimeRemote = 0;
+      if (!backupStartTimeRemote) {
         btn.text('Backup Now');
         status.hide();
+        return;
       }
 
-      function pollBackupStatus() {
-        $.getJSON('/plugins/flash-backup/helpers/backup_status.php', function (res) {
-          backupRunning = res.running === true;
-          updateBackupButtonState();
-          updateBackupUI(res.running);
-        });
+      const elapsed = Date.now() - backupStartTimeRemote;
+
+      if (elapsed < MIN_DURATION_REMOTE) {
+        setTimeout(() => updateBackupUIRemote(false), MIN_DURATION_REMOTE - elapsed);
+        return;
       }
 
-      function pollBackupStatusRemote() {
-        $.getJSON('/plugins/flash-backup/helpers/remote_status.php', function (res) {
-          backupRunningRemote = res.running === true;
-          updateBackupButtonStateRemote();
-          updateBackupUIRemote(res.running);
-        });
+      backupStartTimeRemote = 0;
+      btn.text('Backup Now');
+      status.hide();
+    }
+
+    function pollBackupStatus() {
+      $.getJSON('/plugins/flash-backup/helpers/backup_status.php', function (res) {
+        backupRunning = res.running === true;
+        updateBackupButtonState();
+        updateBackupUI(res.running);
+      });
+    }
+
+    function pollBackupStatusRemote() {
+      $.getJSON('/plugins/flash-backup/helpers/remote_status.php', function (res) {
+        backupRunningRemote = res.running === true;
+        updateBackupButtonStateRemote();
+        updateBackupUIRemote(res.running);
+      });
+    }
+
+    setInterval(pollBackupStatus, 1000);
+    setInterval(pollBackupStatusRemote, 1000);
+
+    $(document).ready(function () {
+      pollBackupStatus();
+      pollBackupStatusRemote();
+    });
+
+    // Force-close any Dynamix tooltip
+    function closeTooltips() {
+      $('.flash-backuptip').trigger('mouseleave');
+    }
+
+    // When your dropdown opens, close tooltips
+    $('select').on('click', closeTooltips);
+
+    let backupRequestInProgress = false;
+    let backupRequestInProgressRemote = false;
+
+    function backupclassifyPath(p) {
+      if (p.startsWith('/mnt/user/')) return 'USER';
+      if (p === '/mnt/user') return 'USER';
+      if (p.startsWith('/mnt/user0/')) return 'USER0';
+      if (p === '/mnt/user0') return 'USER0';
+      return 'OTHER';
+    }
+
+    $('#backupbtn').on('click', async function () {
+
+      if (backupRequestInProgress) {
+        console.warn('Backup already being triggered');
+        return;
       }
 
-      setInterval(pollBackupStatus, 1000);
-      setInterval(pollBackupStatusRemote, 1000);
+      const dest = $('#backup_destination').val().trim();
 
-      $(document).ready(function () {
-        pollBackupStatus();
-        pollBackupStatusRemote();
+      if (!dest) {
+        alert('Please select a backup destination');
+        return;
+      }
+
+      if (!validateDiscordWebhook()) {
+        alert("Please enter a valid Discord webhook URL or leave it blank");
+        return;
+      }
+
+      const destClass = backupclassifyPath(dest);
+
+      backupRequestInProgress = true;
+
+      const cronExpr = $('#cron_expression_hidden').val() || '';
+
+      const params = $.param({
+        MINIMAL_BACKUP: $('#minimal_backup').is(':checked') ? 'yes' : 'no',
+        BACKUP_DESTINATION: dest,
+        BACKUPS_TO_KEEP: $('#backups_to_keep').val(),
+        BACKUP_OWNER: $('#backup_owner').val(),
+        DRY_RUN: $('#dry_run').val(),
+        NOTIFICATIONS: $('#notifications').val(),
+        DISCORD_WEBHOOK_URL: $('#discord_webhook_url').val().trim(),
+        PUSHOVER_USER_KEY: $('#pushover_user_key').val().trim(),
+        csrf_token: csrfToken
       });
 
-      // Force-close any Dynamix tooltip
-      function closeTooltips() {
-        $('.flash-backuptip').trigger('mouseleave');
-      }
+      $.get('/plugins/flash-backup/helpers/save_settings.php?' + params)
+        .done(function (res) {
 
-      // When your dropdown opens, close tooltips
-      $('select').on('click', closeTooltips);
-
-      let backupRequestInProgress = false;
-      let backupRequestInProgressRemote = false;
-
-      function backupclassifyPath(p) {
-        if (p.startsWith('/mnt/user/')) return 'USER';
-        if (p === '/mnt/user') return 'USER';
-        if (p.startsWith('/mnt/user0/')) return 'USER0';
-        if (p === '/mnt/user0') return 'USER0';
-        return 'OTHER';
-      }
-
-      $('#backupbtn').on('click', async function () {
-
-        if (backupRequestInProgress) {
-          console.warn('Backup already being triggered');
-          return;
-        }
-
-        const dest = $('#backup_destination').val().trim();
-
-        if (!dest) {
-          alert('Please select a backup destination');
-          return;
-        }
-
-        if (!validateDiscordWebhook()) {
-          alert("Please enter a valid Discord webhook URL or leave it blank");
-          return;
-        }
-
-        const destClass = backupclassifyPath(dest);
-
-        backupRequestInProgress = true;
-
-        const cronExpr = $('#cron_expression_hidden').val() || '';
-
-        const params = $.param({
-          MINIMAL_BACKUP: $('#minimal_backup').is(':checked') ? 'yes' : 'no',
-          BACKUP_DESTINATION: dest,
-          BACKUPS_TO_KEEP: $('#backups_to_keep').val(),
-          BACKUP_OWNER: $('#backup_owner').val(),
-          DRY_RUN: $('#dry_run').val(),
-          NOTIFICATIONS: $('#notifications').val(),
-          DISCORD_WEBHOOK_URL: $('#discord_webhook_url').val().trim(),
-          PUSHOVER_USER_KEY: $('#pushover_user_key').val().trim(),
-          csrf_token: csrfToken
-        });
-
-        $.get('/plugins/flash-backup/helpers/save_settings.php?' + params)
-          .done(function (res) {
-
-            if (res && res.status === 'ok') {
-              startBackup();
-            } else {
-              alert('Failed to save settings');
-            }
-
-          })
-          .fail(function () {
-            alert('Error saving settings');
-          })
-          .always(function () {
-            backupRequestInProgress = false;
-          });
-
-      });
-
-      $('#b2_bucket_name').on('input', function () {
-        let val = $(this).val();
-        // Collapse multiple slashes
-        val = val.replace(/\/+/g, '/');
-        $(this).val(val);
-        // Debounce trailing slash normalization (2 seconds)
-        clearTimeout(b2BucketNameTimer);
-        b2BucketNameTimer = setTimeout(() => {
-          let v = $('#b2_bucket_name').val().trim();
-          if (v !== '' && !v.endsWith('/')) {
-            $('#b2_bucket_name').val(v + '/');
+          if (res && res.status === 'ok') {
+            startBackup();
+          } else {
+            alert('Failed to save settings');
           }
-        }, 2000);
-      });
-      // Final safety net on blur
-      $('#b2_bucket_name').on('blur', function () {
-        let val = $(this).val().trim().toLowerCase();
-        if (val === '') return;
-        val = val.replace(/\/+/g, '/');
-        if (!val.endsWith('/')) val = val + '/';
-        $(this).val(val);
-      });
-      $(function () {
-        let val = $('#b2_bucket_name').val().trim();
-        if (val === '') return;
-        // Collapse multiple slashes
-        val = val.replace(/\/+/g, '/');
-        // Ensure trailing slash
-        if (!val.endsWith('/')) {
-          val = val + '/';
+
+        })
+        .fail(function () {
+          alert('Error saving settings');
+        })
+        .always(function () {
+          backupRequestInProgress = false;
+        });
+
+    });
+
+    $('#b2_bucket_name').on('input', function () {
+      let val = $(this).val();
+      // Collapse multiple slashes
+      val = val.replace(/\/+/g, '/');
+      $(this).val(val);
+      // Debounce trailing slash normalization (2 seconds)
+      clearTimeout(b2BucketNameTimer);
+      b2BucketNameTimer = setTimeout(() => {
+        let v = $('#b2_bucket_name').val().trim();
+        if (v !== '' && !v.endsWith('/')) {
+          $('#b2_bucket_name').val(v + '/');
         }
-        $('#b2_bucket_name').val(val);
-      });
+      }, 2000);
+    });
+    // Final safety net on blur
+    $('#b2_bucket_name').on('blur', function () {
+      let val = $(this).val().trim().toLowerCase();
+      if (val === '') return;
+      val = val.replace(/\/+/g, '/');
+      if (!val.endsWith('/')) val = val + '/';
+      $(this).val(val);
+    });
+    $(function () {
+      let val = $('#b2_bucket_name').val().trim();
+      if (val === '') return;
+      // Collapse multiple slashes
+      val = val.replace(/\/+/g, '/');
+      // Ensure trailing slash
+      if (!val.endsWith('/')) {
+        val = val + '/';
+      }
+      $('#b2_bucket_name').val(val);
+    });
 
-      $('#backupbtn_remote').on('click', async function () {
+    $('#backupbtn_remote').on('click', async function () {
 
-        if (backupRequestInProgressRemote) {
-          console.warn('Remote backup already being triggered');
-          return;
-        }
+      if (backupRequestInProgressRemote) {
+        console.warn('Remote backup already being triggered');
+        return;
+      }
 
-        const cronExprRemote = $('#cron_expression_hidden_remote').val() || '';
+      const cronExprRemote = $('#cron_expression_hidden_remote').val() || '';
 
-        // --- Check that at least one rclone remote is selected ---
-        const selectedRemotes = $('#rclone_config_remote_hidden').val() || [];
-        if (!selectedRemotes.length) {
-          alert('Please select at least one rclone config');
-          return;
-        }
+      // --- Check that at least one rclone remote is selected ---
+      const selectedRemotes = $('#rclone_config_remote_hidden').val() || [];
+      if (!selectedRemotes.length) {
+        alert('Please select at least one rclone config');
+        return;
+      }
 
-        // --- Validate Path In Config ---
-        const remotePath = $('#remote_path_in_config').val().trim();
+      // --- Validate Path In Config ---
+      const remotePath = $('#remote_path_in_config').val().trim();
 
-        if (remotePath !== '' && !remotePath.startsWith('/')) {
-          alert('Path In Config must start with a "/" or be left blank to use default /Flash_Backups');
-          return;
-        }
+      if (remotePath !== '' && !remotePath.startsWith('/')) {
+        alert('Path In Config must start with a "/" or be left blank to use default /Flash_Backups');
+        return;
+      }
 
-        if (remotePath !== '' && !remotePath.endsWith('/')) {
-          alert('Path In Config must end with a "/" or be left blank to use default /Flash_Backups');
-          return;
-        }
+      if (remotePath !== '' && !remotePath.endsWith('/')) {
+        alert('Path In Config must end with a "/" or be left blank to use default /Flash_Backups');
+        return;
+      }
 
-        // --- Validate allowed characters for each folder segment ---
-        if (remotePath !== '') {
-          const inner = remotePath.replace(/^\/+|\/+$/g, ''); // strip leading/trailing slashes
-          const parts = inner.split('/');
+      // --- Validate allowed characters for each folder segment ---
+      if (remotePath !== '') {
+        const inner = remotePath.replace(/^\/+|\/+$/g, ''); // strip leading/trailing slashes
+        const parts = inner.split('/');
 
-          // rclone-safe folder name characters
-          const validName = /^[A-Za-z0-9._+\-@ ]+$/;
+        // rclone-safe folder name characters
+        const validName = /^[A-Za-z0-9._+\-@ ]+$/;
 
-          for (const p of parts) {
-            if (!validName.test(p)) {
-              alert(
-                'Invalid character detected in folder name: "' + p + '"\n\n' +
-                'Allowed characters:\nletters, numbers, space, _ - . + @'
-              );
-              return;
-            }
-          }
-        }
-
-        // --- Validate B2 Bucket Name if any B2 remote selected ---
-        const anyB2 = selectedRemotes.some(r => remoteTypes[r] === 'b2' || remoteTypes[r] === 'crypt-b2');
-        if (anyB2) {
-          const b2Bucket = $('#b2_bucket_name').val().trim();
-          if (!b2Bucket) {
-            alert('B2 Bucketname is required when a Backblaze B2 config is selected');
-            return;
-          }
-          const validBucket = /^[A-Za-z0-9._\-]+$/;
-          const b2BucketStripped = b2Bucket.replace(/\/+$/, '');
-          if (!validBucket.test(b2BucketStripped)) {
-            alert('Invalid B2 bucket name: "' + b2Bucket + '"\n\nAllowed characters:\nletters, numbers, - . _');
+        for (const p of parts) {
+          if (!validName.test(p)) {
+            alert(
+              'Invalid character detected in folder name: "' + p + '"\n\n' +
+              'Allowed characters:\nletters, numbers, space, _ - . + @'
+            );
             return;
           }
         }
+      }
 
-        if (!validateDiscordWebhookRemote()) {
-          alert("Please enter a valid Discord webhook URL or leave it blank");
-          return;
-        }
-
-        backupRequestInProgressRemote = true;
-        let finalPath = remotePath === '' ? '/Flash_Backups/' : remotePath;
+      // --- Validate B2 Bucket Name if any B2 remote selected ---
+      const anyB2 = selectedRemotes.some(r => remoteTypes[r] === 'b2' || remoteTypes[r] === 'crypt-b2');
+      if (anyB2) {
         const b2Bucket = $('#b2_bucket_name').val().trim();
+        if (!b2Bucket) {
+          alert('B2 Bucketname is required when a Backblaze B2 config is selected');
+          return;
+        }
+        const validBucket = /^[A-Za-z0-9._\-]+$/;
+        const b2BucketStripped = b2Bucket.replace(/\/+$/, '');
+        if (!validBucket.test(b2BucketStripped)) {
+          alert('Invalid B2 bucket name: "' + b2Bucket + '"\n\nAllowed characters:\nletters, numbers, - . _');
+          return;
+        }
+      }
 
-        const params = $.param({
-          MINIMAL_BACKUP_REMOTE: $('#minimal_backup_remote').is(':checked') ? 'yes' : 'no',
-          RCLONE_CONFIG_REMOTE: selectedRemotes,
-          REMOTE_PATH_IN_CONFIG: finalPath,
-          B2_BUCKET_NAME: b2Bucket,
-          BACKUPS_TO_KEEP_REMOTE: $('#backups_to_keep_remote').val(),
-          DRY_RUN_REMOTE: $('#dry_run_remote').val(),
-          NOTIFICATIONS_REMOTE: $('#notifications_remote').val(),
-          DISCORD_WEBHOOK_URL_REMOTE: $('#discord_webhook_url_remote').val().trim(),
-          PUSHOVER_USER_KEY_REMOTE: $('#pushover_user_key_remote').val().trim(),
-          csrf_token: csrfToken
-        });
+      if (!validateDiscordWebhookRemote()) {
+        alert("Please enter a valid Discord webhook URL or leave it blank");
+        return;
+      }
 
-        $.get('/plugins/flash-backup/helpers/save_settings_remote.php?' + params)
-          .done(function (res) {
+      backupRequestInProgressRemote = true;
+      let finalPath = remotePath === '' ? '/Flash_Backups/' : remotePath;
+      const b2Bucket = $('#b2_bucket_name').val().trim();
 
-            if (res && res.status === 'ok') {
-              startBackupRemote();
-            } else {
-              alert('Failed to save remote settings');
-            }
-
-          })
-          .fail(function () {
-            alert('Error saving remote settings');
-          })
-          .always(function () {
-            backupRequestInProgressRemote = false;
-          });
-
+      const params = $.param({
+        MINIMAL_BACKUP_REMOTE: $('#minimal_backup_remote').is(':checked') ? 'yes' : 'no',
+        RCLONE_CONFIG_REMOTE: selectedRemotes,
+        REMOTE_PATH_IN_CONFIG: finalPath,
+        B2_BUCKET_NAME: b2Bucket,
+        BACKUPS_TO_KEEP_REMOTE: $('#backups_to_keep_remote').val(),
+        DRY_RUN_REMOTE: $('#dry_run_remote').val(),
+        NOTIFICATIONS_REMOTE: $('#notifications_remote').val(),
+        DISCORD_WEBHOOK_URL_REMOTE: $('#discord_webhook_url_remote').val().trim(),
+        PUSHOVER_USER_KEY_REMOTE: $('#pushover_user_key_remote').val().trim(),
+        csrf_token: csrfToken
       });
 
-      function startBackup() {
-        $.get('/plugins/flash-backup/helpers/backup.php', {
-          csrf_token: csrfToken
-        })
-          .done(function (res) {
-            if (res && res.status === 'ok') {
-              console.log('Backup started, PID:', res.pid);
-            } else {
-              alert(res.message || 'Failed to start backup');
-            }
-          })
-          .fail(function () {
-            alert('Error starting backup');
-          });
-      }
+      $.get('/plugins/flash-backup/helpers/save_settings_remote.php?' + params)
+        .done(function (res) {
 
-      function startBackupRemote() {
-        $.get('/plugins/flash-backup/helpers/remote_backup.php', {
-          csrf_token: csrfToken
-        })
-          .done(function (res) {
-            if (res && res.status === 'ok') {
-              console.log('Remote backup started, PID:', res.pid);
-            } else {
-              alert(res.message || 'Failed to start remote backup');
-            }
-          })
-          .fail(function () {
-            alert('Error starting remote backup');
-          });
-      }
-
-      function cronToMinutesOfWeek(expr) {
-        // Returns array of [minuteOfWeek, ...] that a cron fires on
-        // Handles: */N, hourly, daily, weekly, monthly (best-effort for conflict detection)
-        const parts = expr.trim().split(/\s+/);
-        if (parts.length !== 5) return [];
-
-        const [min, hour, dom, month, dow] = parts;
-        const minutes = [];
-
-        const MINS_IN_WEEK = 7 * 24 * 60;
-
-        // */N minutes
-        const mInterval = min.match(/^\*\/(\d+)$/);
-        if (mInterval && hour === '*' && dom === '*' && month === '*' && dow === '*') {
-          const n = parseInt(mInterval[1], 10);
-          for (let i = 0; i < MINS_IN_WEEK; i += n) minutes.push(i);
-          return minutes;
-        }
-
-        // Hourly: 0 */N * * *
-        const hInterval = hour.match(/^\*\/(\d+)$/);
-        if (min === '0' && hInterval && dom === '*' && month === '*' && dow === '*') {
-          const n = parseInt(hInterval[1], 10);
-          for (let h = 0; h < 7 * 24; h += n) minutes.push(h * 60);
-          return minutes;
-        }
-
-        // Daily: 0 H * * *
-        if (min === '0' && /^\d+$/.test(hour) && dom === '*' && month === '*' && dow === '*') {
-          const h = parseInt(hour, 10);
-          for (let d = 0; d < 7; d++) minutes.push(d * 24 * 60 + h * 60);
-          return minutes;
-        }
-
-        // Weekly: 0 H * * D
-        if (min === '0' && /^\d+$/.test(hour) && dom === '*' && month === '*' && /^\d+$/.test(dow)) {
-          const h = parseInt(hour, 10);
-          const d = parseInt(dow, 10);
-          minutes.push(d * 24 * 60 + h * 60);
-          return minutes;
-        }
-
-        // Monthly: 0 H D * * — treat as weekly on day-of-month mod 7 (best effort)
-        if (min === '0' && /^\d+$/.test(hour) && /^\d+$/.test(dom) && month === '*' && dow === '*') {
-          const h = parseInt(hour, 10);
-          const d = (parseInt(dom, 10) - 1) % 7;
-          minutes.push(d * 24 * 60 + h * 60);
-          return minutes;
-        }
-
-        return [];
-      }
-
-      function checkCronConflicts(newCron, existingCrons, excludeId, thresholdMinutes) {
-        const newTimes = cronToMinutesOfWeek(newCron);
-        if (!newTimes.length) return null;
-
-        const MINS_IN_WEEK = 7 * 24 * 60;
-
-        for (const entry of existingCrons) {
-          if (entry.id === excludeId) continue;
-
-          const existingTimes = cronToMinutesOfWeek(entry.cron);
-
-          for (const nt of newTimes) {
-            for (const et of existingTimes) {
-              // Circular distance to handle week wrap-around
-              const diff = Math.min(
-                Math.abs(nt - et),
-                MINS_IN_WEEK - Math.abs(nt - et)
-              );
-              if (diff < thresholdMinutes) {
-                return entry.cron;
-              }
-            }
-          }
-        }
-
-        return null;
-      }
-
-      async function fetchExistingCrons() {
-        return $.getJSON('/plugins/flash-backup/helpers/schedule_cron_check.php');
-      }
-
-      // --- Global variable to track editing ---
-      window.editingScheduleId = null;
-
-      // --- Load schedule list ---
-      function loadSchedules() {
-        return $.get(
-          '/plugins/flash-backup/helpers/schedule_list.php',
-          function (html) {
-            $('#schedule-list').html(html);
-          }
-        ).always(() => {
-          unlockScheduleUI();
-        });
-      }
-
-      // --- Build cron string from UI selections (LOCAL ONLY, unchanged) ---
-      function validateCustomCron(expr) {
-        expr = expr.trim();
-        const parts = expr.split(/\s+/);
-        if (parts.length !== 5) return { valid: false };
-        if (parts[0] === '*') return { valid: false };
-        const m = parts[0].match(/^\*\/(\d+)$/);
-        if (m && parseInt(m[1], 10) < 2) return { valid: false };
-        return { valid: true, expression: expr };
-      }
-
-      function buildCronFromUI() {
-        const mode = $('#cron_mode').val();
-        switch (mode) {
-          case 'minutes': {
-            const v = parseInt($('#minutes_frequency').val(), 10);
-            return { valid: true, expression: `*/${v} * * * *` };
-          }
-          case 'hourly': {
-            const v = parseInt($('#hourly_frequency').val(), 10);
-            return { valid: true, expression: `0 */${v} * * *` };
-          }
-          case 'daily': {
-            const h = parseInt($('#daily_time').val(), 10);
-            const m = parseInt($('#daily_minute').val(), 10);
-            return { valid: true, expression: `${m} ${h} * * *` };
-          }
-          case 'weekly': {
-            const dayMap = { Sunday: 0, Monday: 1, Tuesday: 2, Wednesday: 3, Thursday: 4, Friday: 5, Saturday: 6 };
-            const d = dayMap[$('#weekly_day').val()];
-            const h = parseInt($('#weekly_time').val(), 10);
-            const m = parseInt($('#weekly_minute').val(), 10);
-            return { valid: true, expression: `${m} ${h} * * ${d}` };
-          }
-          case 'monthly': {
-            const d = parseInt($('#monthly_day').val(), 10);
-            const h = parseInt($('#monthly_time').val(), 10);
-            const m = parseInt($('#monthly_minute').val(), 10);
-            return { valid: true, expression: `${m} ${h} ${d} * *` };
-          }
-          case 'custom':
-            return validateCustomCron($('#custom_cron').val());
-          default:
-            return { valid: false };
-        }
-      }
-
-      // --- Create or update schedule ---
-      async function scheduleJob(type) {
-
-        if (!validateBackupPrereqs()) {
-          return;
-        }
-
-        if (scheduleUILocked) return;
-        lockScheduleUI();
-
-        const cron = buildCronFromUI();
-        if (!cron.valid) {
-          unlockScheduleUI();
-          alert("Invalid cron expression");
-          return;
-        }
-
-        const existingCrons = await fetchExistingCrons();
-        const conflict = checkCronConflicts(cron.expression, existingCrons, window.editingScheduleId, 15);
-        if (conflict) {
-          unlockScheduleUI();
-          alert('This schedule is within 15 minutes of an existing schedule (' + conflict + '). Please choose a different time.');
-          return;
-        }
-
-        // -------------------------------
-        // CONTINUE WITH NORMAL SAVE LOGIC
-        // -------------------------------
-
-        const settings = {};
-        $('input[name], select[name]').each(function () {
-          if ($(this).is(':checkbox')) {
-            settings[this.name] = $(this).is(':checked') ? 'yes' : 'no';
+          if (res && res.status === 'ok') {
+            startBackupRemote();
           } else {
-            settings[this.name] = $(this).val();
+            alert('Failed to save remote settings');
           }
+
+        })
+        .fail(function () {
+          alert('Error saving remote settings');
+        })
+        .always(function () {
+          backupRequestInProgressRemote = false;
         });
 
-        const url = window.editingScheduleId
-          ? 'schedule_update.php'
-          : 'schedule_create.php';
+    });
 
-        $.ajax({
-          type: 'POST',
-          url: `/plugins/flash-backup/helpers/${url}`,
-          data: {
-            id: window.editingScheduleId,
-            type: type,
-            cron: cron.expression,
-            settings: settings
-          },
-          success: function (response) {
-            resetScheduleUI();
-            window.editingScheduleId = null;
-            loadSchedules();
-            showPopup("Schedule saved!");
-          },
-          error: function (xhr) {
-            unlockScheduleUI();
-
-            if (xhr.status === 409) {
-              alert('Duplicate schedule detected during create!');
-            } else {
-              alert('Error creating/updating schedule: ' + xhr.responseText);
-            }
+    function startBackup() {
+      $.get('/plugins/flash-backup/helpers/backup.php', {
+        csrf_token: csrfToken
+      })
+        .done(function (res) {
+          if (res && res.status === 'ok') {
+            console.log('Backup started, PID:', res.pid);
+          } else {
+            alert(res.message || 'Failed to start backup');
           }
+        })
+        .fail(function () {
+          alert('Error starting backup');
         });
+    }
+
+    function startBackupRemote() {
+      $.get('/plugins/flash-backup/helpers/remote_backup.php', {
+        csrf_token: csrfToken
+      })
+        .done(function (res) {
+          if (res && res.status === 'ok') {
+            console.log('Remote backup started, PID:', res.pid);
+          } else {
+            alert(res.message || 'Failed to start remote backup');
+          }
+        })
+        .fail(function () {
+          alert('Error starting remote backup');
+        });
+    }
+
+    function cronToMinutesOfWeek(expr) {
+      // Returns array of [minuteOfWeek, ...] that a cron fires on
+      // Handles: */N, hourly, daily, weekly, monthly (best-effort for conflict detection)
+      const parts = expr.trim().split(/\s+/);
+      if (parts.length !== 5) return [];
+
+      const [min, hour, dom, month, dow] = parts;
+      const minutes = [];
+
+      const MINS_IN_WEEK = 7 * 24 * 60;
+
+      // */N minutes
+      const mInterval = min.match(/^\*\/(\d+)$/);
+      if (mInterval && hour === '*' && dom === '*' && month === '*' && dow === '*') {
+        const n = parseInt(mInterval[1], 10);
+        for (let i = 0; i < MINS_IN_WEEK; i += n) minutes.push(i);
+        return minutes;
       }
 
-      // --- Edit a schedule ---
-      function editSchedule(id) {
-        if (scheduleUILocked) return;   // prevent double‑clicks during reload
-        lockScheduleUI();               // freeze all schedule action buttons
-
-        $.getJSON('/plugins/flash-backup/helpers/schedule_load.php', { id }, function (s) {
-          const settings = s.SETTINGS || {};
-
-          // Apply schedule type first
-          if (s.TYPE) {
-            $('[name="type"]').val(s.TYPE).trigger('change');
-          }
-
-          // Apply all settings to form fields
-          for (const k in settings) {
-            const el = $('[name="' + k + '"]');
-            if (!el.length) continue;
-
-            if (el.is(':checkbox')) {
-              const v = String(settings[k]).toLowerCase();
-              el.prop('checked', v === 'yes' || v === '1' || v === 'true');
-            } else if (el.is(':radio')) {
-              $('[name="' + k + '"][value="' + settings[k] + '"]').prop('checked', true);
-            } else {
-              el.val(settings[k]).trigger('change');
-            }
-          }
-
-          // Cron mode detection
-          $('#cron_mode')
-            .val(detectCronMode(s.CRON))
-            .trigger('change');
-
-          // Store ID globally
-          window.editingScheduleId = id;
-
-          // Switch Schedule It → Edit
-          $('#schedule-local-backup').text('Update');
-          const $tip = $('#schedule-local-backup').closest('span');
-          $tip.data('tooltip', 'Update the local backup schedule using the settings shown in the fields above');
-          if ($tip.hasClass('tooltipstered')) $tip.tooltipster('content', 'Update the local backup schedule using the settings shown in the fields above');
-
-          // Show Cancel button
-          $('#cancelEditBtn').show();
-
-          unlockScheduleUI();
-        });
+      // Hourly: 0 */N * * *
+      const hInterval = hour.match(/^\*\/(\d+)$/);
+      if (min === '0' && hInterval && dom === '*' && month === '*' && dow === '*') {
+        const n = parseInt(hInterval[1], 10);
+        for (let h = 0; h < 7 * 24; h += n) minutes.push(h * 60);
+        return minutes;
       }
 
-      $('#cancelEditBtn').on('click', function () {
-        location.reload();
+      // Daily: 0 H * * *
+      if (min === '0' && /^\d+$/.test(hour) && dom === '*' && month === '*' && dow === '*') {
+        const h = parseInt(hour, 10);
+        for (let d = 0; d < 7; d++) minutes.push(d * 24 * 60 + h * 60);
+        return minutes;
+      }
+
+      // Weekly: 0 H * * D
+      if (min === '0' && /^\d+$/.test(hour) && dom === '*' && month === '*' && /^\d+$/.test(dow)) {
+        const h = parseInt(hour, 10);
+        const d = parseInt(dow, 10);
+        minutes.push(d * 24 * 60 + h * 60);
+        return minutes;
+      }
+
+      // Monthly: 0 H D * * — treat as weekly on day-of-month mod 7 (best effort)
+      if (min === '0' && /^\d+$/.test(hour) && /^\d+$/.test(dom) && month === '*' && dow === '*') {
+        const h = parseInt(hour, 10);
+        const d = (parseInt(dom, 10) - 1) % 7;
+        minutes.push(d * 24 * 60 + h * 60);
+        return minutes;
+      }
+
+      return [];
+    }
+
+    function checkCronConflicts(newCron, existingCrons, excludeId, thresholdMinutes) {
+      const newTimes = cronToMinutesOfWeek(newCron);
+      if (!newTimes.length) return null;
+
+      const MINS_IN_WEEK = 7 * 24 * 60;
+
+      for (const entry of existingCrons) {
+        if (entry.id === excludeId) continue;
+
+        const existingTimes = cronToMinutesOfWeek(entry.cron);
+
+        for (const nt of newTimes) {
+          for (const et of existingTimes) {
+            // Circular distance to handle week wrap-around
+            const diff = Math.min(
+              Math.abs(nt - et),
+              MINS_IN_WEEK - Math.abs(nt - et)
+            );
+            if (diff < thresholdMinutes) {
+              return entry.cron;
+            }
+          }
+        }
+      }
+
+      return null;
+    }
+
+    async function fetchExistingCrons() {
+      return $.getJSON('/plugins/flash-backup/helpers/schedule_cron_check.php');
+    }
+
+    // --- Global variable to track editing ---
+    window.editingScheduleId = null;
+
+    // --- Load schedule list ---
+    function loadSchedules() {
+      return $.get(
+        '/plugins/flash-backup/helpers/schedule_list.php',
+        function (html) {
+          $('#schedule-list').html(html);
+        }
+      ).always(() => {
+        unlockScheduleUI();
+      });
+    }
+
+    // --- Build cron string from UI selections (LOCAL ONLY, unchanged) ---
+    function validateCustomCron(expr) {
+      expr = expr.trim();
+      const parts = expr.split(/\s+/);
+      if (parts.length !== 5) return { valid: false };
+      if (parts[0] === '*') return { valid: false };
+      const m = parts[0].match(/^\*\/(\d+)$/);
+      if (m && parseInt(m[1], 10) < 2) return { valid: false };
+      return { valid: true, expression: expr };
+    }
+
+    function buildCronFromUI() {
+      const mode = $('#cron_mode').val();
+      switch (mode) {
+        case 'minutes': {
+          const v = parseInt($('#minutes_frequency').val(), 10);
+          return { valid: true, expression: `*/${v} * * * *` };
+        }
+        case 'hourly': {
+          const v = parseInt($('#hourly_frequency').val(), 10);
+          return { valid: true, expression: `0 */${v} * * *` };
+        }
+        case 'daily': {
+          const h = parseInt($('#daily_time').val(), 10);
+          const m = parseInt($('#daily_minute').val(), 10);
+          return { valid: true, expression: `${m} ${h} * * *` };
+        }
+        case 'weekly': {
+          const dayMap = { Sunday: 0, Monday: 1, Tuesday: 2, Wednesday: 3, Thursday: 4, Friday: 5, Saturday: 6 };
+          const d = dayMap[$('#weekly_day').val()];
+          const h = parseInt($('#weekly_time').val(), 10);
+          const m = parseInt($('#weekly_minute').val(), 10);
+          return { valid: true, expression: `${m} ${h} * * ${d}` };
+        }
+        case 'monthly': {
+          const d = parseInt($('#monthly_day').val(), 10);
+          const h = parseInt($('#monthly_time').val(), 10);
+          const m = parseInt($('#monthly_minute').val(), 10);
+          return { valid: true, expression: `${m} ${h} ${d} * *` };
+        }
+        case 'custom':
+          return validateCustomCron($('#custom_cron').val());
+        default:
+          return { valid: false };
+      }
+    }
+
+    // --- Create or update schedule ---
+    async function scheduleJob(type) {
+
+      if (!validateBackupPrereqs()) {
+        return;
+      }
+
+      if (scheduleUILocked) return;
+      lockScheduleUI();
+
+      const cron = buildCronFromUI();
+      if (!cron.valid) {
+        unlockScheduleUI();
+        alert("Invalid cron expression");
+        return;
+      }
+
+      const existingCrons = await fetchExistingCrons();
+      const conflict = checkCronConflicts(cron.expression, existingCrons, window.editingScheduleId, 15);
+      if (conflict) {
+        unlockScheduleUI();
+        alert('This schedule is within 15 minutes of an existing schedule (' + conflict + '). Please choose a different time.');
+        return;
+      }
+
+      // -------------------------------
+      // CONTINUE WITH NORMAL SAVE LOGIC
+      // -------------------------------
+
+      const settings = {};
+      $('input[name], select[name]').each(function () {
+        if ($(this).is(':checkbox')) {
+          settings[this.name] = $(this).is(':checked') ? 'yes' : 'no';
+        } else {
+          settings[this.name] = $(this).val();
+        }
       });
 
-      function showPopup(message) {
-        const popup = $('#popupMessage');
+      const url = window.editingScheduleId
+        ? 'schedule_update.php'
+        : 'schedule_create.php';
 
-        popup.text(message).fadeIn(150);
+      $.ajax({
+        type: 'POST',
+        url: `/plugins/flash-backup/helpers/${url}`,
+        data: {
+          id: window.editingScheduleId,
+          type: type,
+          cron: cron.expression,
+          settings: settings
+        },
+        success: function (response) {
+          resetScheduleUI();
+          window.editingScheduleId = null;
+          loadSchedules();
+          showPopup("Schedule saved!");
+        },
+        error: function (xhr) {
+          unlockScheduleUI();
 
-        setTimeout(() => {
-          popup.fadeOut(200, () => {
-            popup.text('');
-            popup.hide();
-          });
-        }, 3000);
-      }
+          if (xhr.status === 409) {
+            alert('Duplicate schedule detected during create!');
+          } else {
+            alert('Error creating/updating schedule: ' + xhr.responseText);
+          }
+        }
+      });
+    }
 
-      function resetScheduleUI() {
-        // Revert Edit → Schedule It
-        $('#schedule-local-backup').text('Schedule It');
+    // --- Edit a schedule ---
+    function editSchedule(id) {
+      if (scheduleUILocked) return;   // prevent double‑clicks during reload
+      lockScheduleUI();               // freeze all schedule action buttons
+
+      $.getJSON('/plugins/flash-backup/helpers/schedule_load.php', { id }, function (s) {
+        const settings = s.SETTINGS || {};
+
+        // Apply schedule type first
+        if (s.TYPE) {
+          $('[name="type"]').val(s.TYPE).trigger('change');
+        }
+
+        // Apply all settings to form fields
+        for (const k in settings) {
+          const el = $('[name="' + k + '"]');
+          if (!el.length) continue;
+
+          if (el.is(':checkbox')) {
+            const v = String(settings[k]).toLowerCase();
+            el.prop('checked', v === 'yes' || v === '1' || v === 'true');
+          } else if (el.is(':radio')) {
+            $('[name="' + k + '"][value="' + settings[k] + '"]').prop('checked', true);
+          } else {
+            el.val(settings[k]).trigger('change');
+          }
+        }
+
+        // Cron mode detection
+        $('#cron_mode')
+          .val(detectCronMode(s.CRON))
+          .trigger('change');
+
+        // Store ID globally
+        window.editingScheduleId = id;
+
+        // Switch Schedule It → Edit
+        $('#schedule-local-backup').text('Update');
         const $tip = $('#schedule-local-backup').closest('span');
-        $tip.data('tooltip', 'Create a backup schedule using the settings shown in the fields above');
-        if ($tip.hasClass('tooltipstered')) $tip.tooltipster('content', 'Create a backup schedule using the settings shown in the fields above');
+        $tip.data('tooltip', 'Update the local backup schedule using the settings shown in the fields above');
+        if ($tip.hasClass('tooltipstered')) $tip.tooltipster('content', 'Update the local backup schedule using the settings shown in the fields above');
 
-        // Hide Cancel button
-        $('#cancelEditBtn').hide();
+        // Show Cancel button
+        $('#cancelEditBtn').show();
 
-        // Remove any popup message immediately
-        $('#popupMessage').stop(true, true).hide().text('');
-      }
+        unlockScheduleUI();
+      });
+    }
 
-      // --- Delete a schedule ---
-      function deleteSchedule(id) {
-        if (scheduleUILocked) return;   // prevent double‑clicks during reload
+    $('#cancelEditBtn').on('click', function () {
+      location.reload();
+    });
 
-        if (!confirm("Delete this schedule?")) return;
+    function showPopup(message) {
+      const popup = $('#popupMessage');
 
-        lockScheduleUI();               // freeze all schedule action buttons
+      popup.text(message).fadeIn(150);
 
-        $.post(
-          '/plugins/flash-backup/helpers/schedule_delete.php',
-          { id: id }
-        ).always(() => {
-          loadSchedules();
+      setTimeout(() => {
+        popup.fadeOut(200, () => {
+          popup.text('');
+          popup.hide();
         });
-      }
+      }, 3000);
+    }
 
-      // --- Run backup manually ---
-      function runScheduleBackup(id, btn) {
-        if (scheduleUILocked) return;
+    function resetScheduleUI() {
+      // Revert Edit → Schedule It
+      $('#schedule-local-backup').text('Schedule It');
+      const $tip = $('#schedule-local-backup').closest('span');
+      $tip.data('tooltip', 'Create a backup schedule using the settings shown in the fields above');
+      if ($tip.hasClass('tooltipstered')) $tip.tooltipster('content', 'Create a backup schedule using the settings shown in the fields above');
 
-        if (!confirm("Are you sure you want to run this backup now?")) return;
+      // Hide Cancel button
+      $('#cancelEditBtn').hide();
 
-        lockScheduleUI();
+      // Remove any popup message immediately
+      $('#popupMessage').stop(true, true).hide().text('');
+    }
 
-        // Disable clicked button and change tooltip
-        btn.disabled = true;
-        const originalText = btn.textContent;
-        const originalTitle = btn.getAttribute('title');
+    // --- Delete a schedule ---
+    function deleteSchedule(id) {
+      if (scheduleUILocked) return;   // prevent double‑clicks during reload
 
-        btn.textContent = "Running";
+      if (!confirm("Delete this schedule?")) return;
 
-        $.post('/plugins/flash-backup/helpers/run_schedule.php', { id })
-          .done(function (res) {
-            if (!res.started) {
-              alert("Failed to start backup");
-              btn.disabled = false;
-              btn.textContent = originalText;
-              btn.setAttribute('title', originalTitle);
-              unlockScheduleUI();
-              return;
-            }
+      lockScheduleUI();               // freeze all schedule action buttons
 
-            // Poll lock
-            const poll = setInterval(function () {
-              $.getJSON('/plugins/flash-backup/helpers/check_lock.php', function (res) {
-                if (!res.locked) {
-                  clearInterval(poll);
+      $.post(
+        '/plugins/flash-backup/helpers/schedule_delete.php',
+        { id: id }
+      ).always(() => {
+        loadSchedules();
+      });
+    }
 
-                  btn.disabled = false;
-                  btn.textContent = originalText;
+    // --- Run backup manually ---
+    function runScheduleBackup(id, btn) {
+      if (scheduleUILocked) return;
 
-                  unlockScheduleUI();
-                }
-              });
-            }, 1000);
-          })
-          .fail(function (xhr, status, err) {
-            alert("Failed to start backup: " + (xhr.responseJSON?.error || err));
+      if (!confirm("Are you sure you want to run this backup now?")) return;
+
+      lockScheduleUI();
+
+      // Disable clicked button and change tooltip
+      btn.disabled = true;
+      const originalText = btn.textContent;
+      const originalTitle = btn.getAttribute('title');
+
+      btn.textContent = "Running";
+
+      $.post('/plugins/flash-backup/helpers/run_schedule.php', { id })
+        .done(function (res) {
+          if (!res.started) {
+            alert("Failed to start backup");
             btn.disabled = false;
             btn.textContent = originalText;
             btn.setAttribute('title', originalTitle);
             unlockScheduleUI();
-          });
-      }
+            return;
+          }
 
-      // --- Toggle enable/disable ---
-      function toggleSchedule(id, isEnabled) {
-        if (scheduleUILocked) return;   // prevent double‑clicks during reload
+          // Poll lock
+          const poll = setInterval(function () {
+            $.getJSON('/plugins/flash-backup/helpers/check_lock.php', function (res) {
+              if (!res.locked) {
+                clearInterval(poll);
 
-        const msg = isEnabled
-          ? "Disable this schedule?"
-          : "Enable this schedule?";
+                btn.disabled = false;
+                btn.textContent = originalText;
 
-        if (!confirm(msg)) return;
-
-        lockScheduleUI();               // freeze all schedule action buttons
-
-        $.post(
-          '/plugins/flash-backup/helpers/schedule_toggle.php',
-          { id: id }
-        ).always(() => {
-          loadSchedules();
+                unlockScheduleUI();
+              }
+            });
+          }, 1000);
+        })
+        .fail(function (xhr, status, err) {
+          alert("Failed to start backup: " + (xhr.responseJSON?.error || err));
+          btn.disabled = false;
+          btn.textContent = originalText;
+          btn.setAttribute('title', originalTitle);
+          unlockScheduleUI();
         });
-      }
+    }
 
-      // --- Button click handlers ---
-      $(document).ready(function () {
+    // --- Toggle enable/disable ---
+    function toggleSchedule(id, isEnabled) {
+      if (scheduleUILocked) return;   // prevent double‑clicks during reload
+
+      const msg = isEnabled
+        ? "Disable this schedule?"
+        : "Enable this schedule?";
+
+      if (!confirm(msg)) return;
+
+      lockScheduleUI();               // freeze all schedule action buttons
+
+      $.post(
+        '/plugins/flash-backup/helpers/schedule_toggle.php',
+        { id: id }
+      ).always(() => {
         loadSchedules();
+      });
+    }
 
-        $(document).on('click', '#schedule-local-backup', function () { scheduleJob('local-backup'); });
+    // --- Button click handlers ---
+    $(document).ready(function () {
+      loadSchedules();
+
+      $(document).on('click', '#schedule-local-backup', function () { scheduleJob('local-backup'); });
+    });
+
+    // --- Global variable to track editing ---
+    window.editingScheduleIdremote = null;
+
+    // --- Load schedule list ---
+    function loadSchedulesremote() {
+      return $.get(
+        '/plugins/flash-backup/helpers/schedule_list_remote.php',
+        function (html) {
+          $('#schedule-list-remote').html(html);
+        }
+      ).always(() => {
+        unlockScheduleUIremote();
+      });
+    }
+
+    // --- Build cron string from UI selections ---
+    function validateCustomCronremote(expr) {
+      expr = expr.trim();
+      const parts = expr.split(/\s+/);
+      if (parts.length !== 5) return { valid: false };
+      if (parts[0] === '*') return { valid: false };
+      const m = parts[0].match(/^\*\/(\d+)$/);
+      if (m && parseInt(m[1], 10) < 2) return { valid: false };
+      return { valid: true, expression: expr };
+    }
+
+    function buildCronFromUIremote() {
+      const mode = $('#cron_mode_remote').val();
+      switch (mode) {
+        case 'minutes': {
+          const v = parseInt($('#minutes_frequency_remote').val(), 10);
+          return { valid: true, expression: `*/${v} * * * *` };
+        }
+        case 'hourly': {
+          const v = parseInt($('#hourly_frequency_remote').val(), 10);
+          return { valid: true, expression: `0 */${v} * * *` };
+        }
+        case 'daily': {
+          const h = parseInt($('#daily_time_remote').val(), 10);
+          const m = parseInt($('#daily_minute_remote').val(), 10);
+          return { valid: true, expression: `${m} ${h} * * *` };
+        }
+        case 'weekly': {
+          const dayMap = { Sunday: 0, Monday: 1, Tuesday: 2, Wednesday: 3, Thursday: 4, Friday: 5, Saturday: 6 };
+          const d = dayMap[$('#weekly_day_remote').val()];
+          const h = parseInt($('#weekly_time_remote').val(), 10);
+          const m = parseInt($('#weekly_minute_remote').val(), 10);
+          return { valid: true, expression: `${m} ${h} * * ${d}` };
+        }
+        case 'monthly': {
+          const d = parseInt($('#monthly_day_remote').val(), 10);
+          const h = parseInt($('#monthly_time_remote').val(), 10);
+          const m = parseInt($('#monthly_minute_remote').val(), 10);
+          return { valid: true, expression: `${m} ${h} ${d} * *` };
+        }
+        case 'custom':
+          return validateCustomCronremote($('#custom_cron_remote').val());
+        default:
+          return { valid: false };
+      }
+    }
+
+    // --- Create or update schedule ---
+    async function scheduleJobremote(type) {
+
+      if (!validateBackupPrereqsremote()) {
+        return;
+      }
+
+      if (scheduleUILockedremote) return;
+      lockScheduleUIremote();
+
+      const cron = buildCronFromUIremote();
+      if (!cron.valid) {
+        unlockScheduleUIremote();
+        alert("Invalid cron expression");
+        return;
+      }
+
+      const existingCrons = await fetchExistingCrons();
+      const conflict = checkCronConflicts(cron.expression, existingCrons, window.editingScheduleIdremote, 15);
+      if (conflict) {
+        unlockScheduleUIremote();
+        alert('This remote schedule is within 15 minutes of an existing schedule (' + conflict + '). Please choose a different time.');
+        return;
+      }
+
+      const settings = {};
+      $('input[name], select[name]').each(function () {
+        const key = this.name.replace(/\[\]$/, '');
+        if ($(this).is(':checkbox')) {
+          settings[key] = $(this).is(':checked') ? 'yes' : 'no';
+        } else {
+          const val = $(this).val();
+          settings[key] = Array.isArray(val) ? val.join(',') : val;
+        }
       });
 
-      // --- Global variable to track editing ---
-      window.editingScheduleIdremote = null;
+      const url = window.editingScheduleIdremote
+        ? 'schedule_update_remote.php'
+        : 'schedule_create_remote.php';
 
-      // --- Load schedule list ---
-      function loadSchedulesremote() {
-        return $.get(
-          '/plugins/flash-backup/helpers/schedule_list_remote.php',
-          function (html) {
-            $('#schedule-list-remote').html(html);
-          }
-        ).always(() => {
-          unlockScheduleUIremote();
-        });
-      }
-
-      // --- Build cron string from UI selections ---
-      function validateCustomCronremote(expr) {
-        expr = expr.trim();
-        const parts = expr.split(/\s+/);
-        if (parts.length !== 5) return { valid: false };
-        if (parts[0] === '*') return { valid: false };
-        const m = parts[0].match(/^\*\/(\d+)$/);
-        if (m && parseInt(m[1], 10) < 2) return { valid: false };
-        return { valid: true, expression: expr };
-      }
-
-      function buildCronFromUIremote() {
-        const mode = $('#cron_mode_remote').val();
-        switch (mode) {
-          case 'minutes': {
-            const v = parseInt($('#minutes_frequency_remote').val(), 10);
-            return { valid: true, expression: `*/${v} * * * *` };
-          }
-          case 'hourly': {
-            const v = parseInt($('#hourly_frequency_remote').val(), 10);
-            return { valid: true, expression: `0 */${v} * * *` };
-          }
-          case 'daily': {
-            const h = parseInt($('#daily_time_remote').val(), 10);
-            const m = parseInt($('#daily_minute_remote').val(), 10);
-            return { valid: true, expression: `${m} ${h} * * *` };
-          }
-          case 'weekly': {
-            const dayMap = { Sunday: 0, Monday: 1, Tuesday: 2, Wednesday: 3, Thursday: 4, Friday: 5, Saturday: 6 };
-            const d = dayMap[$('#weekly_day_remote').val()];
-            const h = parseInt($('#weekly_time_remote').val(), 10);
-            const m = parseInt($('#weekly_minute_remote').val(), 10);
-            return { valid: true, expression: `${m} ${h} * * ${d}` };
-          }
-          case 'monthly': {
-            const d = parseInt($('#monthly_day_remote').val(), 10);
-            const h = parseInt($('#monthly_time_remote').val(), 10);
-            const m = parseInt($('#monthly_minute_remote').val(), 10);
-            return { valid: true, expression: `${m} ${h} ${d} * *` };
-          }
-          case 'custom':
-            return validateCustomCronremote($('#custom_cron_remote').val());
-          default:
-            return { valid: false };
-        }
-      }
-
-      // --- Create or update schedule ---
-      async function scheduleJobremote(type) {
-
-        if (!validateBackupPrereqsremote()) {
-          return;
-        }
-
-        if (scheduleUILockedremote) return;
-        lockScheduleUIremote();
-
-        const cron = buildCronFromUIremote();
-        if (!cron.valid) {
-          unlockScheduleUIremote();
-          alert("Invalid cron expression");
-          return;
-        }
-
-        const existingCrons = await fetchExistingCrons();
-        const conflict = checkCronConflicts(cron.expression, existingCrons, window.editingScheduleIdremote, 15);
-        if (conflict) {
-          unlockScheduleUIremote();
-          alert('This remote schedule is within 15 minutes of an existing schedule (' + conflict + '). Please choose a different time.');
-          return;
-        }
-
-        const settings = {};
-        $('input[name], select[name]').each(function () {
-          const key = this.name.replace(/\[\]$/, '');
-          if ($(this).is(':checkbox')) {
-            settings[key] = $(this).is(':checked') ? 'yes' : 'no';
-          } else {
-            const val = $(this).val();
-            settings[key] = Array.isArray(val) ? val.join(',') : val;
-          }
-        });
-
-        const url = window.editingScheduleIdremote
-          ? 'schedule_update_remote.php'
-          : 'schedule_create_remote.php';
-
-        $.ajax({
-          type: 'POST',
-          url: `/plugins/flash-backup/helpers/${url}`,
-          data: {
-            id: window.editingScheduleIdremote,
-            type: type,
-            cron: cron.expression,
-            settings: settings
-          },
-          success: function (response) {
-            resetScheduleUIremote();
-            window.editingScheduleIdremote = null;
-            loadSchedulesremote();
-            showPopupremote("Schedule saved!");
-          },
-          error: function (xhr) {
-            unlockScheduleUIremote();
-
-            if (xhr.status === 409) {
-              alert('Duplicate remote schedule detected during create!');
-            } else {
-              alert('Error creating/updating remote schedule: ' + xhr.responseText);
-            }
-          }
-        });
-      }
-
-      // --- Edit a schedule ---
-      function editScheduleremote(id) {
-        if (scheduleUILockedremote) return;
-        lockScheduleUIremote();
-
-        $.getJSON('/plugins/flash-backup/helpers/schedule_load_remote.php', { id }, function (s) {
-          const settings = s.SETTINGS || {};
-
-          if (s.TYPE) {
-            $('[name="type_remote"]').val(s.TYPE).trigger('change');
-          }
-
-          for (const k in settings) {
-            const el = $('[name="' + k + '"]');
-            if (!el.length) continue;
-
-            if (el.is(':checkbox')) {
-              const v = String(settings[k]).toLowerCase();
-              el.prop('checked', v === 'yes' || v === '1' || v === 'true');
-            } else if (el.is(':radio')) {
-              $('[name="' + k + '"][value="' + settings[k] + '"]').prop('checked', true);
-            } else {
-              el.val(settings[k]).trigger('change');
-            }
-          }
-
-          $('#cron_mode_remote')
-            .val(detectCronMode(s.CRON))
-            .trigger('change');
-
-          window.editingScheduleIdremote = id;
-
-          $('#schedule-remote-backup').text('Update');
-          const $tip = $('#schedule-remote-backup').closest('span');
-          $tip.data('tooltip', 'Update the remote backup schedule using the settings shown in the fields above');
-          if ($tip.hasClass('tooltipstered')) $tip.tooltipster('content', 'Update the remote backup schedule using the settings shown in the fields above');
-
-          $('#cancelEditBtnremote').show();
-
-          unlockScheduleUIremote();
-        });
-      }
-
-      $('#cancelEditBtnremote').on('click', function () {
-        location.reload();
-      });
-
-      function showPopupremote(message) {
-        const popup = $('#popupMessageremote');
-
-        popup.text(message).fadeIn(150);
-
-        setTimeout(() => {
-          popup.fadeOut(200, () => {
-            popup.text('');
-            popup.hide();
-          });
-        }, 3000);
-      }
-
-      function resetScheduleUIremote() {
-        $('#schedule-remote-backup').text('Schedule It');
-        const $tip = $('#schedule-remote-backup').closest('span');
-        $tip.data('tooltip', 'Create a remote backup schedule using the settings shown in the fields above');
-        if ($tip.hasClass('tooltipstered')) $tip.tooltipster('content', 'Create a remote backup schedule using the settings shown in the fields above');
-        $('#cancelEditBtnremote').hide();
-        $('#popupMessageremote').stop(true, true).hide().text('');
-      }
-
-      // --- Delete a schedule ---
-      function deleteScheduleremote(id) {
-        if (scheduleUILockedremote) return;
-
-        if (!confirm("Delete this remote schedule?")) return;
-
-        lockScheduleUIremote();
-
-        $.post(
-          '/plugins/flash-backup/helpers/schedule_delete_remote.php',
-          { id: id }
-        ).always(() => {
+      $.ajax({
+        type: 'POST',
+        url: `/plugins/flash-backup/helpers/${url}`,
+        data: {
+          id: window.editingScheduleIdremote,
+          type: type,
+          cron: cron.expression,
+          settings: settings
+        },
+        success: function (response) {
+          resetScheduleUIremote();
+          window.editingScheduleIdremote = null;
           loadSchedulesremote();
+          showPopupremote("Schedule saved!");
+        },
+        error: function (xhr) {
+          unlockScheduleUIremote();
+
+          if (xhr.status === 409) {
+            alert('Duplicate remote schedule detected during create!');
+          } else {
+            alert('Error creating/updating remote schedule: ' + xhr.responseText);
+          }
+        }
+      });
+    }
+
+    // --- Edit a schedule ---
+    function editScheduleremote(id) {
+      if (scheduleUILockedremote) return;
+      lockScheduleUIremote();
+
+      $.getJSON('/plugins/flash-backup/helpers/schedule_load_remote.php', { id }, function (s) {
+        const settings = s.SETTINGS || {};
+
+        if (s.TYPE) {
+          $('[name="type_remote"]').val(s.TYPE).trigger('change');
+        }
+
+        for (const k in settings) {
+          const el = $('[name="' + k + '"]');
+          if (!el.length) continue;
+
+          if (el.is(':checkbox')) {
+            const v = String(settings[k]).toLowerCase();
+            el.prop('checked', v === 'yes' || v === '1' || v === 'true');
+          } else if (el.is(':radio')) {
+            $('[name="' + k + '"][value="' + settings[k] + '"]').prop('checked', true);
+          } else {
+            el.val(settings[k]).trigger('change');
+          }
+        }
+
+        $('#cron_mode_remote')
+          .val(detectCronMode(s.CRON))
+          .trigger('change');
+
+        window.editingScheduleIdremote = id;
+
+        $('#schedule-remote-backup').text('Update');
+        const $tip = $('#schedule-remote-backup').closest('span');
+        $tip.data('tooltip', 'Update the remote backup schedule using the settings shown in the fields above');
+        if ($tip.hasClass('tooltipstered')) $tip.tooltipster('content', 'Update the remote backup schedule using the settings shown in the fields above');
+
+        $('#cancelEditBtnremote').show();
+
+        unlockScheduleUIremote();
+      });
+    }
+
+    $('#cancelEditBtnremote').on('click', function () {
+      location.reload();
+    });
+
+    function showPopupremote(message) {
+      const popup = $('#popupMessageremote');
+
+      popup.text(message).fadeIn(150);
+
+      setTimeout(() => {
+        popup.fadeOut(200, () => {
+          popup.text('');
+          popup.hide();
         });
-      }
+      }, 3000);
+    }
 
-      // --- Run backup manually ---
-      function runScheduleBackupremote(id, btn) {
-        if (scheduleUILockedremote) return;
+    function resetScheduleUIremote() {
+      $('#schedule-remote-backup').text('Schedule It');
+      const $tip = $('#schedule-remote-backup').closest('span');
+      $tip.data('tooltip', 'Create a remote backup schedule using the settings shown in the fields above');
+      if ($tip.hasClass('tooltipstered')) $tip.tooltipster('content', 'Create a remote backup schedule using the settings shown in the fields above');
+      $('#cancelEditBtnremote').hide();
+      $('#popupMessageremote').stop(true, true).hide().text('');
+    }
 
-        if (!confirm("Are you sure you want to run this remote backup now?")) return;
+    // --- Delete a schedule ---
+    function deleteScheduleremote(id) {
+      if (scheduleUILockedremote) return;
 
-        lockScheduleUIremote();
+      if (!confirm("Delete this remote schedule?")) return;
 
-        btn.disabled = true;
-        const originalText = btn.textContent;
-        const originalTitle = btn.getAttribute('title');
+      lockScheduleUIremote();
 
-        btn.textContent = "Running";
+      $.post(
+        '/plugins/flash-backup/helpers/schedule_delete_remote.php',
+        { id: id }
+      ).always(() => {
+        loadSchedulesremote();
+      });
+    }
 
-        $.post('/plugins/flash-backup/helpers/run_schedule_remote.php', { id })
-          .done(function (res) {
-            if (!res.started) {
-              alert("Failed to start remote backup");
-              btn.disabled = false;
-              btn.textContent = originalText;
-              btn.setAttribute('title', originalTitle);
-              unlockScheduleUIremote();
-              return;
-            }
+    // --- Run backup manually ---
+    function runScheduleBackupremote(id, btn) {
+      if (scheduleUILockedremote) return;
 
-            const poll = setInterval(function () {
-              $.getJSON('/plugins/flash-backup/helpers/check_lock.php', function (res) {
-                if (!res.locked) {
-                  clearInterval(poll);
-                  btn.disabled = false;
-                  btn.textContent = originalText;
-                  unlockScheduleUIremote();
-                }
-              });
-            }, 1000);
-          })
-          .fail(function (xhr, status, err) {
-            alert("Failed to start remote backup: " + (xhr.responseJSON?.error || err));
+      if (!confirm("Are you sure you want to run this remote backup now?")) return;
+
+      lockScheduleUIremote();
+
+      btn.disabled = true;
+      const originalText = btn.textContent;
+      const originalTitle = btn.getAttribute('title');
+
+      btn.textContent = "Running";
+
+      $.post('/plugins/flash-backup/helpers/run_schedule_remote.php', { id })
+        .done(function (res) {
+          if (!res.started) {
+            alert("Failed to start remote backup");
             btn.disabled = false;
             btn.textContent = originalText;
             btn.setAttribute('title', originalTitle);
             unlockScheduleUIremote();
-          });
-      }
+            return;
+          }
 
-      // --- Toggle enable/disable ---
-      function toggleScheduleremote(id, isEnabled) {
-        if (scheduleUILockedremote) return;
-
-        const msg = isEnabled
-          ? "Disable this remote schedule?"
-          : "Enable this remote schedule?";
-
-        if (!confirm(msg)) return;
-
-        lockScheduleUIremote();
-
-        $.post(
-          '/plugins/flash-backup/helpers/schedule_toggle_remote.php',
-          { id: id }
-        ).always(() => {
-          loadSchedulesremote();
-        });
-      }
-
-      // --- Button click handlers ---
-      $(document).ready(function () {
-        loadSchedulesremote();
-
-        $(document).on('click', '#schedule-remote-backup', function () { scheduleJobremote('remote-backup'); });
-      });
-    </script>
-
-    <script>
-      function showPopup(message) {
-        const popup = $('#popupMessage');
-
-        popup.text(message).fadeIn(150);
-
-        setTimeout(() => {
-          popup.fadeOut(200, () => {
-            popup.text('');
-            popup.hide();
-          });
-        }, 3000);
-      }
-
-      // --- Detect cron mode based on expression ---
-      function detectCronMode(cron) {
-        if (!cron) return 'minutes';
-        if (/^\*\/\d+ \* \* \* \*$/.test(cron)) return 'minutes';
-        if (/^0 \*\/\d+ \* \* \*$/.test(cron)) return 'hourly';
-        if (/^\d+ \d+ \* \* \*$/.test(cron)) return 'daily';
-        if (/^\d+ \d+ \* \* [0-6]$/.test(cron)) return 'weekly';
-        if (/^\d+ \d+ \d+ \* \*$/.test(cron)) return 'monthly';
-        return 'custom';
-      }
-    </script>
-
-    <script>
-      if (typeof caPluginUpdateCheck === "function") {
-        caPluginUpdateCheck("flash-backup.plg", { name: "flash-backup" });
-      }
-    </script>
-
-    <script>
-      let currentPath = "/mnt";
-      let selectedFolders = [];        // folders checked in current view
-      let accumulatedFolders = [];     // folders added via "Add Selected"
-      let persistentFolders = [];   // survives modal close
-
-      function resolveAndApplyPath(selectedPath, targetInputId) {
-        const params = new URLSearchParams({
-          path: selectedPath,
-          csrf_token: csrf_token
-        });
-
-        fetch('/plugins/flash-backup/helpers/resolve_path.php', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: params.toString()
+          const poll = setInterval(function () {
+            $.getJSON('/plugins/flash-backup/helpers/check_lock.php', function (res) {
+              if (!res.locked) {
+                clearInterval(poll);
+                btn.disabled = false;
+                btn.textContent = originalText;
+                unlockScheduleUIremote();
+              }
+            });
+          }, 1000);
         })
-          .then(r => r.text())
-          .then(resolvedPath => {
-            const $field = $('#' + targetInputId);
+        .fail(function (xhr, status, err) {
+          alert("Failed to start remote backup: " + (xhr.responseJSON?.error || err));
+          btn.disabled = false;
+          btn.textContent = originalText;
+          btn.setAttribute('title', originalTitle);
+          unlockScheduleUIremote();
+        });
+    }
 
-            // Deterministic: always write something
-            $field.val(resolvedPath || selectedPath);
+    // --- Toggle enable/disable ---
+    function toggleScheduleremote(id, isEnabled) {
+      if (scheduleUILockedremote) return;
 
-            // Trigger any listeners
-            $field.trigger('input');
-            $field.trigger('change');
+      const msg = isEnabled
+        ? "Disable this remote schedule?"
+        : "Enable this remote schedule?";
 
-            $('#folderPickerModal').hide();
-          })
-          .catch(() => {
-            // Fallback: original path
-            const $field = $('#' + targetInputId);
-            $field.val(selectedPath);
-            $field.trigger('change');
-            $('#folderPickerModal').hide();
-          });
-      }
+      if (!confirm(msg)) return;
 
-      function loadFolders(path) {
+      lockScheduleUIremote();
 
-        $.getJSON('/plugins/flash-backup/helpers/list_folders.php',
-          {
-            path: path,
-            field: activeInputFieldId   // send which field is active
-          },
+      $.post(
+        '/plugins/flash-backup/helpers/schedule_toggle_remote.php',
+        { id: id }
+      ).always(() => {
+        loadSchedulesremote();
+      });
+    }
 
-          function (data) {
+    // --- Button click handlers ---
+    $(document).ready(function () {
+      loadSchedulesremote();
 
-            currentPath = data.current;
-            selectedFolder = null;
+      $(document).on('click', '#schedule-remote-backup', function () { scheduleJobremote('remote-backup'); });
+    });
+  </script>
 
-            /* -----------------------
-               Build Breadcrumb
-            ----------------------- */
-            const parts = currentPath.split('/').filter(p => p !== '');
-            let breadcrumbHTML = '';
-            let buildPath = '';
+  <script>
+    function showPopup(message) {
+      const popup = $('#popupMessage');
 
-            parts.forEach((part, index) => {
-              buildPath += '/' + part;
+      popup.text(message).fadeIn(150);
 
-              breadcrumbHTML += `
+      setTimeout(() => {
+        popup.fadeOut(200, () => {
+          popup.text('');
+          popup.hide();
+        });
+      }, 3000);
+    }
+
+    // --- Detect cron mode based on expression ---
+    function detectCronMode(cron) {
+      if (!cron) return 'minutes';
+      if (/^\*\/\d+ \* \* \* \*$/.test(cron)) return 'minutes';
+      if (/^0 \*\/\d+ \* \* \*$/.test(cron)) return 'hourly';
+      if (/^\d+ \d+ \* \* \*$/.test(cron)) return 'daily';
+      if (/^\d+ \d+ \* \* [0-6]$/.test(cron)) return 'weekly';
+      if (/^\d+ \d+ \d+ \* \*$/.test(cron)) return 'monthly';
+      return 'custom';
+    }
+  </script>
+
+  <script>
+    if (typeof caPluginUpdateCheck === "function") {
+      caPluginUpdateCheck("flash-backup.plg", { name: "flash-backup" });
+    }
+  </script>
+
+  <script>
+    let currentPath = "/mnt";
+    let selectedFolders = [];        // folders checked in current view
+    let accumulatedFolders = [];     // folders added via "Add Selected"
+    let persistentFolders = [];   // survives modal close
+
+    function resolveAndApplyPath(selectedPath, targetInputId) {
+      const params = new URLSearchParams({
+        path: selectedPath,
+        csrf_token: csrf_token
+      });
+
+      fetch('/plugins/flash-backup/helpers/resolve_path.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: params.toString()
+      })
+        .then(r => r.text())
+        .then(resolvedPath => {
+          const $field = $('#' + targetInputId);
+
+          // Deterministic: always write something
+          $field.val(resolvedPath || selectedPath);
+
+          // Trigger any listeners
+          $field.trigger('input');
+          $field.trigger('change');
+
+          $('#folderPickerModal').hide();
+        })
+        .catch(() => {
+          // Fallback: original path
+          const $field = $('#' + targetInputId);
+          $field.val(selectedPath);
+          $field.trigger('change');
+          $('#folderPickerModal').hide();
+        });
+    }
+
+    function loadFolders(path) {
+
+      $.getJSON('/plugins/flash-backup/helpers/list_folders.php',
+        {
+          path: path,
+          field: activeInputFieldId   // send which field is active
+        },
+
+        function (data) {
+
+          currentPath = data.current;
+          selectedFolder = null;
+
+          /* -----------------------
+             Build Breadcrumb
+          ----------------------- */
+          const parts = currentPath.split('/').filter(p => p !== '');
+          let breadcrumbHTML = '';
+          let buildPath = '';
+
+          parts.forEach((part, index) => {
+            buildPath += '/' + part;
+
+            breadcrumbHTML += `
           <span class="breadcrumb-part"
                 data-path="${buildPath}"
                 style="cursor:pointer;">
@@ -3683,38 +3684,38 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
           </span>
         `;
 
-              if (index < parts.length - 1) {
-                breadcrumbHTML += ' / ';
-              }
-            });
+            if (index < parts.length - 1) {
+              breadcrumbHTML += ' / ';
+            }
+          });
 
-            $('#folderBreadcrumb').html(breadcrumbHTML);
+          $('#folderBreadcrumb').html(breadcrumbHTML);
 
 
-            /* -----------------------
-               Build Folder List
-            ----------------------- */
-            let html = '';
+          /* -----------------------
+             Build Folder List
+          ----------------------- */
+          let html = '';
 
-            // Up Directory (never above /mnt)
-            if (data.parent) {
-              html += `
+          // Up Directory (never above /mnt)
+          if (data.parent) {
+            html += `
           <div class="vm-folder-item browse-row"
                data-path="${data.parent}"
                style="cursor:pointer; display:flex; align-items:center;">
             .. Up Directory
           </div>
         `;
-            }
+          }
 
-            data.folders.forEach(folder => {
+          data.folders.forEach(folder => {
 
-              const isChecked = persistentFolders.includes(folder.path) ? 'checked' : '';
-              const disabledAttr = folder.selectable ? '' : 'disabled';
-              const tooltip = folder.selectable ? '' : 'title="Can’t select. Browse deeper"';
-              const disabledStyle = folder.selectable ? '' : 'style="opacity:0.4;"';
+            const isChecked = persistentFolders.includes(folder.path) ? 'checked' : '';
+            const disabledAttr = folder.selectable ? '' : 'disabled';
+            const tooltip = folder.selectable ? '' : 'title="Can’t select. Browse deeper"';
+            const disabledStyle = folder.selectable ? '' : 'style="opacity:0.4;"';
 
-              html += `
+            html += `
   <div class="vm-folder-item browse-row"
        data-path="${folder.path}"
        style="display:flex; align-items:center; gap:0px;">
@@ -3732,433 +3733,434 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
     <span class="folder-name-label" style="flex:1; cursor:pointer;">${folder.name}</span>
   </div>
 `;
-            });
-
-            $('#folderList').html(html);
-
-            /* -----------------------
-               Breadcrumb Click
-            ----------------------- */
-            $('.breadcrumb-part').off('click').on('click', function () {
-              const newPath = $(this).data('path');
-              loadFolders(newPath);
-            });
-
-            /* -----------------------
-               Browse Row Click
-            ----------------------- */
-            $('.browse-row').off('click').on('click', function (e) {
-              if ($(e.target).closest('.folder-check-label').length) return;
-              if ($(e.target).closest('.folder-name-label').length) return;
-              const newPath = $(this).data('path');
-              loadFolders(newPath);
-            });
-
-            $('.folder-name-label').off('click').on('click', function () {
-              const newPath = $(this).closest('.browse-row').data('path');
-              loadFolders(newPath);
-            });
-
-            $('.folder-check-label').off('click').on('click', function (e) {
-              e.stopPropagation();
-            });
-
-            /* -----------------------
-               Multi-Checkbox Selection
-            ----------------------- */
-            $('.folder-checkbox').off('change').on('change', function (e) {
-              if (this.disabled) return;
-
-              const path = $(this).val();
-
-              if (this.checked) {
-                if (!persistentFolders.includes(path)) {
-                  persistentFolders.push(path);
-                  showFolderToast("Folder selected");
-                }
-              } else {
-                persistentFolders = persistentFolders.filter(p => p !== path);
-                showFolderToast("Removed");
-              }
-
-              e.stopPropagation();
-            });
-
-            $('#addSelectedFolders').off('click').on('click', function () {
-
-              selectedFolders.forEach(path => {
-                if (!persistentFolders.includes(path)) {
-                  persistentFolders.push(path);
-                }
-              });
-
-              selectedFolders = [];
-              $('.folder-checkbox').prop('checked', false);
-
-              showFolderToast("Added to selection");
-            });
-
-            $('#clearSelectedFolders').off('click').on('click', function () {
-              persistentFolders = [];
-              selectedFolders = [];
-              accumulatedFolders = [];
-
-              // Uncheck all boxes
-              $('.folder-checkbox').prop('checked', false);
-
-              showFolderToast("Selections cleared");
-            });
-
           });
+
+          $('#folderList').html(html);
+
+          /* -----------------------
+             Breadcrumb Click
+          ----------------------- */
+          $('.breadcrumb-part').off('click').on('click', function () {
+            const newPath = $(this).data('path');
+            loadFolders(newPath);
+          });
+
+          /* -----------------------
+             Browse Row Click
+          ----------------------- */
+          $('.browse-row').off('click').on('click', function (e) {
+            if ($(e.target).closest('.folder-check-label').length) return;
+            if ($(e.target).closest('.folder-name-label').length) return;
+            const newPath = $(this).data('path');
+            loadFolders(newPath);
+          });
+
+          $('.folder-name-label').off('click').on('click', function () {
+            const newPath = $(this).closest('.browse-row').data('path');
+            loadFolders(newPath);
+          });
+
+          $('.folder-check-label').off('click').on('click', function (e) {
+            e.stopPropagation();
+          });
+
+          /* -----------------------
+             Multi-Checkbox Selection
+          ----------------------- */
+          $('.folder-checkbox').off('change').on('change', function (e) {
+            if (this.disabled) return;
+
+            const path = $(this).val();
+
+            if (this.checked) {
+              if (!persistentFolders.includes(path)) {
+                persistentFolders.push(path);
+                showFolderToast("Folder selected");
+              }
+            } else {
+              persistentFolders = persistentFolders.filter(p => p !== path);
+              showFolderToast("Removed");
+            }
+
+            e.stopPropagation();
+          });
+
+          $('#addSelectedFolders').off('click').on('click', function () {
+
+            selectedFolders.forEach(path => {
+              if (!persistentFolders.includes(path)) {
+                persistentFolders.push(path);
+              }
+            });
+
+            selectedFolders = [];
+            $('.folder-checkbox').prop('checked', false);
+
+            showFolderToast("Added to selection");
+          });
+
+          $('#clearSelectedFolders').off('click').on('click', function () {
+            persistentFolders = [];
+            selectedFolders = [];
+            accumulatedFolders = [];
+
+            // Uncheck all boxes
+            $('.folder-checkbox').prop('checked', false);
+
+            showFolderToast("Selections cleared");
+          });
+
+        });
+    }
+
+    let activeInputFieldId = null;
+
+    $('input[data-picker-title]').on('click', function () {
+      activeInputFieldId = $(this).attr('id');
+      const modalTitle = $(this).data('picker-title');
+
+      // Load persistent selections from the input field
+      const existing = $(this).val().trim();
+      if (existing.length > 0) {
+        persistentFolders = existing.split(',').map(s => s.trim());
+      } else {
+        persistentFolders = [];
       }
 
-      let activeInputFieldId = null;
+      // Reset session arrays
+      selectedFolders = [];
+      accumulatedFolders = [];
 
-      $('input[data-picker-title]').on('click', function () {
-        activeInputFieldId = $(this).attr('id');
-        const modalTitle = $(this).data('picker-title');
+      $('#folderPickerTitle').text(modalTitle);
+      $('#folderPickerModal').show();
 
-        // Load persistent selections from the input field
-        const existing = $(this).val().trim();
-        if (existing.length > 0) {
-          persistentFolders = existing.split(',').map(s => s.trim());
-        } else {
-          persistentFolders = [];
-        }
+      const savedPath = $(this).val();
+      loadFolders(savedPath && savedPath.startsWith('/mnt') ? savedPath : '/mnt');
+    });
 
-        // Reset session arrays
-        selectedFolders = [];
-        accumulatedFolders = [];
-
-        $('#folderPickerTitle').text(modalTitle);
-        $('#folderPickerModal').show();
-
-        const savedPath = $(this).val();
-        loadFolders(savedPath && savedPath.startsWith('/mnt') ? savedPath : '/mnt');
-      });
-
-      $('#closeFolderPicker').on('click', function () {
-  $('#newFolderInputWrap').hide();
-  $('#newFolderName').val('');
-  $('#folderPickerModal').hide();
-});
+    $('#closeFolderPicker').on('click', function () {
+      $('#newFolderInputWrap').hide();
+      $('#newFolderName').val('');
+      $('#folderPickerModal').hide();
+    });
 
 $('#confirmFolderSelection').off('click').on('click', function (e) {
   e.preventDefault();
 
-  if (!selectedFolder || !activeInputFieldId) return;
+  if (!activeInputFieldId) return;
 
-  $('#newFolderInputWrap').hide();
-  $('#newFolderName').val('');
+  const destString = persistentFolders.join(',');
 
-  resolveAndApplyPath(selectedFolder, activeInputFieldId);
+  $('#' + activeInputFieldId).val(destString).trigger('change');
+
+  $('#folderPickerModal').hide();
 });
 
-      $('#createFolderBtn').on('click', function () {
-        $('#newFolderInputWrap').show();
-        $('#newFolderName').val('').focus();
-      });
+    $('#createFolderBtn').on('click', function () {
+      $('#newFolderInputWrap').show();
+      $('#newFolderName').val('').focus();
+    });
 
-      $('#newFolderCancel').on('click', function () {
-        $('#newFolderInputWrap').hide();
-        $('#newFolderName').val('');
-      });
+    $('#newFolderCancel').on('click', function () {
+      $('#newFolderInputWrap').hide();
+      $('#newFolderName').val('');
+    });
 
-      $('#newFolderOk').on('click', function () {
-        const name = $('#newFolderName').val().trim();
-        if (!name) return;
+    $('#newFolderOk').on('click', function () {
+      const name = $('#newFolderName').val().trim();
+      if (!name) return;
 
-        $.post('/plugins/flash-backup/helpers/create_folder.php',
-          { path: currentPath, name: name, csrf_token: csrf_token },
-          function (res) {
-            if (res.success) {
-              $('#newFolderInputWrap').hide();
-              $('#newFolderName').val('');
-              loadFolders(currentPath);
-            } else {
-              alert(res.error || 'Failed to create folder');
-            }
-          }, 'json'
-        );
-      });
+      $.post('/plugins/flash-backup/helpers/create_folder.php',
+        { path: currentPath, name: name, csrf_token: csrf_token },
+        function (res) {
+          if (res.success) {
+            $('#newFolderInputWrap').hide();
+            $('#newFolderName').val('');
+            loadFolders(currentPath);
+          } else {
+            alert(res.error || 'Failed to create folder');
+          }
+        }, 'json'
+      );
+    });
 
-      let remotePathTimer = null;
-      let b2BucketNameTimer;
+    let remotePathTimer = null;
+    let b2BucketNameTimer;
 
-      $('#remote_path_in_config').on('input', function () {
-        let val = $(this).val();
+    $('#remote_path_in_config').on('input', function () {
+      let val = $(this).val();
 
-        // Allow blank
-        if (val.trim() === '') {
-          clearTimeout(remotePathTimer);
-          return;
-        }
-
-        // Collapse multiple slashes
-        val = val.replace(/\/+/g, '/');
-
-        // Ensure leading slash immediately
-        if (!val.startsWith('/')) {
-          val = '/' + val;
-        }
-
-        $(this).val(val);
-
-        // Debounce trailing slash normalization (2 seconds)
+      // Allow blank
+      if (val.trim() === '') {
         clearTimeout(remotePathTimer);
-        remotePathTimer = setTimeout(() => {
-          let v = $('#remote_path_in_config').val().trim();
+        return;
+      }
 
-          if (v !== '' && !v.endsWith('/')) {
-            $('#remote_path_in_config').val(v + '/');
-          }
-        }, 2000);
-      });
+      // Collapse multiple slashes
+      val = val.replace(/\/+/g, '/');
 
-      // Final safety net on blur
-      $('#remote_path_in_config').on('blur', function () {
-        let val = $(this).val().trim();
+      // Ensure leading slash immediately
+      if (!val.startsWith('/')) {
+        val = '/' + val;
+      }
 
-        if (val === '') return;
+      $(this).val(val);
 
-        val = val.replace(/\/+/g, '/');
+      // Debounce trailing slash normalization (2 seconds)
+      clearTimeout(remotePathTimer);
+      remotePathTimer = setTimeout(() => {
+        let v = $('#remote_path_in_config').val().trim();
 
-        if (!val.startsWith('/')) val = '/' + val;
-        if (!val.endsWith('/')) val = val + '/';
-
-        $(this).val(val);
-      });
-
-      $(function () {
-        let val = $('#remote_path_in_config').val().trim();
-
-        if (val === '') return;
-
-        // Collapse multiple slashes
-        val = val.replace(/\/+/g, '/');
-
-        // Ensure leading slash
-        if (!val.startsWith('/')) {
-          val = '/' + val;
+        if (v !== '' && !v.endsWith('/')) {
+          $('#remote_path_in_config').val(v + '/');
         }
+      }, 2000);
+    });
 
-        // Ensure trailing slash
-        if (!val.endsWith('/')) {
-          val = val + '/';
-        }
+    // Final safety net on blur
+    $('#remote_path_in_config').on('blur', function () {
+      let val = $(this).val().trim();
 
-        $('#remote_path_in_config').val(val);
-      });
-    </script>
+      if (val === '') return;
 
-    <script>
-      document.addEventListener('DOMContentLoaded', function () {
-        const multiselect = document.getElementById('rclone_config_remote');
-        const hiddenSelect = document.getElementById('rclone_config_remote_hidden');
-        const placeholder = multiselect.querySelector('.selected-placeholder');
-        const optionsContainer = multiselect.querySelector('.options-container');
-        const options = optionsContainer.querySelectorAll('.option');
+      val = val.replace(/\/+/g, '/');
 
-        const selectAllBtn = optionsContainer.querySelector('.select-all');
-        const clearAllBtn = optionsContainer.querySelector('.clear-all');
+      if (!val.startsWith('/')) val = '/' + val;
+      if (!val.endsWith('/')) val = val + '/';
 
-        function updatePlaceholder() {
-          const selectedValues = [...hiddenSelect.options]
-            .filter(o => o.selected)
-            .map(o => o.value);
+      $(this).val(val);
+    });
 
-          placeholder.textContent = selectedValues.length
-            ? selectedValues.join(', ')
-            : 'Select config(s)';
-        }
+    $(function () {
+      let val = $('#remote_path_in_config').val().trim();
 
-        /* Select all */
-        selectAllBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
+      if (val === '') return;
 
-          options.forEach(opt => {
-            opt.classList.add('selected');
-            const val = opt.dataset.value;
-            const hiddenOpt = [...hiddenSelect.options].find(o => o.value === val);
-            if (hiddenOpt) hiddenOpt.selected = true;
-          });
+      // Collapse multiple slashes
+      val = val.replace(/\/+/g, '/');
 
-          updatePlaceholder();
-          updateB2BucketVisibility();
-        });
+      // Ensure leading slash
+      if (!val.startsWith('/')) {
+        val = '/' + val;
+      }
 
-        /* Clear all */
-        clearAllBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
+      // Ensure trailing slash
+      if (!val.endsWith('/')) {
+        val = val + '/';
+      }
 
-          options.forEach(opt => opt.classList.remove('selected'));
-          [...hiddenSelect.options].forEach(o => o.selected = false);
+      $('#remote_path_in_config').val(val);
+    });
+  </script>
 
-          updatePlaceholder();
-          updateB2BucketVisibility();
-        });
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const multiselect = document.getElementById('rclone_config_remote');
+      const hiddenSelect = document.getElementById('rclone_config_remote_hidden');
+      const placeholder = multiselect.querySelector('.selected-placeholder');
+      const optionsContainer = multiselect.querySelector('.options-container');
+      const options = optionsContainer.querySelectorAll('.option');
 
-        multiselect.addEventListener('click', () => {
-          optionsContainer.style.display = optionsContainer.style.display === 'block' ? 'none' : 'block';
-        });
+      const selectAllBtn = optionsContainer.querySelector('.select-all');
+      const clearAllBtn = optionsContainer.querySelector('.clear-all');
 
-        document.addEventListener('click', (e) => {
-          if (!multiselect.contains(e.target)) {
-            optionsContainer.style.display = 'none';
-          }
-        });
+      function updatePlaceholder() {
+        const selectedValues = [...hiddenSelect.options]
+          .filter(o => o.selected)
+          .map(o => o.value);
+
+        placeholder.textContent = selectedValues.length
+          ? selectedValues.join(', ')
+          : 'Select config(s)';
+      }
+
+      /* Select all */
+      selectAllBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
 
         options.forEach(opt => {
-          const value = opt.dataset.value;
+          opt.classList.add('selected');
+          const val = opt.dataset.value;
+          const hiddenOpt = [...hiddenSelect.options].find(o => o.value === val);
+          if (hiddenOpt) hiddenOpt.selected = true;
+        });
 
-          if ([...hiddenSelect.options].find(o => o.value === value && o.selected)) {
+        updatePlaceholder();
+        updateB2BucketVisibility();
+      });
+
+      /* Clear all */
+      clearAllBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+
+        options.forEach(opt => opt.classList.remove('selected'));
+        [...hiddenSelect.options].forEach(o => o.selected = false);
+
+        updatePlaceholder();
+        updateB2BucketVisibility();
+      });
+
+      multiselect.addEventListener('click', () => {
+        optionsContainer.style.display = optionsContainer.style.display === 'block' ? 'none' : 'block';
+      });
+
+      document.addEventListener('click', (e) => {
+        if (!multiselect.contains(e.target)) {
+          optionsContainer.style.display = 'none';
+        }
+      });
+
+      options.forEach(opt => {
+        const value = opt.dataset.value;
+
+        if ([...hiddenSelect.options].find(o => o.value === value && o.selected)) {
+          opt.classList.add('selected');
+        }
+
+        opt.addEventListener('click', (e) => {
+          e.stopPropagation();
+
+          const hiddenOption = [...hiddenSelect.options].find(o => o.value === value);
+
+          if (hiddenOption.selected) {
+            hiddenOption.selected = false;
+            opt.classList.remove('selected');
+          } else {
+            hiddenOption.selected = true;
             opt.classList.add('selected');
           }
 
-          opt.addEventListener('click', (e) => {
-            e.stopPropagation();
+          // Update placeholder
+          const selectedValues = [...hiddenSelect.options].filter(o => o.selected).map(o => o.value);
+          placeholder.textContent = selectedValues.length ? selectedValues.join(', ') : 'Select config(s)';
 
-            const hiddenOption = [...hiddenSelect.options].find(o => o.value === value);
+          // Optional: keep hiddenSelect values synced for AJAX
+          hiddenSelect.dispatchEvent(new Event('change'));
 
-            if (hiddenOption.selected) {
-              hiddenOption.selected = false;
-              opt.classList.remove('selected');
-            } else {
-              hiddenOption.selected = true;
-              opt.classList.add('selected');
-            }
-
-            // Update placeholder
-            const selectedValues = [...hiddenSelect.options].filter(o => o.selected).map(o => o.value);
-            placeholder.textContent = selectedValues.length ? selectedValues.join(', ') : 'Select config(s)';
-
-            // Optional: keep hiddenSelect values synced for AJAX
-            hiddenSelect.dispatchEvent(new Event('change'));
-
-            updateB2BucketVisibility();
-          });
+          updateB2BucketVisibility();
         });
-
-        updateB2BucketVisibility();
       });
-    </script>
 
-    <script>
-      function loadLastRunLog() {
-        const logEl = document.getElementById('last-run-log');
+      updateB2BucketVisibility();
+    });
+  </script>
 
-        fetch('/plugins/flash-backup/helpers/fetch_last_run_log.php')
-          .then(resp => resp.text())
-          .then(text => {
-            logEl.textContent = text || 'Flash backup log not found';
-          })
-          .catch(err => {
-            console.error('Failed to load log', err);
-            logEl.textContent = 'Failed to load log';
-          });
+  <script>
+    function loadLastRunLog() {
+      const logEl = document.getElementById('last-run-log');
+
+      fetch('/plugins/flash-backup/helpers/fetch_last_run_log.php')
+        .then(resp => resp.text())
+        .then(text => {
+          logEl.textContent = text || 'Flash backup log not found';
+        })
+        .catch(err => {
+          console.error('Failed to load log', err);
+          logEl.textContent = 'Failed to load log';
+        });
+    }
+
+    // Load log on page load
+    document.addEventListener('DOMContentLoaded', loadLastRunLog);
+
+    // Copy button logic
+    document.getElementById('copy-last-run-log').addEventListener('click', function () {
+      const logEl = document.getElementById('last-run-log');
+      const text = logEl.innerText || logEl.textContent;
+
+      if (!text || text.trim() === '' || text.includes('not found')) {
+        alert('Flash backup log is empty or not loaded yet');
+        return;
       }
 
-      // Load log on page load
-      document.addEventListener('DOMContentLoaded', loadLastRunLog);
-
-      // Copy button logic
-      document.getElementById('copy-last-run-log').addEventListener('click', function () {
-        const logEl = document.getElementById('last-run-log');
-        const text = logEl.innerText || logEl.textContent;
-
-        if (!text || text.trim() === '' || text.includes('not found')) {
-          alert('Flash backup log is empty or not loaded yet');
-          return;
-        }
-
-        // Try Clipboard API first
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(text).then(() => {
-            showCopiedFeedback(this);
-          }).catch(err => {
-            console.warn('Clipboard API failed, using fallback', err);
-            fallbackCopyText(text, this);
-          });
-        } else {
+      // Try Clipboard API first
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+          showCopiedFeedback(this);
+        }).catch(err => {
+          console.warn('Clipboard API failed, using fallback', err);
           fallbackCopyText(text, this);
-        }
-      });
-
-      // Fallback for older browsers or Clipboard API failure
-      function fallbackCopyText(text, btn) {
-        const textarea = document.createElement('textarea');
-        textarea.value = text;
-        document.body.appendChild(textarea);
-        textarea.select();
-        try {
-          document.execCommand('copy');
-          showCopiedFeedback(btn);
-        } catch (err) {
-          console.error('Fallback copy failed', err);
-          alert('Failed to copy log');
-        }
-        document.body.removeChild(textarea);
+        });
+      } else {
+        fallbackCopyText(text, this);
       }
+    });
 
-      // Visual feedback
-      function showCopiedFeedback(btn) {
-        const original = btn.textContent;
-        btn.textContent = 'Copied!';
-        btn.disabled = true;
-        setTimeout(() => {
-          btn.textContent = original;
-          btn.disabled = false;
-        }, 1200);
+    // Fallback for older browsers or Clipboard API failure
+    function fallbackCopyText(text, btn) {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      document.body.appendChild(textarea);
+      textarea.select();
+      try {
+        document.execCommand('copy');
+        showCopiedFeedback(btn);
+      } catch (err) {
+        console.error('Fallback copy failed', err);
+        alert('Failed to copy log');
       }
-    </script>
+      document.body.removeChild(textarea);
+    }
 
-    <script>
-      (function () {
-        const CHECK_INTERVAL = 1000;
+    // Visual feedback
+    function showCopiedFeedback(btn) {
+      const original = btn.textContent;
+      btn.textContent = 'Copied!';
+      btn.disabled = true;
+      setTimeout(() => {
+        btn.textContent = original;
+        btn.disabled = false;
+      }, 1200);
+    }
+  </script>
 
-        function updateRunButtons(locked) {
-          document.querySelectorAll('.run-schedule-btn').forEach(btn => {
-            btn.disabled = locked;
-            if (locked) {
-              btn.classList.add('disabled');
-            } else {
-              btn.classList.remove('disabled');
-            }
-          });
-        }
+  <script>
+    (function () {
+      const CHECK_INTERVAL = 1000;
 
-        async function pollLock() {
-          try {
-            const res = await fetch('/plugins/flash-backup/helpers/check_lock.php');
-            const data = await res.json();
-            updateRunButtons(Boolean(data.locked));
-          } catch (e) {
-            console.error('Failed to check lock:', e);
+      function updateRunButtons(locked) {
+        document.querySelectorAll('.run-schedule-btn').forEach(btn => {
+          btn.disabled = locked;
+          if (locked) {
+            btn.classList.add('disabled');
+          } else {
+            btn.classList.remove('disabled');
           }
-        }
-
-        // Initial check
-        pollLock();
-
-        // Poll continuously
-        setInterval(pollLock, CHECK_INTERVAL);
-      })();
-
-      function debounceButton(btn, delay = 500) {
-        let cooling = false;
-        btn.addEventListener('click', function () {
-          if (cooling) return;
-          cooling = true;
-          setTimeout(() => cooling = false, delay);
         });
       }
 
-      ['backupbtn', 'restorebtn', 'schedule-backup', 'cancelEditBtn', 'clear-last-run-log', 'copy-last-run-log', 'confirmFolderSelection', 'closeFolderPicker',
-        // Flash Backup additions:
-        'backupbtn_remote', 'schedule-local-backup', 'schedule-remote-backup', 'cancelEditBtnremote',
-        'clearSelectedFolders'
-      ].forEach(id => {
-        const btn = document.getElementById(id);
-        if (btn) debounceButton(btn);
+      async function pollLock() {
+        try {
+          const res = await fetch('/plugins/flash-backup/helpers/check_lock.php');
+          const data = await res.json();
+          updateRunButtons(Boolean(data.locked));
+        } catch (e) {
+          console.error('Failed to check lock:', e);
+        }
+      }
+
+      // Initial check
+      pollLock();
+
+      // Poll continuously
+      setInterval(pollLock, CHECK_INTERVAL);
+    })();
+
+    function debounceButton(btn, delay = 500) {
+      let cooling = false;
+      btn.addEventListener('click', function () {
+        if (cooling) return;
+        cooling = true;
+        setTimeout(() => cooling = false, delay);
       });
-    </script>
+    }
+
+    ['backupbtn', 'restorebtn', 'schedule-backup', 'cancelEditBtn', 'clear-last-run-log', 'copy-last-run-log', 'confirmFolderSelection', 'closeFolderPicker',
+      // Flash Backup additions:
+      'backupbtn_remote', 'schedule-local-backup', 'schedule-remote-backup', 'cancelEditBtnremote',
+      'clearSelectedFolders'
+    ].forEach(id => {
+      const btn = document.getElementById(id);
+      if (btn) debounceButton(btn);
+    });
+  </script>
