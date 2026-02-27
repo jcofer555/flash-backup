@@ -4,7 +4,7 @@
 <PLUGIN 
   name="flash-backup"
   author="jcofer555"
-  version="2026.02.25.04"
+  version="2026.02.25.07"
   launch="Settings/flash-backup"
   pluginURL="https://raw.githubusercontent.com/jcofer555/flash-backup/main/plugin/flash-backup.plg"
   support="https://forums.unraid.net/topic/197218-flash-backup-for-unraid/"
@@ -16,18 +16,19 @@
 <CHANGES>
 <![CDATA[
 
-### 2026.02.25.04
+### 2026.02.25.07
 
-- 1
+- Added option to send notifications to a discord webhook and if blank sends using unraids inotify
+- Will produce error notifications now if errors
 
 
 For older releases, see https://github.com/jcofer555/flash-backup/releases
 ]]>
 </CHANGES>
 
-<FILE Name="/boot/config/plugins/flash-backup/unraid-flash-backup-2026.02.25.04-noarch-1.txz">
-<URL>https://github.com/jcofer555/flash-backup/releases/download/2026.02.25.04/unraid-flash-backup-2026.02.25.04-noarch-1.txz</URL>
-<SHA256>15a74429f0a25e8a58bd76c01aff7670ecb092eb470392ad2e9a2a8ab4ad13d2</SHA256>
+<FILE Name="/boot/config/plugins/flash-backup/unraid-flash-backup-2026.02.25.07-noarch-1.txz">
+<URL>https://github.com/jcofer555/flash-backup/releases/download/2026.02.25.07/unraid-flash-backup-2026.02.25.07-noarch-1.txz</URL>
+<SHA256>7ea3a2f25976e4b11331425deface49423668e9df4a3aacd56b851611f5eb3e6</SHA256>
 </FILE>
 
 <!-- ==========================================================
@@ -40,7 +41,7 @@ For older releases, see https://github.com/jcofer555/flash-backup/releases
 #  INSTALL / UPGRADE LOGIC
 # ==========================================================
 
-PACKAGE_TXZ="/boot/config/plugins/flash-backup/unraid-flash-backup-2026.02.25.04-noarch-1.txz"
+PACKAGE_TXZ="/boot/config/plugins/flash-backup/unraid-flash-backup-2026.02.25.07-noarch-1.txz"
 USER_CFG="/boot/config/plugins/flash-backup/settings.cfg"
 REMOTE_USER_CFG="/boot/config/plugins/flash-backup/settings_remote.cfg"
 DEFAULT_CFG="/usr/local/emhttp/plugins/flash-backup/helpers/default_settings.cfg"
@@ -60,6 +61,7 @@ ordered_keys=(
 	"BACKUP_OWNER"
     "DRY_RUN"
     "NOTIFICATIONS"
+	"DISCORD_WEBHOOK_URL"
 )
 
 # ==========================================================
@@ -91,10 +93,11 @@ remote_ordered_keys=(
     "MINIMAL_BACKUP_REMOTE"
     "RCLONE_CONFIG_REMOTE"
 	"B2_BUCKET_NAME"
+	"REMOTE_PATH_IN_CONFIG"
     "BACKUPS_TO_KEEP_REMOTE"
     "DRY_RUN_REMOTE"
 	"NOTIFICATIONS_REMOTE"
-	"REMOTE_PATH_IN_CONFIG"
+	"DISCORD_WEBHOOK_URL_REMOTE"
 )
 
 # ==========================================================
@@ -122,12 +125,12 @@ fi
 mv "$REMOTE_TMP_CFG" "$REMOTE_USER_CFG"
 
 # Remove older txz packages (keep only the current one)
-find /boot/config/plugins/flash-backup/ -maxdepth 1 -type f -name "unraid-flash-backup-*.txz" ! -name "unraid-flash-backup-2026.02.25.04-noarch-1.txz" -delete
+find /boot/config/plugins/flash-backup/ -maxdepth 1 -type f -name "unraid-flash-backup-*.txz" ! -name "unraid-flash-backup-2026.02.25.07-noarch-1.txz" -delete
 
 echo ""
 echo "----------------------------------------------------"
 echo " flash-backup has been installed."
-echo " Version: 2026.02.25.04"
+echo " Version: 2026.02.25.07"
 echo "----------------------------------------------------"
 echo ""
 
