@@ -1,73 +1,107 @@
 <?php
-header('Content-Type: application/json');
 
-$lockDir = '/tmp/flash-backup';
-$lock = "$lockDir/lock.txt";
-$script = '/usr/local/emhttp/plugins/flash-backup/helpers/backup.sh';
+define('SETTINGS_FILE', '/boot/config/plugins/flash-backup/settings.cfg');
+define('LOCK_DIR',      '/tmp/flash-backup');
+define('LOCK_FILE',     LOCK_DIR . '/lock.txt');
+define('BACKUP_SCRIPT', '/usr/local/emhttp/plugins/flash-backup/helpers/backup.sh');
 
-if (!is_dir($lockDir)) {
-    mkdir($lockDir, 0777, true);
+// ------------------------------------------------------------------------------
+// respond() — deterministic JSON response with explicit HTTP code, then exit
+// ------------------------------------------------------------------------------
+function respond(int $code, array $payload): void {
+    http_response_code($code);
+    header('Content-Type: application/json');
+    echo json_encode($payload, JSON_UNESCAPED_SLASHES);
+    exit;
 }
 
-// Load settings.cfg
-$settingsFile = "/boot/config/plugins/flash-backup/settings.cfg";
-$settings = [];
+// ------------------------------------------------------------------------------
+// load_and_export_settings() — guarded settings parse, explicit env export
+// ------------------------------------------------------------------------------
+function load_and_export_settings(string $settings_file): void {
+    if (!is_file($settings_file)) {
+        return;
+    }
 
-if (is_file($settingsFile)) {
-    $lines = file($settingsFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    $lines = file($settings_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    if (!is_array($lines)) {
+        return;
+    }
+
     foreach ($lines as $line) {
-        if (strpos($line, '=') !== false) {
-            list($k, $v) = explode('=', $line, 2);
-            $settings[$k] = $v;
-        }
+        if (strpos($line, '=') === false) continue;
+        [$key, $val] = explode('=', $line, 2);
+        putenv("{$key}={$val}");
     }
 }
 
-// Export settings as environment variables
-foreach ($settings as $k => $v) {
-    putenv("$k=$v");
+// ------------------------------------------------------------------------------
+// acquire_lock() — guarded lock dir creation, non-blocking exclusive lock
+// ------------------------------------------------------------------------------
+function acquire_lock(): mixed {
+    if (!is_dir(LOCK_DIR)) {
+        if (!mkdir(LOCK_DIR, 0777, true)) {
+            respond(500, ['status' => 'error', 'message' => 'Unable to create lock directory']);
+        }
+    }
+
+    $fp = fopen(LOCK_FILE, 'c');
+    if (!$fp) {
+        respond(500, ['status' => 'error', 'message' => 'Unable to open lock file']);
+    }
+
+    if (!flock($fp, LOCK_EX | LOCK_NB)) {
+        respond(409, ['status' => 'error', 'message' => 'Backup already running']);
+    }
+
+    return $fp;
 }
 
-// Open lock file
-$fp = fopen($lock, 'c');
-if (!$fp) {
-    echo json_encode(['status' => 'error', 'message' => 'Unable to open lock file']);
-    exit;
+// ------------------------------------------------------------------------------
+// write_lock_meta() — atomic metadata write into open lock file handle
+// ------------------------------------------------------------------------------
+function write_lock_meta(mixed $fp, string $pid): void {
+    $meta = implode("\n", [
+        "PID={$pid}",
+        "MODE=manual",
+        "START=" . time(),
+    ]) . "\n";
+
+    ftruncate($fp, 0);
+    fwrite($fp, $meta);
+    fflush($fp);
 }
 
-// Try to acquire exclusive lock
-if (!flock($fp, LOCK_EX | LOCK_NB)) {
-    echo json_encode(['status' => 'error', 'message' => 'Backup already running']);
-    exit;
+// ------------------------------------------------------------------------------
+// main() — explicit entrypoint, all state explicit
+// ------------------------------------------------------------------------------
+function main(): void {
+    // --- Verify backup script before acquiring lock ---
+    if (!is_file(BACKUP_SCRIPT) || !is_executable(BACKUP_SCRIPT)) {
+        respond(500, ['status' => 'error', 'message' => 'Backup script missing or not executable']);
+    }
+
+    // --- Load and export settings ---
+    load_and_export_settings(SETTINGS_FILE);
+
+    // --- Acquire exclusive lock ---
+    $fp = acquire_lock();
+
+    // --- Launch script ---
+    $cmd = 'nohup /bin/bash ' . BACKUP_SCRIPT . ' >/dev/null 2>&1 & echo $!';
+    $pid = trim((string)shell_exec($cmd));
+
+    if ($pid === '' || !is_numeric($pid)) {
+        respond(500, ['status' => 'error', 'message' => 'Failed to start backup']);
+    }
+
+    // --- Write lock metadata, keep handle open to hold lock ---
+    write_lock_meta($fp, $pid);
+
+    respond(200, [
+        'status' => 'ok',
+        'pid'    => $pid,
+    ]);
 }
 
-// Validate script
-if (!is_file($script) || !is_executable($script)) {
-    echo json_encode(['status' => 'error', 'message' => 'Backup script missing or not executable']);
-    exit;
-}
-
-// Launch backup script asynchronously
-$cmd = "nohup /bin/bash $script >/dev/null 2>&1 & echo $!";
-$pid = trim(shell_exec($cmd));
-
-if (!$pid || !is_numeric($pid)) {
-    echo json_encode(['status' => 'error', 'message' => 'Failed to start backup']);
-    exit;
-}
-
-// Write metadata
-$meta = [
-    "PID=$pid",
-    "MODE=manual",
-    "START=" . time()
-];
-
-ftruncate($fp, 0);
-fwrite($fp, implode("\n", $meta) . "\n");
-fflush($fp);
-
-echo json_encode([
-    'status' => 'ok',
-    'pid' => $pid
-]);
+main();

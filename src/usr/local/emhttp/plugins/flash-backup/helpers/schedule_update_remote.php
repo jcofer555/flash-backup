@@ -1,84 +1,141 @@
 <?php
-require_once 'rebuild_cron_remote.php';
 
-$cfg = '/boot/config/plugins/flash-backup/schedules-remote.cfg';
+require_once __DIR__ . '/rebuild_cron_remote.php';
+define('REMOTE_SCHEDULES_CFG', '/boot/config/plugins/flash-backup/schedules-remote.cfg');
+define('REMOTE_CRON_PATTERN',  '/^([\*\/0-9,-]+\s+){4}[\*\/0-9,-]+$/');
 
-$id       = $_POST['id'] ?? '';
-$cron     = trim($_POST['cron'] ?? '');
-$settings = $_POST['settings'] ?? [];
-
-if (!is_array($settings)) {
-    $settings = [];
+// ------------------------------------------------------------------------------
+// respond() — deterministic JSON response with explicit HTTP code, then exit
+// ------------------------------------------------------------------------------
+function respond(int $code, array $payload): void {
+    http_response_code($code);
+    header('Content-Type: application/json');
+    echo json_encode($payload, JSON_UNESCAPED_SLASHES);
+    exit;
 }
 
-if (!$id) {
-    http_response_code(400);
-    exit("Missing schedule ID");
+// ------------------------------------------------------------------------------
+// load_schedules() — guarded, realpath-normalized
+// ------------------------------------------------------------------------------
+function load_schedules(string $cfg): array {
+    $real = realpath($cfg);
+    if ($real === false || !file_exists($real)) {
+        respond(404, ['error' => 'Remote schedules file not found']);
+    }
+    $schedules = parse_ini_file($real, true, INI_SCANNER_RAW);
+    if (!is_array($schedules)) {
+        respond(500, ['error' => 'Failed to parse remote schedules file']);
+    }
+    return $schedules;
 }
 
-if (!preg_match('/^([\*\/0-9,-]+\s+){4}[\*\/0-9,-]+$/', $cron)) {
-    http_response_code(400);
-    exit("Invalid cron");
-}
+// ------------------------------------------------------------------------------
+// write_schedules() — atomic write via tmp-then-rename, deterministic key order
+// ------------------------------------------------------------------------------
+function write_schedules(string $cfg, array $schedules): void {
+    $real = realpath($cfg);
+    if ($real === false) {
+        respond(500, ['error' => 'Cannot resolve remote schedules file path']);
+    }
 
-if (!file_exists($cfg)) {
-    http_response_code(404);
-    exit("Remote schedules file not found");
-}
+    $tmp = $real . '.tmp';
+    $out = '';
+    foreach ($schedules as $id => $fields) {
+        $out .= "[{$id}]\n";
+        ksort($fields);
+        foreach ($fields as $key => $val) {
+            $out .= "{$key}=\"{$val}\"\n";
+        }
+        $out .= "\n";
+    }
 
-$schedules = parse_ini_file($cfg, true, INI_SCANNER_RAW);
-
-if (!isset($schedules[$id])) {
-    http_response_code(404);
-    exit("Remote schedule not found");
-}
-
-$newFingerprint = [
-    'BACKUP_DESTINATION' => $settings['BACKUP_DESTINATION'] ?? '',
-];
-ksort($newFingerprint);
-$newHash = hash('sha256', json_encode($newFingerprint));
-
-foreach ($schedules as $existingId => $s) {
-    if ($existingId === $id) continue;
-    if (empty($s['SETTINGS'])) continue;
-
-    $existingSettings = json_decode(stripslashes($s['SETTINGS']), true);
-    if (!is_array($existingSettings)) continue;
-
-    $existingFingerprint = [
-        'BACKUP_DESTINATION' => $existingSettings['BACKUP_DESTINATION'] ?? '',
-    ];
-    ksort($existingFingerprint);
-    $existingHash = hash('sha256', json_encode($existingFingerprint));
-
-    if ($existingHash === $newHash) {
-        http_response_code(409);
-        echo json_encode([
-            'error'       => 'Duplicate remote schedule detected',
-            'conflict_id' => $existingId
-        ]);
-        exit;
+    if (file_put_contents($tmp, $out) === false) {
+        respond(500, ['error' => 'Failed to write temporary remote schedules file']);
+    }
+    if (!rename($tmp, $real)) {
+        @unlink($tmp);
+        respond(500, ['error' => 'Failed to commit remote schedules file update']);
     }
 }
 
-$settingsJson = json_encode($settings, JSON_UNESCAPED_SLASHES);
-$settingsJson = addcslashes($settingsJson, '"');
-
-$schedules[$id]['CRON']     = $cron;
-$schedules[$id]['SETTINGS'] = $settingsJson;
-
-$out = '';
-foreach ($schedules as $k => $s) {
-    $out .= "[$k]\n";
-    foreach ($s as $kk => $vv) {
-        $out .= "$kk=\"$vv\"\n";
-    }
-    $out .= "\n";
+// ------------------------------------------------------------------------------
+// fingerprint() — deterministic duplicate detection key
+// ------------------------------------------------------------------------------
+function fingerprint(array $settings): string {
+    $key = ['BACKUP_DESTINATION' => $settings['BACKUP_DESTINATION'] ?? ''];
+    ksort($key);
+    return hash('sha256', json_encode($key));
 }
 
-file_put_contents($cfg, $out);
+// ------------------------------------------------------------------------------
+// check_duplicate() — explicit conflict detection, excludes current ID
+// ------------------------------------------------------------------------------
+function check_duplicate(array $schedules, string $exclude_id, string $new_hash): void {
+    foreach ($schedules as $existing_id => $s) {
+        if ($existing_id === $exclude_id) continue;
+        if (empty($s['SETTINGS']))        continue;
 
-rebuild_cron_remote();
+        $existing_settings = json_decode(stripslashes($s['SETTINGS']), true);
+        if (!is_array($existing_settings)) continue;
 
-echo json_encode(['success' => true]);
+        if (fingerprint($existing_settings) === $new_hash) {
+            respond(409, [
+                'error'       => 'Duplicate remote schedule detected',
+                'conflict_id' => $existing_id,
+            ]);
+        }
+    }
+}
+
+// ------------------------------------------------------------------------------
+// main() — explicit entrypoint, all state explicit
+// ------------------------------------------------------------------------------
+function main(): void {
+    $id       = trim($_POST['id']    ?? '');
+    $cron     = trim($_POST['cron']  ?? '');
+    $settings = $_POST['settings']   ?? [];
+
+    if (!is_array($settings)) {
+        $settings = [];
+    }
+
+    // --- Input validation ---
+    if ($id === '') {
+        respond(400, ['error' => 'Missing schedule ID']);
+    }
+
+    if (!preg_match(REMOTE_CRON_PATTERN, $cron)) {
+        respond(400, ['error' => 'Invalid cron expression']);
+    }
+
+    // --- Load and verify schedule exists ---
+    $schedules = load_schedules(REMOTE_SCHEDULES_CFG);
+
+    if (!isset($schedules[$id])) {
+        respond(404, ['error' => 'Remote schedule not found']);
+    }
+
+    // --- Duplicate check ---
+    $new_hash = fingerprint($settings);
+    check_duplicate($schedules, $id, $new_hash);
+
+    // --- Encode settings for INI storage ---
+    $settings_json = addcslashes(
+        json_encode($settings, JSON_UNESCAPED_SLASHES),
+        '"'
+    );
+
+    // --- Apply update ---
+    $schedules[$id]['CRON']     = $cron;
+    $schedules[$id]['SETTINGS'] = $settings_json;
+
+    // --- Atomic write ---
+    write_schedules(REMOTE_SCHEDULES_CFG, $schedules);
+
+    // --- Rebuild cron jobs ---
+    rebuild_cron_remote();
+
+    respond(200, ['success' => true]);
+}
+
+main();

@@ -1,41 +1,59 @@
 <?php
-$cfg = '/boot/config/plugins/flash-backup/schedules.cfg';
-$id = $_GET['id'] ?? null;
 
-if (!$id) {
-    http_response_code(400);
-    exit("Missing schedule ID");
+define('SCHEDULES_CFG', '/boot/config/plugins/flash-backup/schedules.cfg');
+
+// ------------------------------------------------------------------------------
+// respond() — deterministic JSON response with explicit HTTP code, then exit
+// ------------------------------------------------------------------------------
+function respond(int $code, array $payload): void {
+    http_response_code($code);
+    header('Content-Type: application/json');
+    echo json_encode($payload, JSON_UNESCAPED_SLASHES);
+    exit;
 }
 
-if (!file_exists($cfg)) {
-    http_response_code(404);
-    exit("Schedules file not found");
+// ------------------------------------------------------------------------------
+// load_schedules() — guarded, realpath-normalized
+// ------------------------------------------------------------------------------
+function load_schedules(string $cfg): array {
+    $real = realpath($cfg);
+    if ($real === false || !file_exists($real)) {
+        respond(404, ['error' => 'Schedules file not found']);
+    }
+    $schedules = parse_ini_file($real, true, INI_SCANNER_RAW);
+    if (!is_array($schedules)) {
+        respond(500, ['error' => 'Failed to parse schedules file']);
+    }
+    return $schedules;
 }
 
-// Read all schedules safely
-$schedules = parse_ini_file($cfg, true, INI_SCANNER_RAW);
+// ------------------------------------------------------------------------------
+// main() — explicit entrypoint, all state explicit
+// ------------------------------------------------------------------------------
+function main(): void {
+    $id = trim($_GET['id'] ?? '');
 
-if (!isset($schedules[$id])) {
-    http_response_code(404);
-    exit("Schedule not found");
+    if ($id === '') {
+        respond(400, ['error' => 'Missing schedule ID']);
+    }
+
+    $schedules = load_schedules(SCHEDULES_CFG);
+
+    if (!isset($schedules[$id])) {
+        respond(404, ['error' => 'Schedule not found']);
+    }
+
+    $entry = $schedules[$id];
+
+    // Decode SETTINGS JSON — strip INI escaping, fall back to empty array
+    $settings = json_decode(stripslashes($entry['SETTINGS'] ?? '{}'), true);
+    if (!is_array($settings)) {
+        $settings = [];
+    }
+
+    $entry['SETTINGS'] = $settings;
+
+    respond(200, $entry);
 }
 
-$entry = $schedules[$id];
-
-// ---- Decode SETTINGS JSON safely ----
-$settingsRaw = $entry['SETTINGS'] ?? '{}';
-
-// Remove any extra escaping added when writing to INI
-$settings = json_decode(stripslashes($settingsRaw), true);
-
-// Ensure it’s always an array
-if (!is_array($settings)) {
-    $settings = [];
-}
-
-// Replace SETTINGS in entry with parsed array
-$entry['SETTINGS'] = $settings;
-
-// Return JSON to JS
-header('Content-Type: application/json');
-echo json_encode($entry);
+main();

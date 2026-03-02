@@ -1,17 +1,32 @@
 <?php
-header('Content-Type: application/json');
 
-$status_file = '/tmp/flash-backup/remote_backup_status.txt';
+define('REMOTE_STATUS_FILE',    '/tmp/flash-backup/remote_backup_status.txt');
+define('REMOTE_STATUS_DEFAULT', 'Remote Backup Not Running');
 
-$status = 'Remote Backup Not Running';
-
-if (file_exists($status_file)) {
-    $raw = trim(file_get_contents($status_file));
-    if ($raw !== '') {
-        $status = $raw;
-    }
+// ------------------------------------------------------------------------------
+// respond() — deterministic JSON response with explicit HTTP code, then exit
+// ------------------------------------------------------------------------------
+function respond(int $code, array $payload): void {
+    http_response_code($code);
+    header('Content-Type: application/json');
+    echo json_encode($payload, JSON_UNESCAPED_SLASHES);
+    exit;
 }
 
-echo json_encode([
-    'status' => $status
-]);
+// ------------------------------------------------------------------------------
+// main() — explicit entrypoint, all state explicit
+// ------------------------------------------------------------------------------
+function main(): void {
+    $status = REMOTE_STATUS_DEFAULT;
+
+    if (file_exists(REMOTE_STATUS_FILE)) {
+        $raw = trim(file_get_contents(REMOTE_STATUS_FILE));
+        if ($raw !== '') {
+            $status = $raw;
+        }
+    }
+
+    respond(200, ['status' => $status]);
+}
+
+main();

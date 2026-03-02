@@ -1,69 +1,111 @@
 <?php
-require_once 'rebuild_cron_remote.php';
 
-$cfg = '/boot/config/plugins/flash-backup/schedules-remote.cfg';
+require_once __DIR__ . '/rebuild_cron_remote.php';
+define('REMOTE_SCHEDULES_CFG', '/boot/config/plugins/flash-backup/schedules-remote.cfg');
+define('REMOTE_CRON_PATTERN',  '/^([\*\/0-9,-]+\s+){4}[\*\/0-9,-]+$/');
 
-$type     = $_POST['type'] ?? '';
-$cron     = trim($_POST['cron'] ?? '');
-$settings = $_POST['settings'] ?? [];
-
-if (!is_array($settings)) {
-    $settings = [];
+// ------------------------------------------------------------------------------
+// respond() — deterministic JSON response with explicit HTTP code, then exit
+// ------------------------------------------------------------------------------
+function respond(int $code, array $payload): void {
+    http_response_code($code);
+    header('Content-Type: application/json');
+    echo json_encode($payload, JSON_UNESCAPED_SLASHES);
+    exit;
 }
 
-if (!preg_match('/^([\*\/0-9,-]+\s+){4}[\*\/0-9,-]+$/', $cron)) {
-    http_response_code(400);
-    exit("Invalid cron");
+// ------------------------------------------------------------------------------
+// load_schedules() — guarded, realpath-normalized; returns empty array if missing
+// ------------------------------------------------------------------------------
+function load_schedules(string $cfg): array {
+    $real = realpath($cfg);
+    if ($real === false || !file_exists($real)) {
+        return [];
+    }
+    $schedules = parse_ini_file($real, true, INI_SCANNER_RAW);
+    return is_array($schedules) ? $schedules : [];
 }
 
-$schedules = [];
-if (file_exists($cfg)) {
-    $schedules = parse_ini_file($cfg, true, INI_SCANNER_RAW);
-}
+// ------------------------------------------------------------------------------
+// check_duplicate() — explicit rclone config conflict detection
+// ------------------------------------------------------------------------------
+function check_duplicate(array $schedules, string $new_remote): void {
+    foreach ($schedules as $existing_id => $s) {
+        if (empty($s['SETTINGS'])) continue;
 
-// ---- Compute new fingerprint based on RCLONE_CONFIG_REMOTE ----
-$newRemote = trim($settings['RCLONE_CONFIG_REMOTE'] ?? '');
+        $existing_settings = json_decode(stripslashes($s['SETTINGS']), true);
+        if (!is_array($existing_settings)) continue;
 
-if ($newRemote === '') {
-    http_response_code(400);
-    exit("Rclone config is required");
-}
-
-// ---- Check for duplicates based on RCLONE_CONFIG_REMOTE ----
-foreach ($schedules as $existingId => $s) {
-    if (empty($s['SETTINGS'])) continue;
-
-    $existingSettings = json_decode(stripslashes($s['SETTINGS']), true);
-    if (!is_array($existingSettings)) continue;
-
-    $existingRemote = trim($existingSettings['RCLONE_CONFIG_REMOTE'] ?? '');
-
-    if ($existingRemote !== '' && $existingRemote === $newRemote) {
-        http_response_code(409);
-        echo json_encode([
-            'error'       => 'Duplicate remote schedule detected',
-            'conflict_id' => $existingId
-        ]);
-        exit;
+        $existing_remote = trim($existing_settings['RCLONE_CONFIG_REMOTE'] ?? '');
+        if ($existing_remote !== '' && $existing_remote === $new_remote) {
+            respond(409, [
+                'error'       => 'Duplicate remote schedule detected',
+                'conflict_id' => $existing_id,
+            ]);
+        }
     }
 }
 
-$id = 'schedule_remote_' . time();
+// ------------------------------------------------------------------------------
+// append_schedule() — guarded append of new INI block
+// ------------------------------------------------------------------------------
+function append_schedule(string $cfg, string $id, string $type, string $cron, string $settings_json): void {
+    $real   = realpath($cfg);
+    $target = ($real !== false) ? $real : $cfg;
 
-$settingsJson = json_encode($settings, JSON_UNESCAPED_SLASHES);
-$settingsJson = addcslashes($settingsJson, '"');
+    $block  = "\n[{$id}]\n";
+    $block .= "CRON=\"{$cron}\"\n";
+    $block .= "ENABLED=\"yes\"\n";
+    $block .= "SETTINGS=\"{$settings_json}\"\n";
+    $block .= "TYPE=\"{$type}\"\n";
 
-$block  = "\n[$id]\n";
-$block .= "TYPE=\"$type\"\n";
-$block .= "CRON=\"$cron\"\n";
-$block .= "ENABLED=\"yes\"\n";
-$block .= "SETTINGS=\"$settingsJson\"\n";
+    if (file_put_contents($target, $block, FILE_APPEND) === false) {
+        respond(500, ['error' => 'Failed to write remote schedule']);
+    }
+}
 
-file_put_contents($cfg, $block, FILE_APPEND);
+// ------------------------------------------------------------------------------
+// main() — explicit entrypoint, all state explicit
+// ------------------------------------------------------------------------------
+function main(): void {
+    $type     = trim($_POST['type']    ?? '');
+    $cron     = trim($_POST['cron']    ?? '');
+    $settings = $_POST['settings']     ?? [];
 
-rebuild_cron_remote();
+    if (!is_array($settings)) {
+        $settings = [];
+    }
 
-echo json_encode([
-    'success' => true,
-    'id'      => $id
-]);
+    // --- Input validation ---
+    if (!preg_match(REMOTE_CRON_PATTERN, $cron)) {
+        respond(400, ['error' => 'Invalid cron expression']);
+    }
+
+    $new_remote = trim($settings['RCLONE_CONFIG_REMOTE'] ?? '');
+    if ($new_remote === '') {
+        respond(400, ['error' => 'Rclone config is required']);
+    }
+
+    // --- Load existing schedules and check for duplicates ---
+    $schedules = load_schedules(REMOTE_SCHEDULES_CFG);
+    check_duplicate($schedules, $new_remote);
+
+    // --- Encode settings for INI storage ---
+    $settings_json = addcslashes(
+        json_encode($settings, JSON_UNESCAPED_SLASHES),
+        '"'
+    );
+
+    // --- Generate unique ID and append ---
+    $id = 'schedule_remote_' . time();
+    append_schedule(REMOTE_SCHEDULES_CFG, $id, $type, $cron, $settings_json);
+
+    rebuild_cron_remote();
+
+    respond(200, [
+        'success' => true,
+        'id'      => $id,
+    ]);
+}
+
+main();
