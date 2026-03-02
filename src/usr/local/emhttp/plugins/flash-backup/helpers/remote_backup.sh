@@ -536,8 +536,17 @@ main() {
 
     exec > >(tee -a "$LAST_RUN_FILE") 2>&1
 
+    # --- Get plugin version from .plg ---
+PLG_FILE="/boot/config/plugins/flash-backup.plg"
+if [[ -f "$PLG_FILE" ]]; then
+    version=$(grep -oP 'version="\K[^"]+' "$PLG_FILE" | head -n1)
+else
+    version="unknown"
+fi
+
     echo "--------------------------------------------------------------------------------------------------"
     echo "Remote backup session started - $(date '+%Y-%m-%d %H:%M:%S')"
+    echo "Plugin version: $version"
     set_status "Starting remote backup"
 
     debug_log "===== Session started ====="
