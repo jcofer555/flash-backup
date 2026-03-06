@@ -440,7 +440,7 @@ if (file_exists("/etc/unraid-version")) {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 8px 12px;
+    padding: 2px 12px;
     background: #0a0a0a;
     border-bottom: 1px solid rgba(46, 204, 64, 0.25);
     border-radius: 10px 10px 0 0;
@@ -1432,8 +1432,8 @@ if (file_exists("/etc/unraid-version")) {
       </div>
       <span id="log-search-count"></span>
       <div class="log-toolbar-center">
-        <span title="Copy log to clipboard" class="flash-backuptip"><button type="button" id="copy-last-run-log">Copy Log</button></span>
         <span title="Clear the flash backup log" class="flash-backuptip"><button type="button" id="clear-last-run-log">Clear Log</button></span>
+        <span title="Copy log to clipboard" class="flash-backuptip"><button type="button" id="copy-last-run-log">Copy Log</button></span>
         <span id="log-toast"></span>
       </div>
       <div class="log-scroll-group">
