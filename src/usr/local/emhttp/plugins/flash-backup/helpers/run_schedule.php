@@ -73,7 +73,7 @@ function write_lock_meta(mixed $fp, string $pid, string $id): void {
 // ------------------------------------------------------------------------------
 function main(): void {
     // Accept ID from CLI arg, GET, or POST — CLI takes priority for cron use
-    $id = trim($argv[1] ?? ($_GET['id'] ?? ($_POST['id'] ?? '')));
+    $id = trim(getenv('SCHEDULE_ID') ?: ($_POST['id'] ?? ''));
 
     if ($id === '') {
         respond(400, ['status' => 'error', 'message' => 'Missing schedule ID']);

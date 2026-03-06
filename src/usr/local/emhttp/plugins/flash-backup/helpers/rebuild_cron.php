@@ -28,7 +28,7 @@ function rebuild_cron(): void {
         $cron = trim((string)($s['CRON'] ?? ''));
         if ($cron === '') continue;
 
-        $out .= "{$cron} php " . RUN_SCHEDULE_PHP . " {$id}\n";
+        $out .= "{$cron} sh -c 'SCHEDULE_ID={$id} /usr/bin/php -f " . RUN_SCHEDULE_PHP . " '\n";
     }
 
     file_put_contents(CRON_FILE, $out);

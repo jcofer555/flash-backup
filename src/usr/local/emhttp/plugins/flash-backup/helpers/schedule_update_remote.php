@@ -62,7 +62,7 @@ function write_schedules(string $cfg, array $schedules): void {
 // fingerprint() — deterministic duplicate detection key
 // ------------------------------------------------------------------------------
 function fingerprint(array $settings): string {
-    $key = ['BACKUP_DESTINATION' => $settings['BACKUP_DESTINATION'] ?? ''];
+    $key = ['RCLONE_CONFIG_REMOTE' => $settings['RCLONE_CONFIG_REMOTE'] ?? ''];
     ksort($key);
     return hash('sha256', json_encode($key));
 }
@@ -98,6 +98,29 @@ function main(): void {
     if (!is_array($settings)) {
         $settings = [];
     }
+
+    // --- Allowlist: only store fields that belong ---
+    $allowed = [
+        'B2_BUCKET_NAME',
+        'BACKUPS_TO_KEEP_REMOTE',
+        'DRY_RUN_REMOTE',
+        'MINIMAL_BACKUP_REMOTE',
+        'NOTIFICATION_SERVICE_REMOTE',
+        'NOTIFICATIONS_REMOTE',
+        'PUSHOVER_USER_KEY_REMOTE',
+        'RCLONE_CONFIG_REMOTE',
+        'REMOTE_PATH_IN_CONFIG',
+        'WEBHOOK_DISCORD_REMOTE',
+        'WEBHOOK_GOTIFY_REMOTE',
+        'WEBHOOK_NTFY_REMOTE',
+        'WEBHOOK_PUSHOVER_REMOTE',
+        'WEBHOOK_SLACK_REMOTE',
+    ];
+    $settings = array_intersect_key($settings, array_flip($allowed));
+
+    // --- Always exclude UI-only fields ---
+    $exclude = ['csrf_token', 'CRON_EXPRESSION'];
+    $settings = array_diff_key($settings, array_flip($exclude));
 
     // --- Input validation ---
     if ($id === '') {

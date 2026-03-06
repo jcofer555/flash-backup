@@ -39,6 +39,10 @@ PUSHOVER_USER_KEY="${PUSHOVER_USER_KEY//\"/}"
 
 readonly SCRIPT_START_EPOCH=$(date +%s)
 
+STOP_FLAG="/tmp/flash-backup/stop_requested.txt"
+TAR_PID=""
+WATCHER_PID=""
+
 # ------------------------------------------------------------------------------
 # Helpers
 # ------------------------------------------------------------------------------
@@ -176,6 +180,8 @@ notify_local() {
 # Deterministic cleanup trap
 # ------------------------------------------------------------------------------
 cleanup() {
+    kill "$WATCHER_PID" 2>/dev/null
+
     local lock_file="${LOG_DIR}/lock.txt"
     rm -f "$lock_file"
     debug_log "Lock file removed"
@@ -185,11 +191,25 @@ cleanup() {
     script_duration=$(( script_end_epoch - SCRIPT_START_EPOCH ))
     script_duration_human="$(format_duration "$script_duration")"
 
-    set_status "Local backup complete - Duration: $script_duration_human"
+    if [[ -f "$STOP_FLAG" ]]; then
+        rm -f "$STOP_FLAG"
+        rm -f "${LOG_DIR}"/*.tmp 2>/dev/null
+        if [[ -n "${CURRENT_BACKUP_FILE:-}" ]]; then
+            rm -f "$CURRENT_BACKUP_FILE" 2>/dev/null
+        fi
+        echo "Backup stopped early - Duration: $script_duration_human"
+        echo "Local backup session finished - $(date '+%Y-%m-%d %H:%M:%S')"
+        notify_local "warning" "Flash Backup" \
+            "Local backup stopped early - Duration: $script_duration_human"
+        set_status "Backup stopped"
+        rm -f "$STATUS_FILE"
+        debug_log "===== Session ended (stopped) ====="
+        return
+    fi
 
+    set_status "Local backup complete - Duration: $script_duration_human"
     echo "Backup duration: $script_duration_human"
     echo "Local backup session finished - $(date '+%Y-%m-%d %H:%M:%S')"
-
     debug_log "Session finished - duration=$script_duration_human error_count=$error_count"
 
     if (( error_count > 0 )); then
@@ -204,7 +224,19 @@ cleanup() {
     debug_log "===== Session ended ====="
 }
 
-trap cleanup EXIT SIGTERM SIGINT SIGHUP SIGQUIT
+_STOPPING=0
+handle_signal() {
+    if [[ "$_STOPPING" == "0" ]]; then _STOPPING=1; exit 1; fi
+}
+
+trap cleanup EXIT
+trap handle_signal SIGTERM SIGINT SIGHUP SIGQUIT
+
+( trap '' SIGTERM; while true; do
+    sleep 1
+    if [[ -f "$STOP_FLAG" ]]; then kill -TERM $$ 2>/dev/null; break; fi
+done ) &>/dev/null &
+WATCHER_PID=$!
 
 # ------------------------------------------------------------------------------
 # Build tar paths — explicit state, minimal vs full
@@ -259,21 +291,27 @@ create_archive() {
         return 0
     fi
 
+    CURRENT_BACKUP_FILE="$backup_file"
     debug_log "Starting tar archive creation"
     if [[ "${TAR_PATHS[0]}" == "boot" ]]; then
-        tar czf "$tmp_backup_file" -C / boot || {
-            debug_log "ERROR: tar failed for full boot backup"
-            echo "[ERROR] Failed to create backup"
-            notify_local "alert" "Flash Backup Error" "Failed to create backup tar archive"
-            exit 1
-        }
+        tar czf "$tmp_backup_file" -C / boot &
     else
-        tar czf "$tmp_backup_file" -C / "${TAR_PATHS[@]}" || {
-            debug_log "ERROR: tar failed for minimal backup paths: ${TAR_PATHS[*]}"
-            echo "[ERROR] Failed to create backup"
-            notify_local "alert" "Flash Backup Error" "Failed to create backup tar archive"
-            exit 1
-        }
+        tar czf "$tmp_backup_file" -C / "${TAR_PATHS[@]}" &
+    fi
+    TAR_PID=$!
+    echo "$TAR_PID" > "$LOG_DIR/tar.pid"
+    wait $TAR_PID
+    local tar_exit=$?
+    TAR_PID=""
+    rm -f "$LOG_DIR/tar.pid"
+    if [[ -f "$STOP_FLAG" ]] || (( tar_exit > 128 )); then
+        debug_log "tar interrupted (exit=$tar_exit)"; exit 1
+    fi
+    if (( tar_exit != 0 )); then
+        debug_log "ERROR: tar failed (exit=$tar_exit)"
+        echo "[ERROR] Failed to create backup"
+        notify_local "alert" "Flash Backup Error" "Failed to create backup tar archive"
+        exit 1
     fi
     debug_log "tar archive created: $tmp_backup_file"
 
@@ -435,7 +473,7 @@ else
     version="unknown"
 fi
 
-    echo "--------------------------------------------------------------------------------------------------"
+    echo "----------------------------------------------------------------------------------------"
     echo "Local backup session started - $(date '+%Y-%m-%d %H:%M:%S')"
     echo "Plugin version: $version"
     set_status "Starting local backup"

@@ -1,72 +1,63 @@
 <?php
+header('Content-Type: application/json');
 
-define('SAVE_SETTINGS_SCRIPT', '/usr/local/emhttp/plugins/flash-backup/helpers/save_settings.sh');
+$config = '/boot/config/plugins/flash-backup/settings.cfg';
+$tmp    = $config . '.tmp';
 
-// ------------------------------------------------------------------------------
-// respond() — deterministic JSON response with explicit HTTP code, then exit
-// ------------------------------------------------------------------------------
-function respond(int $code, array $payload): void {
-    http_response_code($code);
-    header('Content-Type: application/json');
-    echo json_encode($payload, JSON_UNESCAPED_SLASHES);
+$minimal_backup       = $_POST['MINIMAL_BACKUP']       ?? '';
+$backup_destination   = $_POST['BACKUP_DESTINATION']   ?? '';
+$backups_to_keep      = $_POST['BACKUPS_TO_KEEP']      ?? '0';
+$backup_owner         = $_POST['BACKUP_OWNER']         ?? 'nobody';
+$dry_run              = $_POST['DRY_RUN']              ?? 'no';
+$notifications        = $_POST['NOTIFICATIONS']        ?? 'no';
+$notification_service = $_POST['NOTIFICATION_SERVICE'] ?? '';
+$pushover_user_key    = $_POST['PUSHOVER_USER_KEY']    ?? '';
+
+$services    = ['DISCORD', 'GOTIFY', 'NTFY', 'PUSHOVER', 'SLACK'];
+$webhookUrls = [];
+foreach ($services as $svc) {
+    $webhookUrls[$svc] = $_POST['WEBHOOK_' . $svc] ?? '';
+}
+
+// --- Sanitize helper: strip quotes and newlines ---
+function sanitize(string $val): string {
+    return str_replace(['"', "'", "\n", "\r"], '', $val);
+}
+
+// --- Build config lines ---
+$lines = [
+    'BACKUP_DESTINATION'   => $backup_destination,
+    'BACKUP_OWNER'         => $backup_owner,
+    'BACKUPS_TO_KEEP'      => $backups_to_keep,
+    'DRY_RUN'              => $dry_run,
+    'MINIMAL_BACKUP'       => $minimal_backup,
+    'NOTIFICATION_SERVICE' => $notification_service,
+    'NOTIFICATIONS'        => $notifications,
+    'PUSHOVER_USER_KEY'    => $pushover_user_key,
+    'WEBHOOK_DISCORD'      => $webhookUrls['DISCORD'],
+    'WEBHOOK_GOTIFY'       => $webhookUrls['GOTIFY'],
+    'WEBHOOK_NTFY'         => $webhookUrls['NTFY'],
+    'WEBHOOK_PUSHOVER'     => $webhookUrls['PUSHOVER'],
+    'WEBHOOK_SLACK'        => $webhookUrls['SLACK'],
+];
+
+$content = '';
+foreach ($lines as $key => $val) {
+    $content .= $key . '="' . sanitize($val) . '"' . "\n";
+}
+
+// --- Write atomically ---
+@mkdir(dirname($config), 0755, true);
+
+if (file_put_contents($tmp, $content) === false) {
+    echo json_encode(['status' => 'error', 'message' => 'Failed to write temp config']);
     exit;
 }
 
-// ------------------------------------------------------------------------------
-// run_script() — guarded proc_open execution, explicit stdout/stderr handling
-// ------------------------------------------------------------------------------
-function run_script(string $cmd): void {
-    $process = proc_open($cmd, [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
-
-    if (!is_resource($process)) {
-        respond(500, ['status' => 'error', 'message' => 'Failed to start process']);
-    }
-
-    $output = stream_get_contents($pipes[1]);
-    $error  = stream_get_contents($pipes[2]);
-    fclose($pipes[1]);
-    fclose($pipes[2]);
-    proc_close($process);
-
-    $output = trim($output);
-    $error  = trim($error);
-
-    if ($output !== '') {
-        header('Content-Type: application/json');
-        echo $output;
-        exit;
-    }
-
-    respond(500, ['status' => 'error', 'message' => $error !== '' ? $error : 'No response from shell script']);
+if (!rename($tmp, $config)) {
+    @unlink($tmp);
+    echo json_encode(['status' => 'error', 'message' => 'Failed to move config into place']);
+    exit;
 }
 
-// ------------------------------------------------------------------------------
-// main() — explicit entrypoint, all state explicit
-// ------------------------------------------------------------------------------
-function main(): void {
-    if (!is_file(SAVE_SETTINGS_SCRIPT) || !is_executable(SAVE_SETTINGS_SCRIPT)) {
-        respond(500, ['status' => 'error', 'message' => 'Save settings script missing or not executable']);
-    }
-
-    $args = [
-        $_GET['MINIMAL_BACKUP']       ?? '',
-        $_GET['BACKUP_DESTINATION']   ?? '',
-        $_GET['BACKUPS_TO_KEEP']      ?? '',
-        $_GET['BACKUP_OWNER']         ?? '',
-        $_GET['DRY_RUN']              ?? '',
-        $_GET['NOTIFICATIONS']        ?? '',
-        $_GET['NOTIFICATION_SERVICE'] ?? '',
-        $_GET['WEBHOOK_DISCORD']      ?? '',
-        $_GET['WEBHOOK_GOTIFY']       ?? '',
-        $_GET['WEBHOOK_NTFY']         ?? '',
-        $_GET['WEBHOOK_PUSHOVER']     ?? '',
-        $_GET['WEBHOOK_SLACK']        ?? '',
-        $_GET['PUSHOVER_USER_KEY']    ?? '',
-    ];
-
-    $cmd = SAVE_SETTINGS_SCRIPT . ' ' . implode(' ', array_map('escapeshellarg', $args));
-
-    run_script($cmd);
-}
-
-main();
+echo json_encode(['status' => 'ok']);

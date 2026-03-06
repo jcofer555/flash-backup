@@ -99,6 +99,28 @@ function main(): void {
         $settings = [];
     }
 
+    // --- Allowlist: only store fields that belong ---
+    $allowed = [
+        'BACKUP_DESTINATION',
+        'BACKUP_OWNER',
+        'BACKUPS_TO_KEEP',
+        'DRY_RUN',
+        'MINIMAL_BACKUP',
+        'NOTIFICATION_SERVICE',
+        'NOTIFICATIONS',
+        'PUSHOVER_USER_KEY',
+        'WEBHOOK_DISCORD',
+        'WEBHOOK_GOTIFY',
+        'WEBHOOK_NTFY',
+        'WEBHOOK_PUSHOVER',
+        'WEBHOOK_SLACK',
+    ];
+    $settings = array_intersect_key($settings, array_flip($allowed));
+
+    // --- Always exclude UI-only fields ---
+    $exclude = ['csrf_token', 'CRON_EXPRESSION'];
+    $settings = array_diff_key($settings, array_flip($exclude));
+
     // --- Input validation ---
     if ($id === '') {
         respond(400, ['error' => 'Missing schedule ID']);

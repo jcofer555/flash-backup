@@ -40,6 +40,9 @@ PUSHOVER_USER_KEY_REMOTE="${PUSHOVER_USER_KEY_REMOTE//\"/}"
 
 readonly SCRIPT_START_EPOCH=$(date +%s)
 
+STOP_FLAG="/tmp/flash-backup/stop_requested_remote.txt"
+WATCHER_PID=""
+
 # ------------------------------------------------------------------------------
 # Helpers
 # ------------------------------------------------------------------------------
@@ -258,6 +261,8 @@ notify_remote() {
 # Deterministic cleanup trap
 # ------------------------------------------------------------------------------
 cleanup() {
+    kill "$WATCHER_PID" 2>/dev/null
+
     local lock_file="${LOG_DIR}/lock.txt"
     rm -f "$lock_file"
     rm -f /tmp/flash_*.tar.gz /tmp/flash_*.tar.gz.tmp 2>/dev/null
@@ -267,6 +272,18 @@ cleanup() {
     script_end_epoch=$(date +%s)
     script_duration=$(( script_end_epoch - SCRIPT_START_EPOCH ))
     script_duration_human="$(format_duration "$script_duration")"
+
+    if [[ -f "$STOP_FLAG" ]]; then
+        rm -f "$STOP_FLAG"
+        echo "Remote backup stopped early - Duration: $script_duration_human"
+        echo "Remote backup session finished - $(date '+%Y-%m-%d %H:%M:%S')"
+        notify_remote "warning" "Flash Backup" \
+            "Remote backup stopped early - Duration: $script_duration_human"
+        set_status "Remote backup stopped"
+        rm -f "$STATUS_FILE"
+        debug_log "===== Session ended (stopped) ====="
+        return
+    fi
 
     set_status "Remote backup complete - Duration: $script_duration_human"
 
@@ -287,7 +304,19 @@ cleanup() {
     debug_log "===== Session ended ====="
 }
 
-trap cleanup EXIT SIGTERM SIGINT SIGHUP SIGQUIT
+_STOPPING=0
+handle_signal() {
+    if [[ "$_STOPPING" == "0" ]]; then _STOPPING=1; exit 1; fi
+}
+
+trap cleanup EXIT
+trap handle_signal SIGTERM SIGINT SIGHUP SIGQUIT
+
+( trap '' SIGTERM; while true; do
+    sleep 1
+    if [[ -f "$STOP_FLAG" ]]; then kill -TERM $$ 2>/dev/null; break; fi
+done ) &>/dev/null &
+WATCHER_PID=$!
 
 # ------------------------------------------------------------------------------
 # Build tar paths — explicit state, minimal vs full
@@ -544,7 +573,7 @@ else
     version="unknown"
 fi
 
-    echo "--------------------------------------------------------------------------------------------------"
+    echo "----------------------------------------------------------------------------------------"
     echo "Remote backup session started - $(date '+%Y-%m-%d %H:%M:%S')"
     echo "Plugin version: $version"
     set_status "Starting remote backup"

@@ -72,8 +72,8 @@ function write_lock_meta(mixed $fp, string $pid, string $id): void {
 // main() — explicit entrypoint, all state explicit
 // ------------------------------------------------------------------------------
 function main(): void {
-    // Accept ID from CLI arg, GET, or POST — CLI takes priority for cron use
-    $id = trim($argv[1] ?? ($_GET['id'] ?? ($_POST['id'] ?? '')));
+    // --- Option C: get schedule ID from environment variable ---
+    $id = trim(getenv('SCHEDULE_ID') ?: ($_POST['id'] ?? ''));
 
     if ($id === '') {
         respond(400, ['status' => 'error', 'message' => 'Missing schedule ID']);
@@ -86,7 +86,6 @@ function main(): void {
     }
 
     // --- Decode and inject settings as environment variables ---
-    // Arrays (e.g. RCLONE_CONFIG_REMOTE[]) are joined to comma-separated strings
     $settings = json_decode(stripslashes($schedules[$id]['SETTINGS'] ?? ''), true);
     if (!is_array($settings)) {
         $settings = [];

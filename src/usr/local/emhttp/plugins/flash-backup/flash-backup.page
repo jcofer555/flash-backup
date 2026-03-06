@@ -116,72 +116,42 @@ if (file_exists("/etc/unraid-version")) {
     flex-direction: column;
     width: 100%;
     min-width: 0;
+    height: 100%;
   }
 
   #log-section {
-    background: #111;
+    background: #000;
     border-radius: 12px;
-    box-shadow: 0 0 12px rgba(46, 204, 64, .3);
+    border: 3px solid #2ECC40;
     color: #f0f8ff;
-    padding: 20px;
-    flex: 1 1 auto;
-    height: auto;
-    max-height: 73vh;
+    padding: 0;
+    flex: 1 1 0;
+    min-height: 0;
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    padding-top: 0;
     min-width: 0;
     width: 100%;
     box-sizing: border-box;
   }
 
-  #flash-backup-settings-remote,
-  #flash-backup-settings {
-    background: #111;
+  #flash-backup-settings,
+  #flash-backup-settings-remote {
+    background: #000;
     border-radius: 12px;
-    box-shadow: 0 0 12px rgba(46, 204, 64, .3);
+    border: 3px solid #2ECC40;
     color: #f0f8ff;
-    padding: 16px !important;
-    flex: 1 1 auto;
-    height: auto;
-    max-height: none;
-    overflow: visible;
+    padding: 20px;
+    flex: 1 1 0;
+    min-height: 0;
+    overflow-y: auto;
     min-width: 0;
     width: 100%;
     box-sizing: border-box;
-    flex-basis: 25%;
+    box-shadow: none;
   }
 
-  .unraid-71 #flash-backup-settings {
-    min-height: 77vh;
-    max-height: 77vh;
-    overflow-y: auto;
-    margin: 0;
-  }
 
-  .unraid-71 #log-section pre {
-    max-height: 68vh;
-    overflow-y: auto;
-    margin: 0;
-  }
-
-  .unraid-72 #flash-backup-settings {
-    min-height: 76vh;
-    max-height: 76vh;
-    overflow-y: auto;
-    margin: 0;
-  }
-
-  .unraid-72 #log-section pre {
-    max-height: 67vh;
-    overflow-y: auto;
-    margin: 0;
-  }
-
-  #flash-backup-settings {
-    flex: 1 1 100%;
-  }
 
   label {
     color: var(--primary-blue);
@@ -191,28 +161,26 @@ if (file_exists("/etc/unraid-version")) {
 
   input,
   select {
-    background: #111;
+    background: #000;
     border: 1px solid var(--primary-blue);
     border-radius: 5px;
-    color: #fff;
+    color: #d4f5d4;
     padding: 8px;
   }
 
-  .unraid-71 .flash-backup-wrapper {
-    margin-top: -31px !important;
-  }
 
-  .unraid-72 .flash-backup-wrapper {
-    margin-top: -20px !important;
-  }
 
   button {
     border: none;
     border-radius: 4px;
     color: #fff;
     cursor: pointer;
-    margin-right: 10px;
     padding: 8px 15px;
+  }
+
+  #flash-backup-settings button,
+  #flash-backup-settings-remote button {
+    margin-right: 10px;
   }
 
   input[type="checkbox"] {
@@ -234,6 +202,11 @@ if (file_exists("/etc/unraid-version")) {
     color: var(--primary-blue);
     font-weight: bold;
     width: 75px;
+  }
+
+  #status-text,
+  #status-text-remote {
+    color: #d4f5d4;
   }
 
   #version-text {
@@ -265,7 +238,7 @@ if (file_exists("/etc/unraid-version")) {
 
   .form-pair input,
   .form-pair select {
-    background: #111;
+    background: #000;
     color: #fff;
     width: 200px;
     min-width: fit-content;
@@ -311,20 +284,25 @@ if (file_exists("/etc/unraid-version")) {
   }
 
   #last-run-log {
-    background: #111;
-    border: 1px solid var(--primary-blue);
-    border-radius: 8px;
-    color: white;
+    background: #000;
+    border: none;
+    border-radius: 0 0 10px 10px;
+    color: #d4f5d4;
     font-family: monospace;
     font-size: 13px;
-    max-height: 66vh;
+    line-height: 1.6;
     overflow-y: auto;
-    padding: 10px;
+    padding: 10px 14px 12px;
     white-space: pre-wrap;
     word-break: break-word;
-    flex: 1;
-    margin-top: 0;
+    flex: 1 1 0;
+    margin: 0;
     min-height: 0;
+  }
+
+  #last-run-log .log-highlight {
+    background: rgba(46, 204, 64, 0.15);
+    border-radius: 2px;
   }
 
   input[type="number"].short-input {
@@ -388,16 +366,24 @@ if (file_exists("/etc/unraid-version")) {
     width: 100%;
     height: 100%;
     background: rgba(0, 0, 0, 0.85);
+    box-sizing: border-box;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
   }
 
   .vm-modal-content {
     width: 600px;
-    margin: 8% auto;
+    max-width: 100%;
+    max-height: calc(100vh - 40px);
+    overflow-y: auto;
+    margin: 0 auto;
     background: #000;
     border: 2px solid #2ECC40;
     border-radius: 8px;
     color: #2ECC40;
     padding: 15px;
+    box-sizing: border-box;
   }
 
   .vm-modal-header {
@@ -420,7 +406,7 @@ if (file_exists("/etc/unraid-version")) {
   }
 
   .vm-folder-item:hover {
-    background: #111;
+    background: #000;
   }
 
   .vm-folder-item label {
@@ -444,24 +430,127 @@ if (file_exists("/etc/unraid-version")) {
 
   #backup_destination {
     border: 1px solid #2ECC40 !important;
-    background-color: #111 !important;
-    color: #fff !important;
+    background-color: #000 !important;
+    color: #d4f5d4 !important;
     padding-left: 6px;
     border-radius: 3px;
   }
 
-  .log-header-row {
+  .log-toolbar {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    margin-bottom: 4px;
+    gap: 8px;
+    padding: 8px 12px;
+    background: #0a0a0a;
+    border-bottom: 1px solid rgba(46, 204, 64, 0.25);
+    border-radius: 10px 10px 0 0;
+    flex-shrink: 0;
   }
 
-  .log-header-row h3 {
-    color: var(--primary-blue);
-    font-size: 18px;
-    margin: 0;
+  .log-toolbar-center {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 1;
+    justify-content: center;
   }
+
+  .log-scroll-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0; /* ← arrow gap, change this to adjust spacing between ↑ and ↓ */
+    margin-left: auto;
+  }
+
+  .log-scroll-group span {
+    display: block;
+    margin: 0 !important;
+    padding: 0 !important;
+    line-height: 0;
+  }
+
+  .log-scroll-group span + span {
+    margin-top: -7px !important;
+  }
+
+  #log-scroll-top-btn,
+  #log-autoscroll-btn {
+    padding: 1px 7px !important;
+    font-size: 13px !important;
+    line-height: 1.2 !important;
+    min-width: 0 !important;
+    display: block !important;
+  }
+
+  #log-toast {
+    font-size: 11px;
+    color: #2ECC40;
+    white-space: nowrap;
+    pointer-events: none;
+    min-width: 70px;
+    visibility: hidden;
+  }
+
+  #log-toast.visible {
+    visibility: visible;
+  }
+
+  .stop-toast {
+    font-size: 11px;
+    color: #2ECC40;
+    white-space: nowrap;
+    pointer-events: none;
+    visibility: hidden;
+  }
+
+  .stop-toast.visible {
+    visibility: visible;
+  }
+
+  .log-search-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    background: #111;
+    border: 1px solid rgba(46, 204, 64, 0.3);
+    border-radius: 6px;
+    overflow: hidden;
+    transition: border-color 0.15s;
+  }
+
+  .log-search-wrap:focus-within {
+    border-color: #2ECC40;
+  }
+
+  #log-search {
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0 !important;
+    color: #fff !important;
+    font-size: 12px;
+    padding: 4px 8px !important;
+    width: 130px;
+    outline: none;
+  }
+
+  #log-search::placeholder {
+    color: rgba(255,255,255,0.25);
+  }
+
+  #log-search-count {
+    font-size: 11px;
+    color: rgba(46, 204, 64, 0.6);
+    white-space: nowrap;
+    width: 68px;
+    flex-shrink: 0;
+    display: inline-block;
+    visibility: hidden;
+  }
+  #log-search-count.visible {
+    visibility: visible;
+  }
+
+
 
   input.invalid {
     border-color: #2ECC40;
@@ -470,16 +559,20 @@ if (file_exists("/etc/unraid-version")) {
 
   #flash-backup-layout {
     display: grid;
-    grid-template-columns: minmax(320px, 1fr) minmax(320px, 1fr) minmax(420px, 1.6fr);
+    grid-template-columns: 1fr 1fr 1.8fr;
     gap: 20px;
     width: 100%;
-    margin-top: 0;
+    max-width: 100%;
+    overflow-x: hidden;
+    margin-top: -30px;
     padding-top: 0;
     align-items: stretch;
+    height: calc(83vh - 80px);
+    min-height: 0;
     --plugin-bg: #1e1e1e;
-    --plugin-panel: #111;
+    --plugin-panel: #000;
     --plugin-border: #2ECC40;
-    --plugin-text: #e6e6e6;
+    --plugin-text: #d4f5d4;
     --plugin-muted: #b0b0b0;
     --plugin-accent: #2ECC40;
   }
@@ -520,28 +613,57 @@ if (file_exists("/etc/unraid-version")) {
 
   #flash-backup-layout select:disabled,
   #flash-backup-layout input:disabled {
-    background-color: #111;
+    background-color: #000;
     color: var(--plugin-muted);
     border-color: #2ECC40;
     cursor: not-allowed;
   }
 
-  @media (max-width:1200px) {
-    #flash-backup-layout {
-      grid-template-columns: repeat(2, 1fr);
-    }
-  }
-
+  /* 2-column: medium screens */
   @media (max-width:1100px) {
     #flash-backup-layout {
-      grid-template-columns: 1fr;
+      grid-template-columns: 1fr 1fr;
+      height: auto;
+      min-height: 0;
+    }
+    #flash-backup-settings,
+    #flash-backup-settings-remote {
+      flex: none;
+      height: auto;
+      max-height: 70vh;
+    }
+    #log-section {
+      grid-column: 1 / -1;
+      flex: none;
+      height: 50vh;
     }
   }
 
-  @media (max-width:800px) {
+  /* 1-column: phone screens */
+  @media (max-width:700px) {
     #flash-backup-layout {
       grid-template-columns: 1fr;
+      height: auto;
+      align-items: start;
     }
+    .flash-backup-wrapper {
+      height: 60vh !important;
+      max-height: 60vh !important;
+      overflow: hidden !important;
+    }
+    #flash-backup-settings,
+    #flash-backup-settings-remote {
+      height: 100% !important;
+      max-height: 100% !important;
+      min-height: 0 !important;
+      overflow-y: auto !important;
+    }
+    #log-section {
+      grid-column: 1;
+      height: 40vh !important;
+      min-height: 0 !important;
+    }
+
   }
 
   #flash-backup-settings h2,
@@ -554,26 +676,8 @@ if (file_exists("/etc/unraid-version")) {
     padding-top: 16px !important;
   }
 
-  #cron-warning-fields,
-  #cron-warning-minute,
-  #cron-warning-interval {
-    max-width: 360px;
-    width: 100%;
-    box-sizing: border-box;
-    word-wrap: break-word;
-    color: yellow;
-  }
 
-  #cron-warning-fields-remote,
-  #cron-warning-slash-remote {
-    max-width: 360px;
-    width: 100%;
-    box-sizing: border-box;
-    word-wrap: break-word;
-    color: yellow;
-  }
 
-  #logtoast,
   #popupMessageremote,
   #popupMessage {
     display: none;
@@ -610,7 +714,7 @@ if (file_exists("/etc/unraid-version")) {
     border-radius: 4px;
     padding: 0 0.5em;
     font-size: 1em;
-    background-color: #111;
+    background-color: #000;
     box-sizing: border-box;
     cursor: pointer;
     position: relative;
@@ -634,7 +738,7 @@ if (file_exists("/etc/unraid-version")) {
     width: 100%;
     border: 1px solid #2ECC40;
     border-top: none;
-    background: #111;
+    background: #000;
     color: #fff;
     z-index: 10;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.6);
@@ -657,7 +761,7 @@ if (file_exists("/etc/unraid-version")) {
     font-size: 0.85em;
     padding: 0.15em 0.6em;
     border: 1px solid #2ECC40;
-    background: #111;
+    background: #000;
     color: #2ECC40;
     border-radius: 13px;
     cursor: pointer;
@@ -689,15 +793,15 @@ if (file_exists("/etc/unraid-version")) {
     width: 200px;
     border: 1px solid #2ECC40;
     padding: 6px;
-    background: #111;
+    background: #000;
     cursor: pointer;
-    color: #111;
+    color: #000;
     white-space: nowrap;
     border-radius: 4px;
   }
 
   .vm-dropdown-label {
-    color: #fff;
+    color: #d4f5d4;
     user-select: none;
     white-space: nowrap;
     overflow: hidden;
@@ -714,7 +818,7 @@ if (file_exists("/etc/unraid-version")) {
     max-height: 200px;
     overflow-y: auto;
     border: 1px solid #2ECC40;
-    background: #111;
+    background: #000;
     color: #fff;
     z-index: 10;
     font-family: 'Segoe UI', sans-serif;
@@ -743,7 +847,7 @@ if (file_exists("/etc/unraid-version")) {
     width: 16px;
     height: 16px;
     border: 1px solid #ccc;
-    background: #222;
+    background: #000;
     cursor: pointer;
     position: relative;
     accent-color: #2ECC40;
@@ -759,12 +863,25 @@ if (file_exists("/etc/unraid-version")) {
   }
 
   .vm-dropdown-list div:hover {
-    background: #111;
+    background: #000;
+  }
+
+  .flash-backup-schedules-table {
+    table-layout: auto;
+    width: 100%;
   }
 
   .flash-backup-schedules-table td {
     padding-top: 2px !important;
     padding-bottom: 2px !important;
+  }
+
+  .schedule-actions-cell {
+    white-space: normal;
+  }
+
+  .schedule-actions-cell button {
+    margin-bottom: 3px;
   }
 
   label.fbb-has-help,
@@ -784,16 +901,41 @@ if (file_exists("/etc/unraid-version")) {
     max-width: 500px;
     box-sizing: border-box;
   }
-</style>
 
-<?php
-$plg = "/boot/config/plugins/flash-backup.plg";
-$version = "unknown";
-if (is_file($plg)) {
-    $xml = @simplexml_load_file($plg);
-    if ($xml && isset($xml['version'])) $version = (string)$xml['version'];
+  .vm-schedules-table tbody tr:hover {
+    background: #000 !important;
+  }
+
+  /* Enable container queries on the panels */
+#flash-backup-settings,
+#flash-backup-settings-remote {
+  container-type: inline-size;
+  container-name: plugin-panel;
 }
-?>
+
+/* 3. Stack form-pair when panel is narrow */
+@container plugin-panel (max-width: 430px) {
+  .form-pair {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 4px 0 !important;
+  }
+  .form-pair label {
+    width: auto !important;
+    min-width: unset !important;
+  }
+  .input-wrapper {
+    width: 100% !important;
+  }
+}
+
+@media (max-width: 500px) {
+  #folderPickerModal .vm-modal-content {
+    width: 95%;
+    margin: 0;
+  }
+}
+</style>
 
 <script>
   const SAVED_WEBHOOKS = {
@@ -911,26 +1053,12 @@ if (is_file($plg)) {
             title="Select scheduling type">Scheduling:</span></label>
         <div class="input-wrapper"><span class="flash-backuptip" title="Select scheduling type">
             <select id="cron_mode" name="CRON_MODE" class="short-input">
-              <option value="minutes">Minutes</option>
               <option value="hourly">Hourly</option>
               <option value="daily" selected>Daily</option>
               <option value="weekly">Weekly</option>
               <option value="monthly">Monthly</option>
-              <option value="custom">Custom</option>
             </select>
           </span></div>
-      </div>
-
-      <div id="minutes-options" style="display:none; margin-top:10px;">
-        <div class="form-pair"><label for="minutes_frequency"><span class="flash-backuptip"
-              title="Select minute frequency">Select Frequency:</span></label>
-          <div class="input-wrapper"><span class="flash-backuptip" title="Select minute frequency">
-              <?php $freq=intval($settings['MINUTES_FREQUENCY']??'');if($freq<1)$freq=30;?><select
-                id="minutes_frequency" name="MINUTES_FREQUENCY" class="short-input">
-                <?php for($i=1;$i<=59;$i++){$s=($freq===$i)?'selected':'';echo "<option value=\"$i\" $s>Every $i Minutes</option>";}?>
-              </select>
-            </span></div>
-        </div>
       </div>
 
       <div id="hourly-options" style="display:none; margin-top:10px;">
@@ -938,7 +1066,7 @@ if (is_file($plg)) {
               title="Select hourly frequency">Select Frequency:</span></label>
           <div class="input-wrapper"><span class="flash-backuptip" title="Select hourly frequency"><select
                 id="hourly_frequency" name="HOURLY_FREQUENCY" class="short-input">
-                <?php for($i=1;$i<=23;$i++){$s=(($settings['HOURLY_FREQUENCY']??'')===(string)$i)?'selected':'';echo "<option value=\"$i\" $s>Every $i Hour".($i>1?'s':'')."</option>";}?>
+                <?php foreach([4,6,8] as $i){$s=(($settings['HOURLY_FREQUENCY']??'4')===(string)$i)?'selected':'';echo "<option value=\"$i\" $s>Every $i Hours</option>";}?>
               </select></span></div>
         </div>
       </div>
@@ -1008,26 +1136,15 @@ if (is_file($plg)) {
         </div>
       </div>
 
-      <div id="custom-options" style="display:none; margin-top:10px;">
-        <div class="form-pair"><label for="custom_cron"><span class="flash-backuptip"
-              title="Enter a valid cron expression 5 fields with spaces between each for example */2 * * * * visit https://crontab.guru for help">Cron
-              Expression:</span></label>
-          <div class="input-wrapper"><span class="flash-backuptip"
-              title="Enter a valid cron expression 5 fields with spaces between each for example */2 * * * * visit https://crontab.guru for help"><input
-                type="text" id="custom_cron" name="CUSTOM_CRON" class="short-input" placeholder="*/2 * * * *"
-                value="<?php echo htmlspecialchars($settings['CUSTOM_CRON']??'');?>"></span></div>
-        </div>
-        <div class="form-pair">
-          <div id="cron-warning-fields" class="field-warning" role="alert" style="display:none;">⚠️ Enter a valid cron
-            expression with 5 fields separated by spaces. Only numbers, *, and / are allowed. Visit <a
-              href="https://crontab.guru/" target="_blank">crontab.guru</a> for help.</div>
-          <div id="cron-warning-slash" class="field-warning" role="alert" style="display:none;">⚠️ Fields using "/" must
-            be in the form */N (example: */5).</div>
+
+
+      <div id="backup-banner-local" style="display:none; max-width:373px; margin-bottom:8px;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span id="backup-banner-text-local" style="color:yellow; font-weight:bold;"></span>
+          <button type="button" id="stop-banner-btn-local" onclick="stopFromBanner()">Stop</button>
+          <span id="stop-toast-banner-local" class="stop-toast">Stop requested</span>
         </div>
       </div>
-
-      <div id="backup-status" style="color:yellow; font-weight:bold; margin-bottom:6px; display:none;">Local or Remote
-        backup in progress!</div>
 
       <div class="backup-actions">
         <span title="Run backup of flash drive to local storage" class="flash-backuptip"><button type="button"
@@ -1093,23 +1210,19 @@ if (is_file($plg)) {
             </option>
             <?php endforeach; ?>
           </select>
-          <div id="rclone_config_remote" class="flash-multiselect">
-            <span class="selected-placeholder">
+          <div id="rclone_config_remote" class="vm-multiselect flash-backuptip"
+            title="Choose which rclone config(s) to use for the remote backup">
+            <div class="vm-dropdown-label" id="rclone-config-label-remote">
               <?=!empty($selectedRemotes)?implode(', ',$selectedRemotes):'Select config(s)'?>
-            </span>
-            <div class="options-container">
-              <div class="options-actions">
-                <button type="button" class="select-all">All</button>
-                <button type="button" class="clear-all">None</button>
-              </div>
-              <div class="options-list">
-                <?php foreach ($rcloneRemotes as $remote): ?>
-                <?php $type=$rcloneIni[$remote]['type']??'unknown';?>
-                <div class="option" data-value="<?=htmlspecialchars($remote)?>">
+            </div>
+            <div class="vm-dropdown-list" id="rclone-config-list-remote" style="display:none;">
+              <?php foreach ($rcloneRemotes as $remote): ?>
+              <?php $type=$rcloneIni[$remote]['type']??'unknown';?>
+              <div><label><input type="checkbox" value="<?=htmlspecialchars($remote)?>"
+                    <?=in_array($remote,$selectedRemotes,true)?'checked':''?>>
                   <?=htmlspecialchars("$type - $remote")?>
-                </div>
-                <?php endforeach; ?>
-              </div>
+                </label></div>
+              <?php endforeach; ?>
             </div>
           </div>
         </span>
@@ -1199,26 +1312,12 @@ if (is_file($plg)) {
             title="Select scheduling selection">Scheduling:</span></label>
         <div class="input-wrapper"><span class="flash-backuptip" title="Select scheduling selection">
             <select id="cron_mode_remote" name="CRON_MODE_REMOTE" class="short-input">
-              <option value="minutes">Minutes</option>
               <option value="hourly">Hourly</option>
               <option value="daily" selected>Daily</option>
               <option value="weekly">Weekly</option>
               <option value="monthly">Monthly</option>
-              <option value="custom">Custom</option>
             </select>
           </span></div>
-      </div>
-
-      <div id="minutes-options-remote" style="display:none; margin-top:10px;">
-        <div class="form-pair"><label for="minutes_frequency_remote"><span class="flash-backuptip"
-              title="Select minute frequency">Select Frequency:</span></label>
-          <div class="input-wrapper"><span class="flash-backuptip" title="Select minute frequency">
-              <?php $freq=intval($remotesettings['MINUTES_FREQUENCY_REMOTE']??'');if($freq<1)$freq=30;?><select
-                id="minutes_frequency_remote" name="MINUTES_FREQUENCY_REMOTE" class="short-input">
-                <?php for($i=1;$i<=59;$i++){$s=($freq===$i)?'selected':'';echo "<option value=\"$i\" $s>Every $i Minutes</option>";}?>
-              </select>
-            </span></div>
-        </div>
       </div>
 
       <div id="hourly-options-remote" style="display:none; margin-top:10px;">
@@ -1226,7 +1325,7 @@ if (is_file($plg)) {
               title="Select hourly frequency">Select Frequency:</span></label>
           <div class="input-wrapper"><span class="flash-backuptip" title="Select hourly frequency"><select
                 id="hourly_frequency_remote" name="HOURLY_FREQUENCY_REMOTE" class="short-input">
-                <?php for($i=1;$i<=23;$i++){$s=(($remotesettings['HOURLY_FREQUENCY_REMOTE']??'')===(string)$i)?'selected':'';echo "<option value=\"$i\" $s>Every $i Hour".($i>1?'s':'')."</option>";}?>
+                <?php foreach([4,6,8] as $i){$s=(($remotesettings['HOURLY_FREQUENCY_REMOTE']??'4')===(string)$i)?'selected':'';echo "<option value=\"$i\" $s>Every $i Hours</option>";}?>
               </select></span></div>
         </div>
       </div>
@@ -1296,27 +1395,15 @@ if (is_file($plg)) {
         </div>
       </div>
 
-      <div id="custom-options-remote" style="display:none; margin-top:10px;">
-        <div class="form-pair"><label for="custom_cron_remote"><span class="flash-backuptip"
-              title="Enter a valid cron expression 5 fields with spaces between each for example */2 * * * * visit https://crontab.guru for help">Cron
-              Expression:</span></label>
-          <div class="input-wrapper"><span class="flash-backuptip"
-              title="Enter a valid cron expression 5 fields with spaces between each for example */2 * * * * visit https://crontab.guru for help"><input
-                type="text" id="custom_cron_remote" name="CUSTOM_CRON_REMOTE" class="short-input"
-                placeholder="*/2 * * * *"
-                value="<?php echo htmlspecialchars($remotesettings['CUSTOM_CRON_REMOTE']??'');?>"></span></div>
-        </div>
-        <div class="form-pair">
-          <div id="cron-warning-fields-remote" class="field-warning" role="alert" style="display:none;">⚠️ Enter a valid
-            cron expression with 5 fields separated by spaces. Only numbers, *, and / are allowed. Visit <a
-              href="https://crontab.guru/" target="_blank">crontab.guru</a> for help.</div>
-          <div id="cron-warning-slash-remote" class="field-warning" role="alert" style="display:none;">⚠️ Fields using
-            "/" must be in the form */N (example: */5).</div>
+
+
+      <div id="backup-banner-remote" style="display:none; max-width:373px; margin-bottom:8px;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span id="backup-banner-text-remote" style="color:yellow; font-weight:bold;"></span>
+          <button type="button" id="stop-banner-btn-remote" onclick="stopFromBanner()">Stop</button>
+          <span id="stop-toast-banner-remote" class="stop-toast">Stop requested</span>
         </div>
       </div>
-
-      <div id="backup-status-remote" style="color:yellow; font-weight:bold; margin-bottom:6px; display:none;">Local or
-        Remote backup in progress!</div>
 
       <div class="backup-actions">
         <span title="Run remote backup" class="flash-backuptip"><button type="button" id="backupbtn_remote">Backup
@@ -1339,22 +1426,30 @@ if (is_file($plg)) {
   </div>
 
   <div id="log-section">
-    <form id="log-section-form">
-      <div class="log-header-row">
-        <span title="Clear the flash backup log" class="flash-backuptip"><button type="button"
-            id="clear-last-run-log">Clear Log</button></span>
-        <div id="logtoast">Log copied</div>
-        <span title="Copy flash backup log to clipboard" class="flash-backuptip"><button type="button"
-            id="copy-last-run-log">Copy</button></span>
+    <div class="log-toolbar">
+      <div class="log-search-wrap">
+        <input type="text" id="log-search" placeholder="Search…" autocomplete="off">
       </div>
-      <pre id="last-run-log">Flash backup log not found</pre>
-    </form>
+      <span id="log-search-count"></span>
+      <div class="log-toolbar-center">
+        <span title="Copy log to clipboard" class="flash-backuptip"><button type="button" id="copy-last-run-log">Copy Log</button></span>
+        <span title="Clear the flash backup log" class="flash-backuptip"><button type="button" id="clear-last-run-log">Clear Log</button></span>
+        <span id="log-toast"></span>
+      </div>
+      <div class="log-scroll-group">
+        <span title="Scroll to top of log" class="flash-backuptip"><button type="button" id="log-scroll-top-btn">&#8679;</button></span>
+        <span title="Scroll to bottom of log" class="flash-backuptip"><button type="button" id="log-autoscroll-btn">&#8681;</button></span>
+      </div>
+    </div>
+    <pre id="last-run-log">Flash backup log not found</pre>
   </div>
 
 </div>
 
-<div id="schedule-list"></div>
-<div id="schedule-list-remote"></div>
+<div id="schedule-section" style="width:100%; margin-top:20px;">
+  <div id="schedule-list"></div>
+  <div id="schedule-list-remote"></div>
+</div>
 
 <div id="folderPickerModal" class="vm-modal">
   <div class="vm-modal-content">
@@ -1368,7 +1463,7 @@ if (is_file($plg)) {
       style="display:flex; align-items:center; justify-content:flex-end; gap:12px; position:relative;">
       <div class="vm-modal-footer" style="position:relative;">
         <div id="folderToast"
-          style="position:absolute; left:-56%; bottom:50%; transform:translateY(50%); background:#6f8d7b; color:white; padding:6px 12px; border-radius:4px; font-size:13px; box-shadow:0 2px 6px rgba(0,0,0,0.25); display:none;">
+          style="position:absolute; left:-43%; bottom:50%; transform:translateY(50%); background:#6f8d7b; color:white; padding:6px 12px; border-radius:4px; font-size:13px; box-shadow:0 2px 6px rgba(0,0,0,0.25); display:none;">
         </div>
         <button type="button" id="createFolderBtn">Create Folder</button>
         <span id="newFolderInputWrap" style="display:none;">
@@ -1389,8 +1484,8 @@ if (is_file($plg)) {
     const isButtonWrapper = $el.is('span') && $el.children('button').length > 0;
     const isCheckboxLabel = $el.is('label') && $el.find('input[type="checkbox"]').length > 0;
     const isButton = $el.is('button');
-    const isInsideTable = $el.closest('table').length > 0;
-    if (!isButtonWrapper && !isCheckboxLabel && !isButton && !isInsideTable) return;
+    const isTableTip = $el.is('span') && $el.closest('table').length > 0;
+    if (!isButtonWrapper && !isCheckboxLabel && !isButton && !isTableTip) return;
     if (!$el.hasClass('tooltipstered')) {
       const tipContent = $el.attr('title') || $el.data('tooltip') || '';
       $el.tooltipster({ maxWidth: 300, content: tipContent });
@@ -1399,18 +1494,12 @@ if (is_file($plg)) {
     }
   });
 
-  document.getElementById('copy-last-run-log').addEventListener('click', () => {
-    const toast = document.getElementById('logtoast');
-    toast.style.display = 'block';
-    setTimeout(() => toast.style.display = 'none', 2000);
-  });
-
   const SERVICE_CONFIG = {
-    Discord: { label: 'Discord Webhook URL', tooltip: 'Enter your Discord webhook URL e.g. https://discord.com/api/webhooks/WEBHOOK or just WEBHOOK', placeholder: 'https://discord.com/api/webhooks/...', prefix: 'https://discord.com/api/webhooks/', needsUserKey: false, needsUrl: true },
-    Gotify: { label: 'Gotify URL', tooltip: 'Enter your Gotify server message URL e.g. https://gotify.example.com/message?token=TOKEN or just TOKEN', placeholder: 'https://gotify.example.com/message?token=...', prefix: 'https://gotify.example.com/message?token=', needsUserKey: false, needsUrl: true },
+    Discord: { label: 'Discord Webhook URL', tooltip: 'Enter your Discord webhook URL e.g. https://discord.com/api/webhooks/WEBHOOK or just WEBHOOK', placeholder: 'https://discord.com/api/webhooks/WEBHOOK', prefix: 'https://discord.com/api/webhooks/', needsUserKey: false, needsUrl: true },
+    Gotify: { label: 'Gotify URL', tooltip: 'Enter your Gotify server message URL e.g. https://gotify.example.com/message?token=TOKEN or just TOKEN', placeholder: 'https://gotify.example.com/message?token=TOKEN', prefix: 'https://gotify.example.com/message?token=', needsUserKey: false, needsUrl: true },
     Ntfy: { label: 'Ntfy URL', tooltip: 'Enter your Ntfy topic URL e.g. https://ntfy.sh/yourtopic or just yourtopic', placeholder: 'https://ntfy.sh/yourtopic', prefix: 'https://ntfy.sh/', needsUserKey: false, needsUrl: true },
     Pushover: { label: 'Pushover App Token URL', tooltip: 'Enter your Pushover app token e.g. https://api.pushover.net/APPTOKEN or just APPTOKEN', placeholder: 'https://api.pushover.net/YOURAPPTOKEN', prefix: 'https://api.pushover.net/', needsUserKey: true, needsUrl: true },
-    Slack: { label: 'Slack Webhook URL', tooltip: 'Enter your Slack webhook URL e.g. https://hooks.slack.com/services/ID or just ID', placeholder: 'https://hooks.slack.com/services/...', prefix: 'https://hooks.slack.com/services/', needsUserKey: false, needsUrl: true },
+    Slack: { label: 'Slack Webhook URL', tooltip: 'Enter your Slack webhook URL e.g. https://hooks.slack.com/services/ID or just ID', placeholder: 'https://hooks.slack.com/services/ID', prefix: 'https://hooks.slack.com/services/', needsUserKey: false, needsUrl: true },
     Unraid: { label: null, tooltip: "Uses Unraid's built-in notification system", placeholder: null, prefix: null, needsUserKey: false, needsUrl: false }
   };
 
@@ -1585,6 +1674,33 @@ if (is_file($plg)) {
   updateServiceLabel('');
   updateServiceLabel('remote');
 
+  // Multiselect open/close — rclone config
+  $('#rclone_config_remote').on('click', function (e) {
+    e.stopPropagation();
+    $('#rclone-config-list-remote').toggle();
+  });
+
+  $('#rclone-config-list-remote').on('click', function (e) {
+    e.stopPropagation();
+  });
+
+  // Close when clicking outside
+  $(document).on('click', function (e) {
+    if (!$(e.target).closest('#rclone_config_remote').length) {
+      $('#rclone-config-list-remote').hide();
+    }
+  });
+
+  // Sync checkboxes to hidden select
+  $('#rclone-config-list-remote').on('change', 'input[type=checkbox]', function () {
+    const selected = $('#rclone-config-list-remote').find('input:checked').map(function () { return $(this).val(); }).get();
+    $('#rclone-config-label-remote').text(selected.length ? selected.join(', ') : 'Select config(s)');
+    $('#rclone_config_remote_hidden option').each(function () {
+      $(this).prop('selected', selected.includes($(this).val()));
+    });
+    updateB2BucketVisibility();
+  });
+
   var scheduleUILocked = false;
   var rebuildToken = 0;
 
@@ -1617,6 +1733,8 @@ if (is_file($plg)) {
     if (anyB2) { $('#b2_bucket_row').show(); }
     else { $('#b2_bucket_row').hide(); $('#b2_bucket_name').val(''); }
   }
+
+  updateB2BucketVisibility();
 
   function validateBackupPrereqsremote() {
     const selectedRemotes = $('#rclone_config_remote_hidden').val() || [];
@@ -1666,50 +1784,42 @@ if (is_file($plg)) {
     function initSchedulingToggle() {
       const cronModeSelect = document.getElementById('cron_mode');
       if (!cronModeSelect) return false;
-      const minutesOptions = document.getElementById('minutes-options');
       const hourlyOptions = document.getElementById('hourly-options');
       const dailyOptions = document.getElementById('daily-options');
       const weeklyOptions = document.getElementById('weekly-options');
       const monthlyOptions = document.getElementById('monthly-options');
-      const customOptions = document.getElementById('custom-options');
-      const minutesFreq = document.getElementById('minutes_frequency');
       const hourlyFreq = document.getElementById('hourly_frequency');
       const dailyTime = document.getElementById('daily_time');
       const weeklyDay = document.getElementById('weekly_day');
       const weeklyTime = document.getElementById('weekly_time');
       const monthlyDay = document.getElementById('monthly_day');
       const monthlyTime = document.getElementById('monthly_time');
-      const customCron = document.getElementById('custom_cron');
 
       function toggleCronOptions(value) {
-        minutesOptions.style.display = (value === 'minutes') ? 'block' : 'none';
         hourlyOptions.style.display = (value === 'hourly') ? 'block' : 'none';
         dailyOptions.style.display = (value === 'daily') ? 'block' : 'none';
         weeklyOptions.style.display = (value === 'weekly') ? 'block' : 'none';
         monthlyOptions.style.display = (value === 'monthly') ? 'block' : 'none';
-        customOptions.style.display = (value === 'custom') ? 'block' : 'none';
         updateCronExpression();
       }
 
       function updateCronExpression() {
         let cronString = "";
-        if (cronModeSelect.value === "minutes" && minutesFreq) cronString = `*/${parseInt(minutesFreq.value, 10)} * * * *`;
-        else if (cronModeSelect.value === "hourly" && hourlyFreq) cronString = `0 */${parseInt(hourlyFreq.value, 10)} * * *`;
+        if (cronModeSelect.value === "hourly" && hourlyFreq) cronString = `0 */${parseInt(hourlyFreq.value, 10)} * * *`;
         else if (cronModeSelect.value === "daily" && dailyTime) cronString = `${parseInt(document.getElementById('daily_minute').value, 10)} ${parseInt(dailyTime.value, 10)} * * *`;
         else if (cronModeSelect.value === "weekly" && weeklyDay && weeklyTime) {
           const dayMap = { Sunday: 0, Monday: 1, Tuesday: 2, Wednesday: 3, Thursday: 4, Friday: 5, Saturday: 6 };
           cronString = `${parseInt(document.getElementById('weekly_minute').value, 10)} ${parseInt(weeklyTime.value, 10)} * * ${dayMap[weeklyDay.value]}`;
         }
         else if (cronModeSelect.value === "monthly" && monthlyDay && monthlyTime) cronString = `${parseInt(document.getElementById('monthly_minute').value, 10)} ${parseInt(monthlyTime.value, 10)} ${parseInt(monthlyDay.value, 10)} * *`;
-        else if (cronModeSelect.value === "custom" && customCron) cronString = customCron.value.trim();
         let hidden = document.getElementById("cron_expression_hidden");
         if (!hidden) { hidden = document.createElement("input"); hidden.type = "hidden"; hidden.id = "cron_expression_hidden"; hidden.name = "CRON_EXPRESSION"; cronModeSelect.closest(".form-pair").appendChild(hidden); }
         hidden.value = cronString;
       }
 
+      window._toggleCronOptions = toggleCronOptions;
       toggleCronOptions(cronModeSelect.value);
-      cronModeSelect.addEventListener('change', (e) => toggleCronOptions(e.target.value));
-      minutesFreq?.addEventListener('change', updateCronExpression);
+      $(cronModeSelect).on('change', (e) => toggleCronOptions(e.target.value));
       hourlyFreq?.addEventListener('change', updateCronExpression);
       dailyTime?.addEventListener('change', updateCronExpression);
       document.getElementById('daily_minute')?.addEventListener('change', updateCronExpression);
@@ -1719,7 +1829,6 @@ if (is_file($plg)) {
       monthlyDay?.addEventListener('change', updateCronExpression);
       monthlyTime?.addEventListener('change', updateCronExpression);
       document.getElementById('monthly_minute')?.addEventListener('change', updateCronExpression);
-      customCron?.addEventListener('input', updateCronExpression);
       return true;
     }
     if (!initSchedulingToggle()) {
@@ -1732,50 +1841,42 @@ if (is_file($plg)) {
     function initSchedulingToggleRemote() {
       const cronModeSelect = document.getElementById('cron_mode_remote');
       if (!cronModeSelect) return false;
-      const minutesOptions = document.getElementById('minutes-options-remote');
       const hourlyOptions = document.getElementById('hourly-options-remote');
       const dailyOptions = document.getElementById('daily-options-remote');
       const weeklyOptions = document.getElementById('weekly-options-remote');
       const monthlyOptions = document.getElementById('monthly-options-remote');
-      const customOptions = document.getElementById('custom-options-remote');
-      const minutesFreq = document.getElementById('minutes_frequency_remote');
       const hourlyFreq = document.getElementById('hourly_frequency_remote');
       const dailyTime = document.getElementById('daily_time_remote');
       const weeklyDay = document.getElementById('weekly_day_remote');
       const weeklyTime = document.getElementById('weekly_time_remote');
       const monthlyDay = document.getElementById('monthly_day_remote');
       const monthlyTime = document.getElementById('monthly_time_remote');
-      const customCron = document.getElementById('custom_cron_remote');
 
       function toggleCronOptions(value) {
-        minutesOptions.style.display = (value === 'minutes') ? 'block' : 'none';
         hourlyOptions.style.display = (value === 'hourly') ? 'block' : 'none';
         dailyOptions.style.display = (value === 'daily') ? 'block' : 'none';
         weeklyOptions.style.display = (value === 'weekly') ? 'block' : 'none';
         monthlyOptions.style.display = (value === 'monthly') ? 'block' : 'none';
-        customOptions.style.display = (value === 'custom') ? 'block' : 'none';
         updateCronExpressionRemote();
       }
 
       function updateCronExpressionRemote() {
         let cronString = "";
-        if (cronModeSelect.value === "minutes" && minutesFreq) cronString = `*/${parseInt(minutesFreq.value, 10)} * * * *`;
-        else if (cronModeSelect.value === "hourly" && hourlyFreq) cronString = `0 */${parseInt(hourlyFreq.value, 10)} * * *`;
+        if (cronModeSelect.value === "hourly" && hourlyFreq) cronString = `0 */${parseInt(hourlyFreq.value, 10)} * * *`;
         else if (cronModeSelect.value === "daily" && dailyTime) cronString = `${parseInt(document.getElementById('daily_minute_remote').value, 10)} ${parseInt(dailyTime.value, 10)} * * *`;
         else if (cronModeSelect.value === "weekly" && weeklyDay && weeklyTime) {
           const dayMap = { Sunday: 0, Monday: 1, Tuesday: 2, Wednesday: 3, Thursday: 4, Friday: 5, Saturday: 6 };
           cronString = `${parseInt(document.getElementById('weekly_minute_remote').value, 10)} ${parseInt(weeklyTime.value, 10)} * * ${dayMap[weeklyDay.value]}`;
         }
         else if (cronModeSelect.value === "monthly" && monthlyDay && monthlyTime) cronString = `${parseInt(document.getElementById('monthly_minute_remote').value, 10)} ${parseInt(monthlyTime.value, 10)} ${parseInt(monthlyDay.value, 10)} * *`;
-        else if (cronModeSelect.value === "custom" && customCron) cronString = customCron.value.trim();
         let hidden = document.getElementById("cron_expression_hidden_remote");
         if (!hidden) { hidden = document.createElement("input"); hidden.type = "hidden"; hidden.id = "cron_expression_hidden_remote"; hidden.name = "CRON_EXPRESSION_REMOTE"; cronModeSelect.closest(".form-pair").appendChild(hidden); }
         hidden.value = cronString;
       }
 
+      window._toggleCronOptionsRemote = toggleCronOptions;
       toggleCronOptions(cronModeSelect.value);
-      cronModeSelect.addEventListener('change', (e) => toggleCronOptions(e.target.value));
-      minutesFreq?.addEventListener('change', updateCronExpressionRemote);
+      $(cronModeSelect).on('change', (e) => toggleCronOptions(e.target.value));
       hourlyFreq?.addEventListener('change', updateCronExpressionRemote);
       dailyTime?.addEventListener('change', updateCronExpressionRemote);
       document.getElementById('daily_minute_remote')?.addEventListener('change', updateCronExpressionRemote);
@@ -1785,7 +1886,6 @@ if (is_file($plg)) {
       monthlyDay?.addEventListener('change', updateCronExpressionRemote);
       monthlyTime?.addEventListener('change', updateCronExpressionRemote);
       document.getElementById('monthly_minute_remote')?.addEventListener('change', updateCronExpressionRemote);
-      customCron?.addEventListener('input', updateCronExpressionRemote);
       return true;
     }
     if (!initSchedulingToggleRemote()) {
@@ -1794,13 +1894,79 @@ if (is_file($plg)) {
     }
   })();
 
+  var logAutoScroll = true;
+
+  function applyLogSearch() {
+    var logEl = document.getElementById('last-run-log');
+    var countEl = document.getElementById('log-search-count');
+    var term = (document.getElementById('log-search').value || '').trim();
+    var raw = logEl.dataset.raw || '';
+    if (!term) {
+      logEl.textContent = raw || 'Flash backup log not found';
+      countEl.classList.remove('visible');
+      return;
+    }
+    var escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\$&');
+    var re = new RegExp('(' + escaped + ')', 'gi');
+    var parts = raw.split(re);
+    var matches = 0;
+    logEl.innerHTML = '';
+    parts.forEach(function(part) {
+      if (re.test(part)) {
+        matches++;
+        var mark = document.createElement('mark');
+        mark.className = 'log-highlight';
+        mark.textContent = part;
+        logEl.appendChild(mark);
+        re.lastIndex = 0;
+      } else {
+        logEl.appendChild(document.createTextNode(part));
+      }
+    });
+    countEl.textContent = matches + ' match' + (matches !== 1 ? 'es' : '');
+    countEl.classList.toggle('visible', matches > 0);
+  }
+
   function loadLastRunLog() {
     fetch('/plugins/flash-backup/helpers/fetch_last_run_log.php')
-      .then(res => res.text()).then(data => { document.getElementById('last-run-log').textContent = data || 'Flash backup log not found'; })
-      .catch(() => { document.getElementById('last-run-log').textContent = 'Error loading flash backup log'; });
+      .then(res => res.text()).then(data => {
+        var logEl = document.getElementById('last-run-log');
+        var text = data || 'Flash backup log not found';
+        logEl.dataset.raw = text;
+        applyLogSearch();
+        if (logAutoScroll) { logEl.scrollTop = logEl.scrollHeight; }
+      })
+      .catch(() => {
+        var logEl = document.getElementById('last-run-log');
+        logEl.dataset.raw = 'Error loading flash backup log';
+        logEl.textContent = 'Error loading flash backup log';
+      });
   }
   loadLastRunLog();
   setInterval(loadLastRunLog, 1000);
+
+  document.getElementById('log-search').addEventListener('input', applyLogSearch);
+
+  var autoScrollBtn = document.getElementById('log-autoscroll-btn');
+  autoScrollBtn.addEventListener('click', function() {
+    logAutoScroll = !logAutoScroll;
+    if (logAutoScroll) {
+      var logEl = document.getElementById('last-run-log');
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+  });
+
+  document.getElementById('log-scroll-top-btn').addEventListener('click', function() {
+    logAutoScroll = false;
+    document.getElementById('last-run-log').scrollTop = 0;
+  });
+
+  document.getElementById('last-run-log').addEventListener('scroll', function() {
+    var atBottom = this.scrollHeight - this.scrollTop - this.clientHeight < 8;
+    if (!atBottom && logAutoScroll) {
+      logAutoScroll = false;
+    }
+  });
 
   const clearLastRunBtn = document.getElementById("clear-last-run-log");
   if (clearLastRunBtn) {
@@ -1812,8 +1978,16 @@ if (is_file($plg)) {
           body: "log=last&csrf_token=" + encodeURIComponent(csrfToken)
         })
           .then(r => r.json())
-          .then(data => { showToast(toastLast, data.message, data.ok ? "ok" : "err"); if (data.ok) document.getElementById("last-run-log").textContent = ""; })
-          .catch(() => showToast(toastLast, "Failed to clear log", "err"));
+          .then(data => {
+              if (data.ok) {
+                var logEl = document.getElementById("last-run-log");
+                logEl.dataset.raw = "";
+                logEl.textContent = "";
+                document.getElementById("log-search-count").classList.remove("visible");
+                showLogToast("Log cleared");
+              }
+            })
+          .catch(() => { alert("Failed to clear log"); });
       }
     });
   }
@@ -1944,76 +2118,88 @@ if (is_file($plg)) {
 </script>
 
 <script>
-  let cronValid = false, backupRunning = false;
-  let cronValidRemote = false, backupRunningRemote = false;
+  let cronValid = true, backupRunning = false;
+  let cronValidRemote = true, backupRunningRemote = false;
 
-  const cronInput = document.getElementById('custom_cron');
   const cronMode = document.getElementById('cron_mode');
   const backupbtn = document.getElementById('backupbtn');
-  const warnFields = document.getElementById('cron-warning-fields');
-  const warnSlash = document.getElementById('cron-warning-slash');
-  const cronInputRemote = document.getElementById('custom_cron_remote');
   const cronModeRemote = document.getElementById('cron_mode_remote');
   const backupbtnRemote = document.getElementById('backupbtn_remote');
-  const warnFieldsRemote = document.getElementById('cron-warning-fields-remote');
-  const warnSlashRemote = document.getElementById('cron-warning-slash-remote');
 
   function updateBackupButtonState() { if (backupbtn) backupbtn.disabled = !(cronValid && !backupRunning); }
   function updateBackupButtonStateRemote() { if (backupbtnRemote) backupbtnRemote.disabled = !(cronValidRemote && !backupRunningRemote); }
 
-  function validateCronLive() {
-    if (!cronMode || !cronInput) return;
-    if (cronMode.value !== "custom") { cronValid = true;[warnFields, warnSlash].forEach(w => { if (w) w.style.display = 'none'; }); updateBackupButtonState(); return; }
-    const expr = cronInput.value.trim(); const parts = expr.split(/\s+/);
-    [warnFields, warnSlash].forEach(w => { if (w) w.style.display = 'none'; }); cronValid = true;
-    if (!expr) { cronValid = false; updateBackupButtonState(); return; }
-    if (parts.length !== 5) { cronValid = false; if (warnFields) warnFields.style.display = 'block'; }
-    if (parts.length === 5) { for (const field of parts) { if (!/^[\d*\/]+$/.test(field)) { cronValid = false; if (warnFields) warnFields.style.display = 'block'; } if (field.includes('/') && !field.match(/^\*\/\d+$/)) { cronValid = false; if (warnSlash) warnSlash.style.display = 'block'; } } }
-    updateBackupButtonState();
+  updateBackupButtonState(); updateBackupButtonStateRemote();
+
+  // Banner state: tracks what is currently running so stopFromBanner knows which stop to call
+  let bannerStopTarget = null; // 'local' | 'remote' | null
+  let prevAnyRunning = false;
+
+  function showBanner(label, stopTarget) {
+    bannerStopTarget = stopTarget;
+    var which = (stopTarget === 'remote') ? 'remote' : 'local';
+    $('#backup-banner-text-' + which).text(label);
+    $('#stop-toast-banner-' + which).removeClass('visible');
+    $('#backup-banner-' + which).show();
   }
 
-  function validateCronLiveRemote() {
-    if (!cronModeRemote || !cronInputRemote) return;
-    if (cronModeRemote.value !== "custom") { cronValidRemote = true;[warnFieldsRemote, warnSlashRemote].forEach(w => { if (w) w.style.display = 'none'; }); updateBackupButtonStateRemote(); return; }
-    const expr = cronInputRemote.value.trim(); const parts = expr.split(/\s+/);
-    [warnFieldsRemote, warnSlashRemote].forEach(w => { if (w) w.style.display = 'none'; }); cronValidRemote = true;
-    if (!expr) { cronValidRemote = false; updateBackupButtonStateRemote(); return; }
-    if (parts.length !== 5) { cronValidRemote = false; if (warnFieldsRemote) warnFieldsRemote.style.display = 'block'; }
-    if (parts.length === 5) { for (const field of parts) { if (!/^[\d*\/]+$/.test(field)) { cronValidRemote = false; if (warnFieldsRemote) warnFieldsRemote.style.display = 'block'; } if (field.includes('/') && !field.match(/^\*\/\d+$/)) { cronValidRemote = false; if (warnSlashRemote) warnSlashRemote.style.display = 'block'; } } }
-    updateBackupButtonStateRemote();
+  function hideBanner() {
+    var which = (bannerStopTarget === 'remote') ? 'remote' : 'local';
+    $('#backup-banner-' + which).hide();
+    $('#stop-toast-banner-' + which).removeClass('visible');
+    bannerStopTarget = null;
   }
 
-  if (cronInput) cronInput.addEventListener('input', validateCronLive);
-  if (cronMode) cronMode.addEventListener('change', validateCronLive);
-  if (cronInputRemote) cronInputRemote.addEventListener('input', validateCronLiveRemote);
-  if (cronModeRemote) cronModeRemote.addEventListener('change', validateCronLiveRemote);
-  validateCronLive(); validateCronLiveRemote();
+  function stopFromBanner() {
+    var url = bannerStopTarget === 'remote'
+      ? '/plugins/flash-backup/helpers/stop_remote.php'
+      : '/plugins/flash-backup/helpers/stop_backup.php';
+    $.post(url, { csrf_token: csrfToken })
+      .done(function () {
+        var which = (bannerStopTarget === 'remote') ? 'remote' : 'local';
+        $('#stop-toast-banner-' + which).addClass('visible');
+        setTimeout(function () { $('#stop-toast-banner-' + which).removeClass('visible'); }, 3000);
+      })
+      .fail(function () { alert('Error sending stop request'); });
+  }
 
-  let backupStartTime = 0, backupStartTimeRemote = 0;
-  const MIN_DURATION = 5000, MIN_DURATION_REMOTE = 5000;
+  function setAllBackupButtonsDisabled(disabled) {
+    $('#backupbtn, #backupbtn_remote').prop('disabled', disabled);
+    document.querySelectorAll('.schedule-run-btn').forEach(function (b) {
+      b.disabled = disabled;
+    });
+  }
 
   function updateBackupUI(running) {
-    const status = $('#backup-status'); const btn = $('#backupbtn');
-    if (running) { if (!backupStartTime) backupStartTime = Date.now(); btn.text('Backup running...'); status.show(); return; }
-    if (!backupStartTime) { btn.text('Backup Now'); status.hide(); return; }
-    const elapsed = Date.now() - backupStartTime;
-    if (elapsed < MIN_DURATION) { setTimeout(() => updateBackupUI(false), MIN_DURATION - elapsed); return; }
-    backupStartTime = 0; btn.text('Backup Now'); status.hide();
+    backupRunning = running;
+    syncBannerState();
   }
 
   function updateBackupUIRemote(running) {
-    const status = $('#backup-status-remote'); const btn = $('#backupbtn_remote');
-    if (running) { if (!backupStartTimeRemote) backupStartTimeRemote = Date.now(); btn.text('Backup running...'); status.show(); return; }
-    if (!backupStartTimeRemote) { btn.text('Backup Now'); status.hide(); return; }
-    const elapsed = Date.now() - backupStartTimeRemote;
-    if (elapsed < MIN_DURATION_REMOTE) { setTimeout(() => updateBackupUIRemote(false), MIN_DURATION_REMOTE - elapsed); return; }
-    backupStartTimeRemote = 0; btn.text('Backup Now'); status.hide();
+    backupRunningRemote = running;
+    syncBannerState();
   }
 
-  function pollBackupStatus() { $.getJSON('/plugins/flash-backup/helpers/backup_status.php', function (res) { backupRunning = res.running === true; updateBackupButtonState(); updateBackupUI(res.running); }); }
-  function pollBackupStatusRemote() { $.getJSON('/plugins/flash-backup/helpers/remote_status.php', function (res) { backupRunningRemote = res.running === true; updateBackupButtonStateRemote(); updateBackupUIRemote(res.running); }); }
-  setInterval(pollBackupStatus, 1000); setInterval(pollBackupStatusRemote, 1000);
-  $(document).ready(function () { pollBackupStatus(); pollBackupStatusRemote(); });
+  function syncBannerState() {
+    var anyRunning = backupRunning || backupRunningRemote;
+    if (anyRunning && !prevAnyRunning) {
+      var target = bannerStopTarget || (backupRunning ? 'local' : 'remote');
+      var label = target === 'remote' ? '⚠ Remote backup in progress' : '⚠ Local backup in progress';
+      showBanner(label, target);
+      setAllBackupButtonsDisabled(true);
+    } else if (!anyRunning && prevAnyRunning) {
+      hideBanner();
+      setAllBackupButtonsDisabled(false);
+    }
+    prevAnyRunning = anyRunning;
+  }
+
+  function pollBackupStatus() { $.getJSON('/plugins/flash-backup/helpers/backup_status.php', function (res) { updateBackupButtonState(); updateBackupUI(res.running === true); }); }
+  function pollBackupStatusRemote() { $.getJSON('/plugins/flash-backup/helpers/remote_status.php', function (res) { updateBackupButtonStateRemote(); updateBackupUIRemote(res.running === true); }); }
+  $(document).ready(function () {
+    pollBackupStatus(); pollBackupStatusRemote();
+    setInterval(pollBackupStatus, 1000); setInterval(pollBackupStatusRemote, 1000);
+  });
 
   let backupRequestInProgress = false, backupRequestInProgressRemote = false;
 
@@ -2037,7 +2223,7 @@ if (is_file($plg)) {
       webhookParams['WEBHOOK_' + $(this).data('service').toUpperCase()] = $(this).val().trim();
     });
 
-    const params = $.param({
+    $.post('/plugins/flash-backup/helpers/save_settings.php', {
       BACKUP_DESTINATION: dest,
       BACKUP_OWNER: $('#backup_owner').val(),
       BACKUPS_TO_KEEP: $('#backups_to_keep').val(),
@@ -2052,9 +2238,7 @@ if (is_file($plg)) {
       WEBHOOK_PUSHOVER: webhookParams['WEBHOOK_PUSHOVER'] || '',
       WEBHOOK_SLACK: webhookParams['WEBHOOK_SLACK'] || '',
       csrf_token: csrfToken
-    });
-
-    $.get('/plugins/flash-backup/helpers/save_settings.php?' + params)
+    })
       .done(function (res) { if (res && res.status === 'ok') startBackup(); else alert('Failed to save settings'); })
       .fail(function () { alert('Error saving settings'); })
       .always(function () { backupRequestInProgress = false; });
@@ -2102,7 +2286,7 @@ if (is_file($plg)) {
       webhookParamsRemote['WEBHOOK_' + $(this).data('service').toUpperCase() + '_REMOTE'] = $(this).val().trim();
     });
 
-    const params = $.param({
+    $.post('/plugins/flash-backup/helpers/save_settings_remote.php', {
       B2_BUCKET_NAME: b2Bucket,
       BACKUPS_TO_KEEP_REMOTE: $('#backups_to_keep_remote').val(),
       DRY_RUN_REMOTE: $('#dry_run_remote').val(),
@@ -2118,46 +2302,60 @@ if (is_file($plg)) {
       WEBHOOK_PUSHOVER_REMOTE: webhookParamsRemote['WEBHOOK_PUSHOVER_REMOTE'] || '',
       WEBHOOK_SLACK_REMOTE: webhookParamsRemote['WEBHOOK_SLACK_REMOTE'] || '',
       csrf_token: csrfToken
-    });
-
-    $.get('/plugins/flash-backup/helpers/save_settings_remote.php?' + params)
+    })
       .done(function (res) { if (res && res.status === 'ok') startBackupRemote(); else alert('Failed to save remote settings'); })
       .fail(function () { alert('Error saving remote settings'); })
       .always(function () { backupRequestInProgressRemote = false; });
   });
 
   function startBackup() {
+    bannerStopTarget = 'local';
     $.get('/plugins/flash-backup/helpers/backup.php', { csrf_token: csrfToken })
-      .done(function (res) { if (res && res.status === 'ok') console.log('Backup started, PID:', res.pid); else alert(res.message || 'Failed to start backup'); })
-      .fail(function () { alert('Error starting backup'); });
+      .done(function (res) { if (res && res.status === 'ok') console.log('Backup started, PID:', res.pid); else { bannerStopTarget = null; alert(res.message || 'Failed to start backup'); } })
+      .fail(function () { bannerStopTarget = null; alert('Error starting backup'); });
   }
 
   function startBackupRemote() {
+    bannerStopTarget = 'remote';
     $.get('/plugins/flash-backup/helpers/remote_backup.php', { csrf_token: csrfToken })
-      .done(function (res) { if (res && res.status === 'ok') console.log('Remote backup started, PID:', res.pid); else alert(res.message || 'Failed to start remote backup'); })
-      .fail(function () { alert('Error starting remote backup'); });
+      .done(function (res) { if (res && res.status === 'ok') console.log('Remote backup started, PID:', res.pid); else { bannerStopTarget = null; alert(res.message || 'Failed to start remote backup'); } })
+      .fail(function () { bannerStopTarget = null; alert('Error starting remote backup'); });
   }
 
   function cronToMinutesOfWeek(expr) {
     const parts = expr.trim().split(/\s+/); if (parts.length !== 5) return [];
     const [min, hour, dom, month, dow] = parts; const minutes = []; const MINS_IN_WEEK = 7 * 24 * 60;
-    const mInterval = min.match(/^\*\/(\d+)$/);
-    if (mInterval && hour === '*' && dom === '*' && month === '*' && dow === '*') { const n = parseInt(mInterval[1], 10); for (let i = 0; i < MINS_IN_WEEK; i += n) minutes.push(i); return minutes; }
     const hInterval = hour.match(/^\*\/(\d+)$/);
     if (min === '0' && hInterval && dom === '*' && month === '*' && dow === '*') { const n = parseInt(hInterval[1], 10); for (let h = 0; h < 7 * 24; h += n) minutes.push(h * 60); return minutes; }
-    if (min === '0' && /^\d+$/.test(hour) && dom === '*' && month === '*' && dow === '*') { const h = parseInt(hour, 10); for (let d = 0; d < 7; d++) minutes.push(d * 24 * 60 + h * 60); return minutes; }
-    if (min === '0' && /^\d+$/.test(hour) && dom === '*' && month === '*' && /^\d+$/.test(dow)) { minutes.push(parseInt(dow, 10) * 24 * 60 + parseInt(hour, 10) * 60); return minutes; }
-    if (min === '0' && /^\d+$/.test(hour) && /^\d+$/.test(dom) && month === '*' && dow === '*') { minutes.push(((parseInt(dom, 10) - 1) % 7) * 24 * 60 + parseInt(hour, 10) * 60); return minutes; }
+    const mMin = parseInt(min, 10);
+    if (!isNaN(mMin) && /^\d+$/.test(hour) && dom === '*' && month === '*' && dow === '*') { const h = parseInt(hour, 10); for (let d = 0; d < 7; d++) minutes.push(d * 24 * 60 + h * 60 + mMin); return minutes; }
+    if (!isNaN(mMin) && /^\d+$/.test(hour) && dom === '*' && month === '*' && /^\d+$/.test(dow)) { minutes.push(parseInt(dow, 10) * 24 * 60 + parseInt(hour, 10) * 60 + mMin); return minutes; }
+    if (!isNaN(mMin) && /^\d+$/.test(hour) && /^\d+$/.test(dom) && month === '*' && dow === '*') { minutes.push(((parseInt(dom, 10) - 1) % 7) * 24 * 60 + parseInt(hour, 10) * 60 + mMin); return minutes; }
     return [];
   }
 
-  function checkCronConflicts(newCron, existingCrons, excludeId, thresholdMinutes) {
+  function getHourlyInterval(expr) {
+    const parts = expr.trim().split(/\s+/);
+    if (parts.length === 5) { const m = parts[1].match(/^\*\/(\d+)$/); if (m && parts[0] === '0') return parseInt(m[1], 10) * 60; }
+    return null;
+  }
+
+  function checkCronConflicts(newCron, existingCrons, excludeId) {
     const newTimes = cronToMinutesOfWeek(newCron); if (!newTimes.length) return null;
+    const newInterval = getHourlyInterval(newCron);
     const MINS_IN_WEEK = 7 * 24 * 60;
     for (const entry of existingCrons) {
       if (entry.id === excludeId) continue;
       const existingTimes = cronToMinutesOfWeek(entry.cron);
-      for (const nt of newTimes) { for (const et of existingTimes) { if (Math.min(Math.abs(nt - et), MINS_IN_WEEK - Math.abs(nt - et)) < thresholdMinutes) return entry.cron; } }
+      const existingInterval = getHourlyInterval(entry.cron);
+      // For hourly vs hourly: conflict only if they share a fire time exactly
+      if (newInterval !== null && existingInterval !== null) {
+        for (const nt of newTimes) { for (const et of existingTimes) { if (Math.min(Math.abs(nt - et), MINS_IN_WEEK - Math.abs(nt - et)) === 0) return entry.cron; } }
+        continue;
+      }
+      // For hourly vs fixed-time: conflict if a fixed fire falls within 30 min of an hourly fire
+      const threshold = (newInterval !== null || existingInterval !== null) ? 30 : 15;
+      for (const nt of newTimes) { for (const et of existingTimes) { if (Math.min(Math.abs(nt - et), MINS_IN_WEEK - Math.abs(nt - et)) < threshold) return entry.cron; } }
     }
     return null;
   }
@@ -2167,22 +2365,13 @@ if (is_file($plg)) {
   window.editingScheduleId = null;
   function loadSchedules() { return $.get('/plugins/flash-backup/helpers/schedule_list.php', function (html) { $('#schedule-list').html(html); }).always(() => unlockScheduleUI()); }
 
-  function validateCustomCron(expr) {
-    expr = expr.trim(); const parts = expr.split(/\s+/);
-    if (parts.length !== 5 || parts[0] === '*') return { valid: false };
-    const m = parts[0].match(/^\*\/(\d+)$/); if (m && parseInt(m[1], 10) < 2) return { valid: false };
-    return { valid: true, expression: expr };
-  }
-
   function buildCronFromUI() {
     const mode = $('#cron_mode').val();
     switch (mode) {
-      case 'minutes': return { valid: true, expression: `*/${parseInt($('#minutes_frequency').val(), 10)} * * * *` };
       case 'hourly': return { valid: true, expression: `0 */${parseInt($('#hourly_frequency').val(), 10)} * * *` };
       case 'daily': return { valid: true, expression: `${parseInt($('#daily_minute').val(), 10)} ${parseInt($('#daily_time').val(), 10)} * * *` };
       case 'weekly': { const dm = { Sunday: 0, Monday: 1, Tuesday: 2, Wednesday: 3, Thursday: 4, Friday: 5, Saturday: 6 }; return { valid: true, expression: `${parseInt($('#weekly_minute').val(), 10)} ${parseInt($('#weekly_time').val(), 10)} * * ${dm[$('#weekly_day').val()]}` }; }
       case 'monthly': return { valid: true, expression: `${parseInt($('#monthly_minute').val(), 10)} ${parseInt($('#monthly_time').val(), 10)} ${parseInt($('#monthly_day').val(), 10)} * *` };
-      case 'custom': return validateCustomCron($('#custom_cron').val());
       default: return { valid: false };
     }
   }
@@ -2192,14 +2381,14 @@ if (is_file($plg)) {
     if (scheduleUILocked) return; lockScheduleUI();
     const cron = buildCronFromUI(); if (!cron.valid) { unlockScheduleUI(); alert("Invalid cron expression"); return; }
     const existingCrons = await fetchExistingCrons();
-    const conflict = checkCronConflicts(cron.expression, existingCrons, window.editingScheduleId, 15);
+    const conflict = checkCronConflicts(cron.expression, existingCrons, window.editingScheduleId);
     if (conflict) { unlockScheduleUI(); alert('This schedule is within 15 minutes of an existing schedule (' + conflict + '). Please choose a different time.'); return; }
     const settings = {};
     $('input[name], select[name]').each(function () { if ($(this).is(':checkbox')) settings[this.name] = $(this).is(':checked') ? 'yes' : 'no'; else settings[this.name] = $(this).val(); });
     const url = window.editingScheduleId ? 'schedule_update.php' : 'schedule_create.php';
     $.ajax({
       type: 'POST', url: `/plugins/flash-backup/helpers/${url}`, data: { id: window.editingScheduleId, type, cron: cron.expression, settings },
-      success: function () { resetScheduleUI(); window.editingScheduleId = null; loadSchedules(); showPopup("Schedule saved!"); },
+      success: function () { const wasEdit = !!window.editingScheduleId; resetScheduleUI(); window.editingScheduleId = null; loadSchedules(); showPopup("Schedule saved!"); if (wasEdit) { $.getJSON('/plugins/flash-backup/helpers/load_settings_fields.php', function(d) { if (!d || d.error) return; for (const k in d) { const el = $('[name="' + k + '"]'); if (!el.length) return; if (el.is(':checkbox')) el.prop('checked', d[k] === 'yes'); else el.val(d[k]); } }); } },
       error: function (xhr) { unlockScheduleUI(); if (xhr.status === 409) alert('Duplicate schedule detected!'); else alert('Error creating/updating schedule: ' + xhr.responseText); }
     });
   }
@@ -2209,8 +2398,8 @@ if (is_file($plg)) {
     $.getJSON('/plugins/flash-backup/helpers/schedule_load.php', { id }, function (s) {
       const settings = s.SETTINGS || {};
       if (s.TYPE) $('[name="type"]').val(s.TYPE).trigger('change');
+      var _cmMode = detectCronMode(s.CRON); document.getElementById('cron_mode').value = _cmMode; if (window._toggleCronOptions) window._toggleCronOptions(_cmMode);
       for (const k in settings) { const el = $('[name="' + k + '"]'); if (!el.length) continue; if (el.is(':checkbox')) { const v = String(settings[k]).toLowerCase(); el.prop('checked', v === 'yes' || v === '1' || v === 'true'); } else if (el.is(':radio')) $('[name="' + k + '"][value="' + settings[k] + '"]').prop('checked', true); else el.val(settings[k]).trigger('change'); }
-      $('#cron_mode').val(detectCronMode(s.CRON)).trigger('change');
       window.editingScheduleId = id;
       $('#schedule-local-backup').text('Update');
       const $tip = $('#schedule-local-backup').closest('span');
@@ -2239,13 +2428,15 @@ if (is_file($plg)) {
     if (!confirm("Are you sure you want to run this backup now?")) return;
     lockScheduleUI(); btn.disabled = true;
     const originalText = btn.textContent, originalTitle = btn.getAttribute('title');
-    btn.textContent = "Running";
     $.post('/plugins/flash-backup/helpers/run_schedule.php', { id })
       .done(function (res) {
-        if (!res.started) { alert("Failed to start backup"); btn.disabled = false; btn.textContent = originalText; btn.setAttribute('title', originalTitle); unlockScheduleUI(); return; }
-        const poll = setInterval(function () { $.getJSON('/plugins/flash-backup/helpers/check_lock.php', function (res) { if (!res.locked) { clearInterval(poll); btn.disabled = false; btn.textContent = originalText; unlockScheduleUI(); } }); }, 1000);
+        if (!res.started) { alert("Failed to start backup"); btn.disabled = false; btn.setAttribute('title', originalTitle); unlockScheduleUI(); return; }
+        showBanner('⚠ Scheduled local backup in progress...', 'local');
+        setAllBackupButtonsDisabled(true);
+        btn._keepEnabled = false;
+        const poll = setInterval(function () { $.getJSON('/plugins/flash-backup/helpers/check_lock.php', function (res) { if (!res.locked) { clearInterval(poll); btn.disabled = false; setAllBackupButtonsDisabled(false); unlockScheduleUI(); } }); }, 1000);
       })
-      .fail(function (xhr, status, err) { alert("Failed to start backup: " + (xhr.responseJSON?.error || err)); btn.disabled = false; btn.textContent = originalText; btn.setAttribute('title', originalTitle); unlockScheduleUI(); });
+      .fail(function (xhr, status, err) { alert("Failed to start backup: " + (xhr.responseJSON?.error || err)); btn.disabled = false; btn.setAttribute('title', originalTitle); unlockScheduleUI(); });
   }
 
   function toggleSchedule(id, isEnabled) { if (scheduleUILocked) return; if (!confirm(isEnabled ? "Disable this schedule?" : "Enable this schedule?")) return; lockScheduleUI(); $.post('/plugins/flash-backup/helpers/schedule_toggle.php', { id }).always(() => loadSchedules()); }
@@ -2258,22 +2449,13 @@ if (is_file($plg)) {
   window.editingScheduleIdremote = null;
   function loadSchedulesremote() { return $.get('/plugins/flash-backup/helpers/schedule_list_remote.php', function (html) { $('#schedule-list-remote').html(html); }).always(() => unlockScheduleUIremote()); }
 
-  function validateCustomCronremote(expr) {
-    expr = expr.trim(); const parts = expr.split(/\s+/);
-    if (parts.length !== 5 || parts[0] === '*') return { valid: false };
-    const m = parts[0].match(/^\*\/(\d+)$/); if (m && parseInt(m[1], 10) < 2) return { valid: false };
-    return { valid: true, expression: expr };
-  }
-
   function buildCronFromUIremote() {
     const mode = $('#cron_mode_remote').val();
     switch (mode) {
-      case 'minutes': return { valid: true, expression: `*/${parseInt($('#minutes_frequency_remote').val(), 10)} * * * *` };
       case 'hourly': return { valid: true, expression: `0 */${parseInt($('#hourly_frequency_remote').val(), 10)} * * *` };
       case 'daily': return { valid: true, expression: `${parseInt($('#daily_minute_remote').val(), 10)} ${parseInt($('#daily_time_remote').val(), 10)} * * *` };
       case 'weekly': { const dm = { Sunday: 0, Monday: 1, Tuesday: 2, Wednesday: 3, Thursday: 4, Friday: 5, Saturday: 6 }; return { valid: true, expression: `${parseInt($('#weekly_minute_remote').val(), 10)} ${parseInt($('#weekly_time_remote').val(), 10)} * * ${dm[$('#weekly_day_remote').val()]}` }; }
       case 'monthly': return { valid: true, expression: `${parseInt($('#monthly_minute_remote').val(), 10)} ${parseInt($('#monthly_time_remote').val(), 10)} ${parseInt($('#monthly_day_remote').val(), 10)} * *` };
-      case 'custom': return validateCustomCronremote($('#custom_cron_remote').val());
       default: return { valid: false };
     }
   }
@@ -2283,14 +2465,14 @@ if (is_file($plg)) {
     if (scheduleUILockedremote) return; lockScheduleUIremote();
     const cron = buildCronFromUIremote(); if (!cron.valid) { unlockScheduleUIremote(); alert("Invalid cron expression"); return; }
     const existingCrons = await fetchExistingCrons();
-    const conflict = checkCronConflicts(cron.expression, existingCrons, window.editingScheduleIdremote, 15);
-    if (conflict) { unlockScheduleUIremote(); alert('This remote schedule is within 15 minutes of an existing schedule (' + conflict + '). Please choose a different time.'); return; }
+    const conflict = checkCronConflicts(cron.expression, existingCrons, window.editingScheduleIdremote);
+    if (conflict) { unlockScheduleUIremote(); alert('This remote schedule conflicts with an existing schedule (' + conflict + '). Please choose a different time.'); return; }
     const settings = {};
     $('input[name], select[name]').each(function () { const key = this.name.replace(/\[\]$/, ''); if ($(this).is(':checkbox')) settings[key] = $(this).is(':checked') ? 'yes' : 'no'; else { const val = $(this).val(); settings[key] = Array.isArray(val) ? val.join(',') : val; } });
     const url = window.editingScheduleIdremote ? 'schedule_update_remote.php' : 'schedule_create_remote.php';
     $.ajax({
       type: 'POST', url: `/plugins/flash-backup/helpers/${url}`, data: { id: window.editingScheduleIdremote, type, cron: cron.expression, settings },
-      success: function () { resetScheduleUIremote(); window.editingScheduleIdremote = null; loadSchedulesremote(); showPopupremote("Schedule saved!"); },
+      success: function () { const wasEditRemote = !!window.editingScheduleIdremote; resetScheduleUIremote(); window.editingScheduleIdremote = null; loadSchedulesremote(); showPopupremote("Schedule saved!"); if (wasEditRemote) { $.getJSON('/plugins/flash-backup/helpers/load_settings_fields_remote.php', function(d) { if (!d || d.error) return; for (const k in d) { const el = $('[name="' + k + '"]'); if (!el.length) return; if (el.is(':checkbox')) el.prop('checked', d[k] === 'yes'); else el.val(d[k]); } }); } },
       error: function (xhr) { unlockScheduleUIremote(); if (xhr.status === 409) alert('Duplicate remote schedule!'); else alert('Error creating/updating remote schedule: ' + xhr.responseText); }
     });
   }
@@ -2300,8 +2482,8 @@ if (is_file($plg)) {
     $.getJSON('/plugins/flash-backup/helpers/schedule_load_remote.php', { id }, function (s) {
       const settings = s.SETTINGS || {};
       if (s.TYPE) $('[name="type_remote"]').val(s.TYPE).trigger('change');
+      var _cmrMode = detectCronMode(s.CRON); document.getElementById('cron_mode_remote').value = _cmrMode; if (window._toggleCronOptionsRemote) window._toggleCronOptionsRemote(_cmrMode);
       for (const k in settings) { const el = $('[name="' + k + '"]'); if (!el.length) continue; if (el.is(':checkbox')) { const v = String(settings[k]).toLowerCase(); el.prop('checked', v === 'yes' || v === '1' || v === 'true'); } else if (el.is(':radio')) $('[name="' + k + '"][value="' + settings[k] + '"]').prop('checked', true); else el.val(settings[k]).trigger('change'); }
-      $('#cron_mode_remote').val(detectCronMode(s.CRON)).trigger('change');
       window.editingScheduleIdremote = id;
       $('#schedule-remote-backup').text('Update');
       const $tip = $('#schedule-remote-backup').closest('span');
@@ -2330,13 +2512,15 @@ if (is_file($plg)) {
     if (!confirm("Are you sure you want to run this remote backup now?")) return;
     lockScheduleUIremote(); btn.disabled = true;
     const originalText = btn.textContent, originalTitle = btn.getAttribute('title');
-    btn.textContent = "Running";
     $.post('/plugins/flash-backup/helpers/run_schedule_remote.php', { id })
       .done(function (res) {
-        if (!res.started) { alert("Failed to start remote backup"); btn.disabled = false; btn.textContent = originalText; btn.setAttribute('title', originalTitle); unlockScheduleUIremote(); return; }
-        const poll = setInterval(function () { $.getJSON('/plugins/flash-backup/helpers/check_lock.php', function (res) { if (!res.locked) { clearInterval(poll); btn.disabled = false; btn.textContent = originalText; unlockScheduleUIremote(); } }); }, 1000);
+        if (!res.started) { alert("Failed to start remote backup"); btn.disabled = false; btn.setAttribute('title', originalTitle); unlockScheduleUIremote(); return; }
+        showBanner('⚠ Scheduled remote backup in progress...', 'remote');
+        setAllBackupButtonsDisabled(true);
+        btn._keepEnabled = false;
+        const poll = setInterval(function () { $.getJSON('/plugins/flash-backup/helpers/check_lock.php', function (res) { if (!res.locked) { clearInterval(poll); btn.disabled = false; setAllBackupButtonsDisabled(false); unlockScheduleUIremote(); } }); }, 1000);
       })
-      .fail(function (xhr, status, err) { alert("Failed to start remote backup: " + (xhr.responseJSON?.error || err)); btn.disabled = false; btn.textContent = originalText; btn.setAttribute('title', originalTitle); unlockScheduleUIremote(); });
+      .fail(function (xhr, status, err) { alert("Failed to start remote backup: " + (xhr.responseJSON?.error || err)); btn.disabled = false; btn.setAttribute('title', originalTitle); unlockScheduleUIremote(); });
   }
 
   function toggleScheduleremote(id, isEnabled) { if (scheduleUILockedremote) return; if (!confirm(isEnabled ? "Disable this remote schedule?" : "Enable this remote schedule?")) return; lockScheduleUIremote(); $.post('/plugins/flash-backup/helpers/schedule_toggle_remote.php', { id }).always(() => loadSchedulesremote()); }
@@ -2348,16 +2532,13 @@ if (is_file($plg)) {
 </script>
 
 <script>
-  function showPopup(message) { const popup = $('#popupMessage'); popup.text(message).fadeIn(150); setTimeout(() => { popup.fadeOut(200, () => { popup.text(''); popup.hide(); }); }, 3000); }
-
   function detectCronMode(cron) {
-    if (!cron) return 'minutes';
-    if (/^\*\/\d+ \* \* \* \*$/.test(cron)) return 'minutes';
-    if (/^0 \*\/\d+ \* \* \*$/.test(cron)) return 'hourly';
+    if (!cron) return 'daily';
+    if (/^0 \*\/(4|6|8) \* \* \*$/.test(cron)) return 'hourly';
     if (/^\d+ \d+ \* \* \*$/.test(cron)) return 'daily';
     if (/^\d+ \d+ \* \* [0-6]$/.test(cron)) return 'weekly';
     if (/^\d+ \d+ \d+ \* \*$/.test(cron)) return 'monthly';
-    return 'custom';
+    return 'daily';
   }
 </script>
 
@@ -2422,7 +2603,7 @@ if (is_file($plg)) {
     persistentFolders = existing.length > 0 ? existing.split(',').map(s => s.trim()) : [];
     selectedFolders = []; accumulatedFolders = [];
     $('#folderPickerTitle').text($(this).data('picker-title'));
-    $('#folderPickerModal').show();
+    $('#folderPickerModal').css('display', 'flex').css('align-items', 'center').css('justify-content', 'center');
     const savedPath = $(this).val();
     loadFolders(savedPath && savedPath.startsWith('/mnt') ? savedPath : '/mnt');
   });
@@ -2460,72 +2641,10 @@ if (is_file($plg)) {
 </script>
 
 <script>
-  document.addEventListener('DOMContentLoaded', function () {
-    const multiselect = document.getElementById('rclone_config_remote');
-    const hiddenSelect = document.getElementById('rclone_config_remote_hidden');
-    const placeholder = multiselect.querySelector('.selected-placeholder');
-    const optionsContainer = multiselect.querySelector('.options-container');
-    const options = optionsContainer.querySelectorAll('.option');
-    const selectAllBtn = optionsContainer.querySelector('.select-all');
-    const clearAllBtn = optionsContainer.querySelector('.clear-all');
-
-    function updatePlaceholder() {
-      const selectedValues = [...hiddenSelect.options].filter(o => o.selected).map(o => o.value);
-      placeholder.textContent = selectedValues.length ? selectedValues.join(', ') : 'Select config(s)';
-    }
-
-    selectAllBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      options.forEach(opt => { opt.classList.add('selected'); const ho = [...hiddenSelect.options].find(o => o.value === opt.dataset.value); if (ho) ho.selected = true; });
-      updatePlaceholder(); updateB2BucketVisibility();
-    });
-
-    clearAllBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      options.forEach(opt => opt.classList.remove('selected'));
-      [...hiddenSelect.options].forEach(o => o.selected = false);
-      updatePlaceholder(); updateB2BucketVisibility();
-    });
-
-    multiselect.addEventListener('click', () => {
-      optionsContainer.style.display = optionsContainer.style.display === 'block' ? 'none' : 'block';
-    });
-
-    document.addEventListener('click', (e) => {
-      if (!multiselect.contains(e.target)) optionsContainer.style.display = 'none';
-    });
-
-    options.forEach(opt => {
-      const value = opt.dataset.value;
-      if ([...hiddenSelect.options].find(o => o.value === value && o.selected)) opt.classList.add('selected');
-      opt.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const ho = [...hiddenSelect.options].find(o => o.value === value);
-        if (ho.selected) { ho.selected = false; opt.classList.remove('selected'); } else { ho.selected = true; opt.classList.add('selected'); }
-        const selectedValues = [...hiddenSelect.options].filter(o => o.selected).map(o => o.value);
-        placeholder.textContent = selectedValues.length ? selectedValues.join(', ') : 'Select config(s)';
-        hiddenSelect.dispatchEvent(new Event('change'));
-        updateB2BucketVisibility();
-      });
-    });
-
-    updateB2BucketVisibility();
-  });
-</script>
-
-<script>
-  function loadLastRunLog() {
-    const logEl = document.getElementById('last-run-log');
-    fetch('/plugins/flash-backup/helpers/fetch_last_run_log.php')
-      .then(resp => resp.text()).then(text => { logEl.textContent = text || 'Flash backup log not found'; })
-      .catch(err => { console.error('Failed to load log', err); logEl.textContent = 'Failed to load log'; });
-  }
-  document.addEventListener('DOMContentLoaded', loadLastRunLog);
-
   document.getElementById('copy-last-run-log').addEventListener('click', function () {
     const logEl = document.getElementById('last-run-log');
-    const text = logEl.innerText || logEl.textContent;
-    if (!text || text.trim() === '' || text.includes('not found')) { alert('Flash backup log is empty or not loaded yet'); return; }
+    const text = logEl.dataset.raw || logEl.textContent || '';
+    if (!text.trim() || text.includes('Flash backup log not found')) return;
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(text).then(() => showCopiedFeedback(this)).catch(err => { console.warn('Clipboard API failed', err); fallbackCopyText(text, this); });
     } else { fallbackCopyText(text, this); }
@@ -2537,9 +2656,20 @@ if (is_file($plg)) {
     document.body.removeChild(textarea);
   }
 
+  // Also remove copy-last-run-log from debounce list since icon btn has no text to swap
+
+
+  function showLogToast(message) {
+    const toast = document.getElementById('log-toast');
+    if (!toast) return;
+    toast.textContent = message;
+    toast.classList.add('visible');
+    clearTimeout(toast._hideTimer);
+    toast._hideTimer = setTimeout(() => { toast.classList.remove('visible'); }, 2000);
+  }
+
   function showCopiedFeedback(btn) {
-    const original = btn.textContent; btn.textContent = 'Copied!'; btn.disabled = true;
-    setTimeout(() => { btn.textContent = original; btn.disabled = false; }, 1200);
+    showLogToast('Log copied');
   }
 </script>
 
