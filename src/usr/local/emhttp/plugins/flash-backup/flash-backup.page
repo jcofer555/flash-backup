@@ -935,6 +935,19 @@ if (file_exists("/etc/unraid-version")) {
     margin: 0;
   }
 }
+
+/* --- Ensure hover glow for Backup Destination + Remote Path --- */
+#backup_destination:hover,
+#remote_path_in_config:hover {
+  border-color: var(--plugin-accent) !important;
+  filter: brightness(1.1);
+}
+
+/* --- Ensure hover glow for Rclone Config multiselect --- */
+.vm-multiselect:hover {
+  border-color: var(--plugin-accent) !important;
+  filter: brightness(1.1);
+}
 </style>
 
 <script>
