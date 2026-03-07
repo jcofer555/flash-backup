@@ -82,14 +82,14 @@ if (file_exists(REMOTE_SCHEDULES_CFG)) {
     text-align:center;
     border-bottom:3px solid #2ECC40;
 ">
-    <th style="padding:8px; width:24%;">Scheduling</th>
+    <th style="padding:8px; width:20%;">Scheduling</th>
     <th style="padding:8px; width:6%;">Minimal Backup</th>
-    <th style="padding:8px; width:13%;">Rclone Config</th>
-    <th style="padding:8px; width:16%;">Path In Config</th>
-    <th style="padding:8px; width:7%;">Backups To Keep</th>
-    <th style="padding:8px; width:5%;">Dry Run</th>
-    <th style="padding:8px; width:5%;">Notifications</th>
-    <th style="padding:8px; width:22%;">Actions</th>
+    <th style="padding:8px; width:24%;">Rclone Config</th>
+    <th style="padding:8px; width:8%;">Path In Config</th>
+    <th style="padding:8px; width:8%;">Backups To Keep</th>
+    <th style="padding:8px; width:6%;">Dry Run</th>
+    <th style="padding:8px; width:6%;">Notifications</th>
+    <th style="padding:8px; width:23%;">Actions</th>
 </tr>
 </thead>
 
