@@ -1,12 +1,16 @@
 <?php
 
+// Path to the remote backup settings config file
 define('REMOTE_SETTINGS_FILE', '/boot/config/plugins/flash-backup/settings_remote.cfg');
+// Directory used to hold the lock file and runtime state
 define('LOCK_DIR',             '/tmp/flash-backup');
+// Lock file path — presence indicates a backup is in progress
 define('LOCK_FILE',            LOCK_DIR . '/lock.txt');
+// Path to the remote backup shell script
 define('REMOTE_BACKUP_SCRIPT', '/usr/local/emhttp/plugins/flash-backup/helpers/remote_backup.sh');
 
 // ------------------------------------------------------------------------------
-// respond() — deterministic JSON response with explicit HTTP code, then exit
+// respond() — JSON response with explicit HTTP code, then exit
 // ------------------------------------------------------------------------------
 function respond(int $code, array $payload): void {
     http_response_code($code);
@@ -16,9 +20,10 @@ function respond(int $code, array $payload): void {
 }
 
 // ------------------------------------------------------------------------------
-// load_and_export_settings() — guarded settings parse, explicit env export
+// load_and_export_settings()
 // ------------------------------------------------------------------------------
 function load_and_export_settings(string $settings_file): void {
+    // Skip silently if the settings file does not exist yet
     if (!is_file($settings_file)) {
         return;
     }
@@ -28,6 +33,7 @@ function load_and_export_settings(string $settings_file): void {
         return;
     }
 
+    // Export each key=value pair as a process environment variable
     foreach ($lines as $line) {
         if (strpos($line, '=') === false) continue;
         [$key, $val] = explode('=', $line, 2);
@@ -36,9 +42,10 @@ function load_and_export_settings(string $settings_file): void {
 }
 
 // ------------------------------------------------------------------------------
-// acquire_lock() — guarded lock dir creation, non-blocking exclusive lock
+// acquire_lock() — Non blocking
 // ------------------------------------------------------------------------------
 function acquire_lock(): mixed {
+    // Create the lock directory if it does not exist
     if (!is_dir(LOCK_DIR)) {
         if (!mkdir(LOCK_DIR, 0777, true)) {
             respond(500, ['status' => 'error', 'message' => 'Unable to create lock directory']);
@@ -50,6 +57,7 @@ function acquire_lock(): mixed {
         respond(500, ['status' => 'error', 'message' => 'Unable to open remote lock file']);
     }
 
+    // Non-blocking lock — returns 409 immediately if another backup is running
     if (!flock($fp, LOCK_EX | LOCK_NB)) {
         respond(409, ['status' => 'error', 'message' => 'Remote backup already running']);
     }
@@ -58,7 +66,7 @@ function acquire_lock(): mixed {
 }
 
 // ------------------------------------------------------------------------------
-// write_lock_meta() — atomic metadata write into open lock file handle
+// write_lock_meta() — write metadata into open lock file handle
 // ------------------------------------------------------------------------------
 function write_lock_meta(mixed $fp, string $pid): void {
     $meta = implode("\n", [
@@ -67,27 +75,28 @@ function write_lock_meta(mixed $fp, string $pid): void {
         "START=" . time(),
     ]) . "\n";
 
+    // Truncate before writing so stale data from a previous run is not left behind
     ftruncate($fp, 0);
     fwrite($fp, $meta);
     fflush($fp);
 }
 
 // ------------------------------------------------------------------------------
-// main() — explicit entrypoint, all state explicit
+// main()
 // ------------------------------------------------------------------------------
 function main(): void {
-    // --- Verify backup script before acquiring lock ---
+    // Verify backup script before acquiring lock
     if (!is_file(REMOTE_BACKUP_SCRIPT) || !is_executable(REMOTE_BACKUP_SCRIPT)) {
         respond(500, ['status' => 'error', 'message' => 'Remote backup script missing or not executable']);
     }
 
-    // --- Load and export settings ---
+    // Load and export settings
     load_and_export_settings(REMOTE_SETTINGS_FILE);
 
-    // --- Acquire exclusive lock ---
+    // Acquire exclusive lock
     $fp = acquire_lock();
 
-    // --- Launch script ---
+    // Launch remote backup script in background and capture the spawned PID
     $cmd = 'nohup /bin/bash ' . REMOTE_BACKUP_SCRIPT . ' >/dev/null 2>&1 & echo $!';
     $pid = trim((string)shell_exec($cmd));
 
@@ -95,7 +104,7 @@ function main(): void {
         respond(500, ['status' => 'error', 'message' => 'Failed to start remote backup']);
     }
 
-    // --- Write lock metadata, keep handle open to hold lock ---
+    // Write lock metadata and keep the file handle open to hold the lock
     write_lock_meta($fp, $pid);
 
     respond(200, [

@@ -1,12 +1,13 @@
 <?php
 
+// List of schedule config files to inspect — covers both local and remote schedules
 define('SCHEDULE_CFGS', [
     '/boot/config/plugins/flash-backup/schedules.cfg',
     '/boot/config/plugins/flash-backup/schedules-remote.cfg',
 ]);
 
 // ------------------------------------------------------------------------------
-// respond() — deterministic JSON response with explicit HTTP code, then exit
+// respond() — JSON response with explicit HTTP code, then exit
 // ------------------------------------------------------------------------------
 function respond(int $code, array $payload): void {
     http_response_code($code);
@@ -16,7 +17,7 @@ function respond(int $code, array $payload): void {
 }
 
 // ------------------------------------------------------------------------------
-// load_schedules() — guarded, realpath-normalized; returns empty array on failure
+// load_schedules()
 // ------------------------------------------------------------------------------
 function load_schedules(string $cfg): array {
     $real = realpath($cfg);
@@ -28,11 +29,12 @@ function load_schedules(string $cfg): array {
 }
 
 // ------------------------------------------------------------------------------
-// main() — explicit entrypoint, all state explicit
+// main()
 // ------------------------------------------------------------------------------
 function main(): void {
     $crons = [];
 
+    // Collect cron entries from both local and remote schedule files
     foreach (SCHEDULE_CFGS as $cfg) {
         $schedules = load_schedules($cfg);
 
@@ -40,6 +42,7 @@ function main(): void {
             $cron    = trim($s['CRON'] ?? '');
             $enabled = strtolower((string)($s['ENABLED'] ?? 'yes')) === 'yes';
 
+            // Skip entries with no cron expression
             if ($cron === '') continue;
 
             $crons[] = [

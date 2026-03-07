@@ -1,12 +1,19 @@
 <?php
 
+// Path to the remote schedules config file
 define('REMOTE_SCHEDULES_CFG', '/boot/config/plugins/flash-backup/schedules-remote.cfg');
 
+// ------------------------------------------------------------------------------
+// yes_no() — mapping to human-friendly label
+// ------------------------------------------------------------------------------
 function yes_no(string $value): string {
     $v = strtolower($value);
     return ($v === 'yes' || $v === '1' || $v === 'true') ? 'Yes' : 'No';
 }
 
+// ------------------------------------------------------------------------------
+// human_cron() — cron to human-readable string
+// ------------------------------------------------------------------------------
 function human_cron(string $cron): string {
     $cron  = trim($cron);
     $parts = preg_split('/\s+/', $cron);
@@ -98,10 +105,12 @@ if (file_exists(REMOTE_SCHEDULES_CFG)) {
 <?php foreach ($schedules as $id => $s): ?>
 
     <?php
+    // Determine enabled state and set button label and border color accordingly
     $enabledBool = ($s['ENABLED'] ?? 'yes') === 'yes';
     $btnText     = $enabledBool ? 'Disable' : 'Enable';
 
-    $sideBorder = $enabledBool ? '#2ECC40' : '#b30000'; // green or red
+    // Green border for enabled schedules, red for disabled
+    $sideBorder = $enabledBool ? '#2ECC40' : '#b30000';
     $statusDot  = $enabledBool ? '🟢' : '🔴';
 
     $cron = $s['CRON'] ?? '';
@@ -116,6 +125,7 @@ if (file_exists(REMOTE_SCHEDULES_CFG)) {
     $rcloneConfig  = $settings['RCLONE_CONFIG_REMOTE'] ?? '—';
     $pathInConfig  = $settings['REMOTE_PATH_IN_CONFIG'] ?? '—';
 
+    // Map numeric value to human-friendly label
     if (!isset($settings['BACKUPS_TO_KEEP_REMOTE'])) {
         $backupsToKeep = '—';
     } else {

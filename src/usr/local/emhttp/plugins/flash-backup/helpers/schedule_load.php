@@ -1,9 +1,10 @@
 <?php
 
+// Path to the local schedules config file
 define('SCHEDULES_CFG', '/boot/config/plugins/flash-backup/schedules.cfg');
 
 // ------------------------------------------------------------------------------
-// respond() — deterministic JSON response with explicit HTTP code, then exit
+// respond() — JSON response with explicit HTTP code, then exit
 // ------------------------------------------------------------------------------
 function respond(int $code, array $payload): void {
     http_response_code($code);
@@ -13,7 +14,7 @@ function respond(int $code, array $payload): void {
 }
 
 // ------------------------------------------------------------------------------
-// load_schedules() — guarded, realpath-normalized
+// load_schedules()
 // ------------------------------------------------------------------------------
 function load_schedules(string $cfg): array {
     $real = realpath($cfg);
@@ -28,7 +29,7 @@ function load_schedules(string $cfg): array {
 }
 
 // ------------------------------------------------------------------------------
-// main() — explicit entrypoint, all state explicit
+// main()
 // ------------------------------------------------------------------------------
 function main(): void {
     $id = trim($_GET['id'] ?? '');
@@ -51,6 +52,7 @@ function main(): void {
         $settings = [];
     }
 
+    // Replace the raw escaped JSON string with the decoded array
     $entry['SETTINGS'] = $settings;
 
     respond(200, $entry);

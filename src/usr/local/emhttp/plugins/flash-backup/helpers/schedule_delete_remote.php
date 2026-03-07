@@ -1,10 +1,11 @@
 <?php
 
 require_once __DIR__ . '/rebuild_cron_remote.php';
+// Path to the remote schedules config file
 define('REMOTE_SCHEDULES_CFG', '/boot/config/plugins/flash-backup/schedules-remote.cfg');
 
 // ------------------------------------------------------------------------------
-// respond() — deterministic JSON response with explicit HTTP code, then exit
+// respond() — JSON response with explicit HTTP code, then exit
 // ------------------------------------------------------------------------------
 function respond(int $code, array $payload): void {
     http_response_code($code);
@@ -14,7 +15,7 @@ function respond(int $code, array $payload): void {
 }
 
 // ------------------------------------------------------------------------------
-// load_schedules() — guarded, realpath-normalized
+// load_schedules()
 // ------------------------------------------------------------------------------
 function load_schedules(string $cfg): array {
     $real = realpath($cfg);
@@ -29,7 +30,7 @@ function load_schedules(string $cfg): array {
 }
 
 // ------------------------------------------------------------------------------
-// write_schedules() — atomic write via tmp-then-rename, deterministic key order
+// write_schedules() — tmp then rename
 // ------------------------------------------------------------------------------
 function write_schedules(string $cfg, array $schedules): void {
     $real = realpath($cfg);
@@ -41,6 +42,7 @@ function write_schedules(string $cfg, array $schedules): void {
     $out = '';
     foreach ($schedules as $id => $fields) {
         $out .= "[{$id}]\n";
+        // Sort keys so the file layout is deterministic regardless of insertion order
         ksort($fields);
         foreach ($fields as $key => $val) {
             $out .= "{$key}=\"{$val}\"\n";
@@ -58,7 +60,7 @@ function write_schedules(string $cfg, array $schedules): void {
 }
 
 // ------------------------------------------------------------------------------
-// main() — explicit entrypoint, all state explicit
+// main()
 // ------------------------------------------------------------------------------
 function main(): void {
     $id = trim($_POST['id'] ?? '');
@@ -73,10 +75,12 @@ function main(): void {
         respond(404, ['error' => 'Remote schedule not found']);
     }
 
+    // Remove the schedule entry and persist the updated file
     unset($schedules[$id]);
 
     write_schedules(REMOTE_SCHEDULES_CFG, $schedules);
 
+    // Rebuild cron so the deleted schedule no longer fires
     rebuild_cron_remote();
 
     respond(200, ['success' => true]);

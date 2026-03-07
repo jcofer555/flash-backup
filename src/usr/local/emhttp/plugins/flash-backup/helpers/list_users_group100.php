@@ -1,12 +1,16 @@
 <?php
 
+// System passwd file
 define('PASSWD_FILE',   '/etc/passwd');
+// GID for the standard Unraid users group
 define('USERS_GID',     100);
+// Skip UIDs below this threshold to exclude system accounts
 define('MIN_UID',       1000);
+// Username always included regardless of UID or group membership
 define('ALWAYS_INCLUDE', 'nobody');
 
 // ------------------------------------------------------------------------------
-// respond() — deterministic JSON response with explicit HTTP code, then exit
+// respond() — JSON response with explicit HTTP code, then exit
 // ------------------------------------------------------------------------------
 function respond(int $code, array $payload): void {
     http_response_code($code);
@@ -16,7 +20,7 @@ function respond(int $code, array $payload): void {
 }
 
 // ------------------------------------------------------------------------------
-// is_in_users_group() — explicit supplementary group check via id -G
+// is_in_users_group()
 // ------------------------------------------------------------------------------
 function is_in_users_group(string $username): bool {
     $output = [];
@@ -24,12 +28,13 @@ function is_in_users_group(string $username): bool {
     if (empty($output)) {
         return false;
     }
+    // Parse the space-separated GID list and check for the target GID
     $gids = array_map('intval', explode(' ', $output[0]));
     return in_array(USERS_GID, $gids, true);
 }
 
 // ------------------------------------------------------------------------------
-// main() — explicit entrypoint, all state explicit
+// main()
 // ------------------------------------------------------------------------------
 function main(): void {
     $lines = file(PASSWD_FILE, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
@@ -56,7 +61,7 @@ function main(): void {
         }
     }
 
-    // Always ensure nobody is first in the list
+    // Ensure nobody appears first in the list
     if (!in_array(ALWAYS_INCLUDE, $users, true)) {
         array_unshift($users, ALWAYS_INCLUDE);
     }

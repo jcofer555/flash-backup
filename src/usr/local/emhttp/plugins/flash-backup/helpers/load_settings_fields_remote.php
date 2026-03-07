@@ -1,4 +1,5 @@
 <?php
+// Returns all saved remote backup settings as JSON for populating the remote settings form
 header('Content-Type: application/json');
 
 $cfgPath = '/boot/config/plugins/flash-backup/settings_remote.cfg';

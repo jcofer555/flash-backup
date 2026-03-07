@@ -1,11 +1,14 @@
 <?php
 
+// Root path that all browsing is constrained to
 define('PICKER_BASE', '/mnt');
+// Minimum depth for a folder to be selectable in the standard backup destination picker
 define('MIN_SELECTABLE_DEPTH',            3);
+// Minimum depth for a folder to be selectable in the restore destination picker
 define('RESTORE_DESTINATION_MIN_DEPTH',   2);
 
 // ------------------------------------------------------------------------------
-// respond() — deterministic JSON response with explicit HTTP code, then exit
+// respond() — JSON response with explicit HTTP code, then exit
 // ------------------------------------------------------------------------------
 function respond(int $code, array $payload): void {
     http_response_code($code);
@@ -15,10 +18,11 @@ function respond(int $code, array $payload): void {
 }
 
 // ------------------------------------------------------------------------------
-// resolve_path() — realpath-normalized, constrained to base
+// resolve_path()
 // ------------------------------------------------------------------------------
 function resolve_path(string $path): string {
     $resolved = realpath($path);
+    // Fall back to the base if the path resolves outside it
     if ($resolved === false || strpos($resolved, PICKER_BASE) !== 0) {
         return PICKER_BASE;
     }
@@ -35,9 +39,10 @@ function get_depth(string $full_path): int {
 }
 
 // ------------------------------------------------------------------------------
-// is_selectable() — explicit state machine for selectability by field and depth
+// is_selectable() — selectability by field and depth
 // ------------------------------------------------------------------------------
 function is_selectable(int $depth, string $field): bool {
+    // The restore destination picker allows selection one level shallower
     if ($field === 'restore_destination' && $depth === RESTORE_DESTINATION_MIN_DEPTH) {
         return true;
     }
@@ -45,7 +50,7 @@ function is_selectable(int $depth, string $field): bool {
 }
 
 // ------------------------------------------------------------------------------
-// scan_folders() — guarded scandir, returns deterministic folder list
+// scan_folders() — returns folder list
 // ------------------------------------------------------------------------------
 function scan_folders(string $path, string $field): array {
     if (!is_dir($path)) {
@@ -59,6 +64,7 @@ function scan_folders(string $path, string $field): array {
 
     $folders = [];
     foreach ($items as $item) {
+        // Skip dot entries
         if ($item === '.' || $item === '..') continue;
 
         $full = $path . '/' . $item;
@@ -77,13 +83,14 @@ function scan_folders(string $path, string $field): array {
 }
 
 // ------------------------------------------------------------------------------
-// main() — explicit entrypoint, all state explicit
+// main()
 // ------------------------------------------------------------------------------
 function main(): void {
     $path  = resolve_path($_GET['path'] ?? PICKER_BASE);
     $field = trim($_GET['field'] ?? '');
 
     $folders = scan_folders($path, $field);
+    // Parent is null when already at the root of the picker
     $parent  = ($path !== PICKER_BASE) ? dirname($path) : null;
 
     respond(200, [

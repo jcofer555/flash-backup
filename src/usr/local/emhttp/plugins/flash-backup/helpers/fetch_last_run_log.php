@@ -1,10 +1,12 @@
 <?php
 
+// Path to the main plugin log file
 define('LOG_FILE',      '/tmp/flash-backup/flash-backup.log');
+// Maximum number of lines to return — avoids sending a very large log to the browser
 define('LOG_TAIL_LINES', 500);
 
 // ------------------------------------------------------------------------------
-// respond_text() — deterministic plain-text response with explicit HTTP code
+// respond_text() — plain-text response with explicit HTTP code
 // ------------------------------------------------------------------------------
 function respond_text(int $code, string $body): void {
     http_response_code($code);
@@ -14,7 +16,7 @@ function respond_text(int $code, string $body): void {
 }
 
 // ------------------------------------------------------------------------------
-// main() — explicit entrypoint, all state explicit
+// main()
 // ------------------------------------------------------------------------------
 function main(): void {
     if (!file_exists(LOG_FILE)) {
@@ -26,6 +28,7 @@ function main(): void {
         respond_text(500, 'Failed to read log file');
     }
 
+    // Return only the most recent lines, reversed so newest is first
     $tail     = array_slice($lines, -LOG_TAIL_LINES);
     $reversed = array_reverse($tail);
 

@@ -1,7 +1,7 @@
 <?php
 
 // ------------------------------------------------------------------------------
-// respond() — deterministic JSON response with explicit HTTP code, then exit
+// respond() — JSON response with explicit HTTP code, then exit
 // ------------------------------------------------------------------------------
 function respond(int $code, array $payload): void {
     http_response_code($code);
@@ -23,11 +23,12 @@ function validate_csrf(): void {
 }
 
 // ------------------------------------------------------------------------------
-// main() — explicit entrypoint, all state explicit
+// main()
 // ------------------------------------------------------------------------------
 function main(): void {
     validate_csrf();
 
+    // Resolve the parent path and strip any directory component from the new folder name
     $parent = realpath($_POST['path'] ?? '');
     $name   = basename($_POST['name'] ?? '');
 
@@ -37,10 +38,12 @@ function main(): void {
 
     $new = $parent . '/' . $name;
 
+    // Refuse to overwrite an existing path
     if (file_exists($new)) {
         respond(409, ['success' => false, 'error' => 'Already exists']);
     }
 
+    // Inherit ownership and permissions from the parent directory
     $stat = stat($parent);
     if ($stat === false) {
         respond(500, ['success' => false, 'error' => 'Failed to stat parent directory']);

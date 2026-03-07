@@ -1,11 +1,12 @@
 <?php
 
+// Map of valid log targets to their file paths
 define('LOG_FILES', [
     'last' => '/tmp/flash-backup/flash-backup.log',
 ]);
 
 // ------------------------------------------------------------------------------
-// respond() — deterministic JSON response with explicit HTTP code, then exit
+// respond() — JSON response with explicit HTTP code, then exit
 // ------------------------------------------------------------------------------
 function respond(int $code, array $payload): void {
     http_response_code($code);
@@ -22,21 +23,24 @@ function validate_csrf(): void {
     $header = $_SERVER['HTTP_X_CSRF_TOKEN']       ?? '';
     $posted = $_POST['csrf_token']                ?? '';
 
+    // Require at least one token to be present
     if ($header === '' && $posted === '') {
         respond(403, ['ok' => false, 'message' => 'Missing CSRF token']);
     }
 
+    // Accept either the header token or the posted token
     if (!hash_equals($cookie, $header) && !hash_equals($cookie, $posted)) {
         respond(403, ['ok' => false, 'message' => 'Invalid CSRF token']);
     }
 }
 
 // ------------------------------------------------------------------------------
-// main() — explicit entrypoint, all state explicit
+// main()
 // ------------------------------------------------------------------------------
 function main(): void {
     validate_csrf();
 
+    // The 'log' param must match a key in LOG_FILES
     $log = $_POST['log'] ?? '';
 
     $log_files = LOG_FILES;
@@ -50,6 +54,7 @@ function main(): void {
         respond(404, ['ok' => false, 'message' => 'Log file not found.']);
     }
 
+    // Overwrite with empty string to clear without deleting the file
     if (file_put_contents($file, '') === false) {
         respond(500, ['ok' => false, 'message' => 'Failed to clear log file.']);
     }

@@ -1,9 +1,11 @@
 <?php
 header('Content-Type: application/json');
 
+// Path to the remote settings config and a temp file used
 $config = '/boot/config/plugins/flash-backup/settings_remote.cfg';
 $tmp    = $config . '.tmp';
 
+// Read all expected fields from POST with safe defaults
 $minimal_backup_remote       = $_POST['MINIMAL_BACKUP_REMOTE']       ?? 'no';
 $backups_to_keep_remote      = $_POST['BACKUPS_TO_KEEP_REMOTE']      ?? '0';
 $dry_run_remote              = $_POST['DRY_RUN_REMOTE']              ?? 'no';
@@ -11,7 +13,7 @@ $notifications_remote        = $_POST['NOTIFICATIONS_REMOTE']        ?? 'no';
 $notification_service_remote = $_POST['NOTIFICATION_SERVICE_REMOTE'] ?? '';
 $pushover_user_key_remote    = $_POST['PUSHOVER_USER_KEY_REMOTE']    ?? '';
 
-// --- Normalize rclone config: array or comma string ---
+// Accept either an array (multi-select) or a comma string
 $rclone_raw = $_POST['RCLONE_CONFIG_REMOTE'] ?? '';
 if (is_array($rclone_raw)) {
     $rclone_config_remote = implode(',', array_map('trim', $rclone_raw));
@@ -19,7 +21,7 @@ if (is_array($rclone_raw)) {
     $rclone_config_remote = trim((string)$rclone_raw);
 }
 
-// --- Normalize B2 bucket: no leading slash, trailing slash enforced ---
+// No leading slash, trailing slash enforced
 $b2_bucket_name = trim($_POST['B2_BUCKET_NAME'] ?? '');
 if ($b2_bucket_name !== '') {
     $b2_bucket_name = ltrim($b2_bucket_name, '/');
@@ -28,7 +30,7 @@ if ($b2_bucket_name !== '') {
     }
 }
 
-// --- Normalize remote path: leading + trailing slash enforced ---
+// Leading and trailing slash enforced, default applied if empty
 $remote_path_in_config = trim($_POST['REMOTE_PATH_IN_CONFIG'] ?? '');
 if ($remote_path_in_config === '') {
     $remote_path_in_config = '/Flash_Backups/';
@@ -41,19 +43,19 @@ if ($remote_path_in_config === '') {
     }
 }
 
-// --- Collect webhook URLs ---
+// Collect webhook URLs for all supported notification services
 $services    = ['DISCORD', 'GOTIFY', 'NTFY', 'PUSHOVER', 'SLACK'];
 $webhookUrls = [];
 foreach ($services as $svc) {
     $webhookUrls[$svc] = $_POST['WEBHOOK_' . $svc . '_REMOTE'] ?? '';
 }
 
-// --- Sanitize helper: strip quotes and newlines ---
+// Strip quotes and newlines to prevent config file injection
 function sanitize(string $val): string {
     return str_replace(['"', "'", "\n", "\r"], '', $val);
 }
 
-// --- Build config lines ---
+// Build the config key-value array in alphabetical order
 $lines = [
     'B2_BUCKET_NAME'              => $b2_bucket_name,
     'BACKUPS_TO_KEEP_REMOTE'      => $backups_to_keep_remote,
@@ -76,7 +78,7 @@ foreach ($lines as $key => $val) {
     $content .= $key . '="' . sanitize($val) . '"' . "\n";
 }
 
-// --- Write atomically ---
+// Write to a temp file then rename over the real config
 @mkdir(dirname($config), 0755, true);
 
 if (file_put_contents($tmp, $content) === false) {

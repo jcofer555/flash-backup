@@ -7,7 +7,9 @@ readonly LAST_RUN_FILE="${LOG_DIR}/flash-backup.log"
 readonly ROTATE_DIR="${LOG_DIR}/archived_logs"
 readonly STATUS_FILE="${LOG_DIR}/remote_backup_status.txt"
 readonly DEBUG_LOG="${LOG_DIR}/flash-backup-remote-debug.log"
+# Rotate log files when they exceed 10 MB
 readonly LOG_MAX_BYTES=$(( 10 * 1024 * 1024 ))
+# Number of rotated log archives to retain before purging the oldest
 readonly LOG_ROTATE_KEEP=10
 
 # ------------------------------------------------------------------------------
@@ -40,7 +42,9 @@ PUSHOVER_USER_KEY_REMOTE="${PUSHOVER_USER_KEY_REMOTE//\"/}"
 
 readonly SCRIPT_START_EPOCH=$(date +%s)
 
+# Path to the stop flag file — created by stop_remote.php to request a graceful stop
 STOP_FLAG="/tmp/flash-backup/stop_requested_remote.txt"
+# PID of the background watcher loop that monitors the stop flag
 WATCHER_PID=""
 
 # ------------------------------------------------------------------------------
@@ -78,7 +82,7 @@ set_status() {
 }
 
 # ------------------------------------------------------------------------------
-# Atomic log rotation — guarded, retention-capped
+# log rotation
 # ------------------------------------------------------------------------------
 rotate_log() {
     local log_file="$1"
@@ -106,7 +110,7 @@ rotate_log() {
 }
 
 # ------------------------------------------------------------------------------
-# rclone flags — explicit state machine per remote type
+# rclone flags — per remote type
 # ------------------------------------------------------------------------------
 get_rclone_flags() {
     local remote_type="$1"
@@ -176,7 +180,7 @@ get_rclone_flags() {
 }
 
 # ------------------------------------------------------------------------------
-# Notification helper — explicit service state machine
+# Notification helper
 # ------------------------------------------------------------------------------
 notify_remote() {
     local level="$1"
@@ -194,6 +198,7 @@ notify_remote() {
         *)       color=3066993  ;;
     esac
 
+    # Iterate over each configured notification service (comma-separated list)
     IFS=',' read -ra SERVICES <<< "$NOTIFICATION_SERVICE_REMOTE"
     for service in "${SERVICES[@]}"; do
         service="${service// /}"
@@ -258,12 +263,14 @@ notify_remote() {
 }
 
 # ------------------------------------------------------------------------------
-# Deterministic cleanup trap
+# Cleanup
 # ------------------------------------------------------------------------------
 cleanup() {
+    # Stop the background watcher loop
     kill "$WATCHER_PID" 2>/dev/null
 
     local lock_file="${LOG_DIR}/lock.txt"
+    # Remove lock file and any leftover temp archives in /tmp
     rm -f "$lock_file"
     rm -f /tmp/flash_*.tar.gz /tmp/flash_*.tar.gz.tmp 2>/dev/null
     debug_log "Lock file and temp files removed"
@@ -273,6 +280,7 @@ cleanup() {
     script_duration=$(( script_end_epoch - SCRIPT_START_EPOCH ))
     script_duration_human="$(format_duration "$script_duration")"
 
+    # Handle a user-requested stop — clean up the stop flag
     if [[ -f "$STOP_FLAG" ]]; then
         rm -f "$STOP_FLAG"
         echo "Remote backup stopped early - Duration: $script_duration_human"
@@ -312,6 +320,7 @@ handle_signal() {
 trap cleanup EXIT
 trap handle_signal SIGTERM SIGINT SIGHUP SIGQUIT
 
+# Background watcher loop — polls for the stop flag every second and sends SIGTERM to the main process
 ( trap '' SIGTERM; while true; do
     sleep 1
     if [[ -f "$STOP_FLAG" ]]; then kill -TERM $$ 2>/dev/null; break; fi
@@ -319,7 +328,7 @@ done ) &>/dev/null &
 WATCHER_PID=$!
 
 # ------------------------------------------------------------------------------
-# Build tar paths — explicit state, minimal vs full
+# Build tar paths — minimal vs full
 # ------------------------------------------------------------------------------
 build_tar_paths() {
     TAR_PATHS=()
@@ -354,7 +363,7 @@ build_tar_paths() {
 }
 
 # ------------------------------------------------------------------------------
-# Create archive — atomic tmp-then-rename, guarded
+# Create archive — tmp then rename
 # ------------------------------------------------------------------------------
 create_archive() {
     local backup_file="$1"
@@ -421,7 +430,7 @@ resolve_remote_type() {
 }
 
 # ------------------------------------------------------------------------------
-# Prune old remote backups — guarded, retention-capped
+# Prune old remote backups
 # ------------------------------------------------------------------------------
 prune_old_remote_backups() {
     local dest="$1"
@@ -481,7 +490,7 @@ prune_old_remote_backups() {
 }
 
 # ------------------------------------------------------------------------------
-# Process a single remote — atomic, auditable
+# Process a single remote
 # ------------------------------------------------------------------------------
 process_remote() {
     local remote="$1"
@@ -555,7 +564,7 @@ process_remote() {
 }
 
 # ------------------------------------------------------------------------------
-# main — explicit entrypoint
+# Main
 # ------------------------------------------------------------------------------
 main() {
     mkdir -p "$LOG_DIR" "$ROTATE_DIR"
@@ -565,7 +574,7 @@ main() {
 
     exec > >(tee -a "$LAST_RUN_FILE") 2>&1
 
-    # --- Get plugin version from .plg ---
+    # --- Read plugin version from the .plg installer file for logging ---
 PLG_FILE="/boot/config/plugins/flash-backup.plg"
 if [[ -f "$PLG_FILE" ]]; then
     version=$(grep -oP 'version="\K[^"]+' "$PLG_FILE" | head -n1)
@@ -627,7 +636,7 @@ fi
 
     debug_log "Remote count: $remote_count"
 
-    # Validate folder name segments
+    # Validate each path segment in REMOTE_PATH_IN_CONFIG to reject unsafe characters
     if [[ -n "$REMOTE_PATH_IN_CONFIG" ]]; then
         local inner="${REMOTE_PATH_IN_CONFIG#/}"
         inner="${inner%/}"
@@ -644,7 +653,7 @@ fi
         done
     fi
 
-    # Normalize remote subpath
+    # Strip leading and trailing slashes, fall back to default
     if [[ -z "$REMOTE_PATH_IN_CONFIG" ]]; then
         REMOTE_SUBPATH="Flash_Backups"
     else
@@ -661,7 +670,7 @@ fi
 
     build_tar_paths
 
-    # Create archive once, upload to all remotes
+    # Create the archive once then upload it to each configured remote
     local ts backup_file
     ts="$(date +"%Y-%m-%d_%H-%M-%S")"
     backup_file="/tmp/flash_${ts}.tar.gz"

@@ -1,10 +1,11 @@
 <?php
 
 require_once __DIR__ . '/rebuild_cron.php';
+// Path to the local schedules config file
 define('SCHEDULES_CFG', '/boot/config/plugins/flash-backup/schedules.cfg');
 
 // ------------------------------------------------------------------------------
-// respond() — deterministic JSON response with explicit HTTP code, then exit
+// respond() — JSON response with explicit HTTP code, then exit
 // ------------------------------------------------------------------------------
 function respond(int $code, array $payload): void {
     http_response_code($code);
@@ -14,7 +15,7 @@ function respond(int $code, array $payload): void {
 }
 
 // ------------------------------------------------------------------------------
-// load_schedules() — guarded, realpath-normalized
+// load_schedules()
 // ------------------------------------------------------------------------------
 function load_schedules(string $cfg): array {
     $real = realpath($cfg);
@@ -29,7 +30,7 @@ function load_schedules(string $cfg): array {
 }
 
 // ------------------------------------------------------------------------------
-// write_schedules() — atomic write via tmp-then-rename, deterministic key order
+// write_schedules() — tmp then rename
 // ------------------------------------------------------------------------------
 function write_schedules(string $cfg, array $schedules): void {
     $real = realpath($cfg);
@@ -41,6 +42,7 @@ function write_schedules(string $cfg, array $schedules): void {
     $out = '';
     foreach ($schedules as $id => $fields) {
         $out .= "[{$id}]\n";
+        // Sort keys so the file layout is deterministic regardless of insertion order
         ksort($fields);
         foreach ($fields as $key => $val) {
             $out .= "{$key}=\"{$val}\"\n";
@@ -58,7 +60,7 @@ function write_schedules(string $cfg, array $schedules): void {
 }
 
 // ------------------------------------------------------------------------------
-// main() — explicit entrypoint, all state explicit
+// main()
 // ------------------------------------------------------------------------------
 function main(): void {
     $id = trim($_POST['id'] ?? '');
@@ -73,12 +75,13 @@ function main(): void {
         respond(404, ['error' => 'Schedule not found']);
     }
 
-    // Toggle ENABLED — normalize to lowercase, map to human-friendly yes/no
+    // Toggle ENABLED — map to human-friendly yes/no
     $current = strtolower((string)($schedules[$id]['ENABLED'] ?? 'yes'));
     $schedules[$id]['ENABLED'] = ($current === 'yes') ? 'no' : 'yes';
 
     write_schedules(SCHEDULES_CFG, $schedules);
 
+    // Rebuild cron so the enabled state change takes effect immediately
     rebuild_cron();
 
     respond(200, ['success' => true]);

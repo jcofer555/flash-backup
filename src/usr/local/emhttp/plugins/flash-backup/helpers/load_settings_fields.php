@@ -1,4 +1,5 @@
 <?php
+// Returns all saved local backup settings as JSON for populating the settings form
 header('Content-Type: application/json');
 
 $cfgPath = '/boot/config/plugins/flash-backup/settings.cfg';

@@ -1,11 +1,13 @@
 <?php
 
 require_once __DIR__ . '/rebuild_cron.php';
+// Path to the local schedules config file
 define('SCHEDULES_CFG',  '/boot/config/plugins/flash-backup/schedules.cfg');
+// Regex pattern for validating a standard 5-field cron expression
 define('CRON_PATTERN',   '/^([\*\/0-9,-]+\s+){4}[\*\/0-9,-]+$/');
 
 // ------------------------------------------------------------------------------
-// respond() — deterministic JSON response with explicit HTTP code, then exit
+// respond() — JSON response with explicit HTTP code, then exit
 // ------------------------------------------------------------------------------
 function respond(int $code, array $payload): void {
     http_response_code($code);
@@ -15,7 +17,7 @@ function respond(int $code, array $payload): void {
 }
 
 // ------------------------------------------------------------------------------
-// load_schedules() — guarded, realpath-normalized; returns empty array if missing
+// load_schedules()
 // ------------------------------------------------------------------------------
 function load_schedules(string $cfg): array {
     $real = realpath($cfg);
@@ -27,7 +29,7 @@ function load_schedules(string $cfg): array {
 }
 
 // ------------------------------------------------------------------------------
-// check_duplicate() — explicit destination conflict detection
+// check_duplicate() — destination conflict detection
 // ------------------------------------------------------------------------------
 function check_duplicate(array $schedules, string $new_dest): void {
     foreach ($schedules as $existing_id => $s) {
@@ -37,6 +39,7 @@ function check_duplicate(array $schedules, string $new_dest): void {
         if (!is_array($existing_settings)) continue;
 
         $existing_dest = trim($existing_settings['BACKUP_DESTINATION'] ?? '');
+        // Reject if another schedule already uses this destination
         if ($existing_dest !== '' && $existing_dest === $new_dest) {
             respond(409, [
                 'error'       => 'Duplicate schedule detected',
@@ -47,12 +50,12 @@ function check_duplicate(array $schedules, string $new_dest): void {
 }
 
 // ------------------------------------------------------------------------------
-// append_schedule() — guarded append of new INI block
+// append_schedule() — append new INI block
 // ------------------------------------------------------------------------------
 function append_schedule(string $cfg, string $id, string $type, string $cron, string $settings_json): void {
     $real = realpath($cfg);
 
-    // If file doesn't exist yet, use the raw path for first write
+    // If file does not exist yet, use the raw path for the first write
     $target = ($real !== false) ? $real : $cfg;
 
     $block  = "\n[{$id}]\n";
@@ -67,7 +70,7 @@ function append_schedule(string $cfg, string $id, string $type, string $cron, st
 }
 
 // ------------------------------------------------------------------------------
-// main() — explicit entrypoint, all state explicit
+// main()
 // ------------------------------------------------------------------------------
 function main(): void {
     $type     = trim($_POST['type']     ?? '');
@@ -78,7 +81,7 @@ function main(): void {
         $settings = [];
     }
 
-    // --- Allowlist: only store fields that belong ---
+    // Allowlist: only store fields that belong in a local schedule
     $allowed = [
         'BACKUP_DESTINATION',
         'BACKUP_OWNER',
@@ -96,11 +99,11 @@ function main(): void {
     ];
     $settings = array_intersect_key($settings, array_flip($allowed));
 
-    // --- Always exclude UI-only fields ---
+    // Always exclude UI-only fields that must not be persisted
     $exclude = ['csrf_token', 'CRON_EXPRESSION'];
     $settings = array_diff_key($settings, array_flip($exclude));
 
-    // --- Input validation ---
+    // Input validation
     if (!preg_match(CRON_PATTERN, $cron)) {
         respond(400, ['error' => 'Invalid cron expression']);
     }
@@ -110,17 +113,17 @@ function main(): void {
         respond(400, ['error' => 'Backup destination is required']);
     }
 
-    // --- Load existing schedules and check for duplicates ---
+    // Load existing schedules and check for destination conflicts
     $schedules = load_schedules(SCHEDULES_CFG);
     check_duplicate($schedules, $new_dest);
 
-    // --- Encode settings for INI storage ---
+    // Encode settings as escaped JSON for safe INI storage
     $settings_json = addcslashes(
         json_encode($settings, JSON_UNESCAPED_SLASHES),
         '"'
     );
 
-    // --- Generate unique ID and append ---
+    // Generate a unique timestamp-based ID and append the new block
     $id = 'schedule_' . time();
     append_schedule(SCHEDULES_CFG, $id, $type, $cron, $settings_json);
 

@@ -8,7 +8,9 @@ readonly LAST_RUN_FILE="${LOG_DIR}/flash-backup.log"
 readonly ROTATE_DIR="${LOG_DIR}/archived_logs"
 readonly STATUS_FILE="${LOG_DIR}/local_backup_status.txt"
 readonly DEBUG_LOG="${LOG_DIR}/flash-backup-local-debug.log"
+# Rotate log files when they exceed 10 MB
 readonly LOG_MAX_BYTES=$(( 10 * 1024 * 1024 ))
+# Number of rotated log archives to retain before purging the oldest
 readonly LOG_ROTATE_KEEP=10
 
 # ------------------------------------------------------------------------------
@@ -39,8 +41,11 @@ PUSHOVER_USER_KEY="${PUSHOVER_USER_KEY//\"/}"
 
 readonly SCRIPT_START_EPOCH=$(date +%s)
 
+# Path to the stop flag file — created by stop_backup.php to request a graceful stop
 STOP_FLAG="/tmp/flash-backup/stop_requested.txt"
+# PID of the running tar process, used by stop_backup.php to send SIGTERM
 TAR_PID=""
+# PID of the background watcher loop that monitors the stop flag
 WATCHER_PID=""
 
 # ------------------------------------------------------------------------------
@@ -67,7 +72,7 @@ set_status() {
 }
 
 # ------------------------------------------------------------------------------
-# Atomic log rotation — guarded, retention-capped
+# log rotation
 # ------------------------------------------------------------------------------
 rotate_log() {
     local log_file="$1"
@@ -95,7 +100,7 @@ rotate_log() {
 }
 
 # ------------------------------------------------------------------------------
-# Notification helper — explicit service state machine
+# Notification helper
 # ------------------------------------------------------------------------------
 notify_local() {
     local level="$1"
@@ -113,6 +118,7 @@ notify_local() {
         *)       color=3066993  ;;
     esac
 
+    # Iterate over each configured notification service (comma-separated list)
     IFS=',' read -ra SERVICES <<< "$NOTIFICATION_SERVICE"
     for service in "${SERVICES[@]}"; do
         service="${service// /}"
@@ -177,9 +183,10 @@ notify_local() {
 }
 
 # ------------------------------------------------------------------------------
-# Deterministic cleanup trap
+# Cleanup
 # ------------------------------------------------------------------------------
 cleanup() {
+    # Stop the background watcher loop
     kill "$WATCHER_PID" 2>/dev/null
 
     local lock_file="${LOG_DIR}/lock.txt"
@@ -191,6 +198,7 @@ cleanup() {
     script_duration=$(( script_end_epoch - SCRIPT_START_EPOCH ))
     script_duration_human="$(format_duration "$script_duration")"
 
+    # Handle a user-requested stop — clean up the stop flag and any partial archive
     if [[ -f "$STOP_FLAG" ]]; then
         rm -f "$STOP_FLAG"
         rm -f "${LOG_DIR}"/*.tmp 2>/dev/null
@@ -232,6 +240,7 @@ handle_signal() {
 trap cleanup EXIT
 trap handle_signal SIGTERM SIGINT SIGHUP SIGQUIT
 
+# Background watcher loop — polls for the stop flag every second and sends SIGTERM to the main process
 ( trap '' SIGTERM; while true; do
     sleep 1
     if [[ -f "$STOP_FLAG" ]]; then kill -TERM $$ 2>/dev/null; break; fi
@@ -239,7 +248,7 @@ done ) &>/dev/null &
 WATCHER_PID=$!
 
 # ------------------------------------------------------------------------------
-# Build tar paths — explicit state, minimal vs full
+# Build tar paths — minimal vs full
 # ------------------------------------------------------------------------------
 build_tar_paths() {
     TAR_PATHS=()
@@ -274,7 +283,7 @@ build_tar_paths() {
 }
 
 # ------------------------------------------------------------------------------
-# Create archive — atomic tmp-then-rename, guarded
+# Create archive — tmp then rename
 # ------------------------------------------------------------------------------
 create_archive() {
     local backup_file="$1"
@@ -335,7 +344,7 @@ create_archive() {
 }
 
 # ------------------------------------------------------------------------------
-# Set ownership — guarded
+# Set ownership
 # ------------------------------------------------------------------------------
 set_ownership() {
     local backup_file="$1"
@@ -355,7 +364,7 @@ set_ownership() {
 }
 
 # ------------------------------------------------------------------------------
-# Prune old backups — guarded, retention-capped
+# Prune old backups
 # ------------------------------------------------------------------------------
 prune_old_backups() {
     local dest="$1"
@@ -409,13 +418,13 @@ prune_old_backups() {
 }
 
 # ------------------------------------------------------------------------------
-# Process a single destination — atomic, auditable
+# Process a single destination
 # ------------------------------------------------------------------------------
 process_destination() {
     local dest="$1"
     local dest_count="$2"
 
-    # Trim whitespace
+    # Trim leading and trailing whitespace from the destination path
     dest="${dest#"${dest%%[![:space:]]*}"}"
     dest="${dest%"${dest##*[![:space:]]}"}"
 
@@ -443,6 +452,7 @@ process_destination() {
         debug_log "Destination directory exists: $dest"
     fi
 
+    # Ensure the destination path ends with a trailing slash
     [[ "$dest" != */ ]] && dest="${dest}/"
 
     local ts backup_file
@@ -455,7 +465,7 @@ process_destination() {
 }
 
 # ------------------------------------------------------------------------------
-# main — explicit entrypoint
+# Main
 # ------------------------------------------------------------------------------
 main() {
     mkdir -p "$LOG_DIR" "$ROTATE_DIR"
@@ -465,7 +475,7 @@ main() {
 
     exec > >(tee -a "$LAST_RUN_FILE") 2>&1
 
-    # --- Get plugin version from .plg ---
+    # Read plugin version from the .plg installer file for logging
 PLG_FILE="/boot/config/plugins/flash-backup.plg"
 if [[ -f "$PLG_FILE" ]]; then
     version=$(grep -oP 'version="\K[^"]+' "$PLG_FILE" | head -n1)
