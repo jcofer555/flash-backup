@@ -3,7 +3,7 @@
     "package_name": "unraid-flash-backup",
     "author": "jcofer555",
     "icon": "icon.png",
-    "support": "https://forums.unraid.net/topic/197218-flash-backup-for-unraid/",
+    "support": "https://forums.unraid.net/topic/197716-flash-backup-for-unraid/",
     "min": "7.1.99",
     "launch": "Settings/flash-backup"
 }
