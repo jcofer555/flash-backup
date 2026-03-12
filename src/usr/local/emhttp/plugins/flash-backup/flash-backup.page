@@ -6,9 +6,7 @@ Tag="icon.png"
 Markdown="false"
 ---
 <?php
-// Load local backup settings and write defaults for any missing keys
 $cfgPath = '/boot/config/plugins/flash-backup/settings.cfg';
-
 $defaults = [
     'BACKUP_DESTINATION'   => '',
     'BACKUP_OWNER'         => 'nobody',
@@ -24,31 +22,14 @@ $defaults = [
     'WEBHOOK_PUSHOVER'     => '',
     'WEBHOOK_SLACK'        => '',
 ];
-
-// Read existing config and falling back to defaults for any missing keys
-$existing = [];
-if (file_exists($cfgPath)) {
-    $existing = parse_ini_file($cfgPath) ?: [];
-}
-foreach ($defaults as $key => $value) {
-    if (!array_key_exists($key, $existing)) {
-        $existing[$key] = $value;
-    }
-}
-// Write the merged config back to ensure missing keys are always persisted
-$configText = '';
-foreach ($defaults as $key => $defaultValue) {
-    $val = $existing[$key];
-    $configText .= "$key=\"$val\"\n";
-}
-@file_put_contents($cfgPath, $configText);
+$existing = file_exists($cfgPath) ? (parse_ini_file($cfgPath) ?: []) : [];
+foreach ($defaults as $k => $v) { if (!array_key_exists($k, $existing)) $existing[$k] = $v; }
+$cfg = ''; foreach ($defaults as $k => $dv) { $cfg .= "$k=\"{$existing[$k]}\"\n"; }
+@file_put_contents($cfgPath, $cfg);
 $settings = $existing;
 ?>
-
 <?php
-// Load remote backup settings and write defaults for any missing keys
 $remoteCfgPath = '/boot/config/plugins/flash-backup/settings_remote.cfg';
-
 $remoteDefaults = [
     'B2_BUCKET_NAME'              => '',
     'BACKUPS_TO_KEEP_REMOTE'      => '0',
@@ -65,1425 +46,1008 @@ $remoteDefaults = [
     'WEBHOOK_PUSHOVER_REMOTE'     => '',
     'WEBHOOK_SLACK_REMOTE'        => '',
 ];
-
-$existingRemote = [];
-if (file_exists($remoteCfgPath)) {
-    $existingRemote = parse_ini_file($remoteCfgPath) ?: [];
-}
-foreach ($remoteDefaults as $key => $value) {
-    if (!array_key_exists($key, $existingRemote)) {
-        $existingRemote[$key] = $value;
-    }
-}
-$remoteConfigText = '';
-foreach ($remoteDefaults as $key => $defaultValue) {
-    $val = $existingRemote[$key];
-    $remoteConfigText .= "$key=\"$val\"\n";
-}
-@file_put_contents($remoteCfgPath, $remoteConfigText);
+$existingRemote = file_exists($remoteCfgPath) ? (parse_ini_file($remoteCfgPath) ?: []) : [];
+foreach ($remoteDefaults as $k => $v) { if (!array_key_exists($k, $existingRemote)) $existingRemote[$k] = $v; }
+$rcfg = ''; foreach ($remoteDefaults as $k => $dv) { $rcfg .= "$k=\"{$existingRemote[$k]}\"\n"; }
+@file_put_contents($remoteCfgPath, $rcfg);
 $remotesettings = $existingRemote;
 ?>
-
 <?php
-// Read the installed unraid version and used for version aware behavior if needed
-$unraid_version = "7.2";
-if (file_exists("/etc/unraid-version")) {
-    $data = parse_ini_file("/etc/unraid-version");
-    if (!empty($data["version"])) $unraid_version = $data["version"];
+$unraid_version = '7.2';
+if (file_exists('/etc/unraid-version')) {
+    $d = parse_ini_file('/etc/unraid-version');
+    if (!empty($d['version'])) $unraid_version = $d['version'];
 }
+$isResponsiveWebgui = version_compare($unraid_version, '7.2.0-beta', '>=');
+?>
+<?php
+$sibling_plugin_checks_arr = [
+    'automover'                  => ['plg'=>'/boot/config/plugins/automover.plg',                  'page'=>'/usr/local/emhttp/plugins/automover/automover.page',                                      'label'=>'Automover',                   'url'=>'/Settings/automover'],
+    'flash-backup'               => ['plg'=>'/boot/config/plugins/flash-backup.plg',               'page'=>'/usr/local/emhttp/plugins/flash-backup/flash-backup.page',                               'label'=>'Flash Backup',                'url'=>'/Settings/flash-backup'],
+    'automover_beta'             => ['plg'=>'/boot/config/plugins/automover_beta.plg',             'page'=>'/usr/local/emhttp/plugins/automover_beta/automover_beta.page',                           'label'=>'Automover (Beta)',             'url'=>'/Settings/automover_beta'],
+    'flash-backup'          => ['plg'=>'/boot/config/plugins/flash-backup.plg',          'page'=>'/usr/local/emhttp/plugins/flash-backup/flash-backup.page',                     'label'=>'Flash Backup (Beta)',          'url'=>'/Settings/flash-backup'],
+    'vm-backup-and-restore_beta' => ['plg'=>'/boot/config/plugins/vm-backup-and-restore_beta.plg','page'=>'/usr/local/emhttp/plugins/vm-backup-and-restore_beta/vm-backup-and-restore_beta.page',   'label'=>'VM Backup & Restore (Beta)',   'url'=>'/Settings/vm-backup-and-restore_beta'],
+];
+$sibling_plugins_arr = [];
+$current_plugin_str  = basename(dirname(__FILE__));
+foreach ($sibling_plugin_checks_arr as $key_str => $check_arr) {
+    if ($key_str === $current_plugin_str) continue;
+    if (file_exists($check_arr['plg']) && file_exists($check_arr['page'])) $sibling_plugins_arr[$key_str] = $check_arr;
+}
+$has_siblings_bool = !empty($sibling_plugins_arr);
+$all_plugin_options_arr = $sibling_plugins_arr;
+uasort($all_plugin_options_arr, fn($a,$b) => strcmp($a['label'],$b['label']));
+?>
+<?php
+$rcloneConfig = '/boot/config/plugins/rclone/.rclone.conf';
+$rcloneIni = []; $rcloneRemotes = []; $remoteTypes = [];
+if (file_exists($rcloneConfig)) {
+    $rcloneIni = parse_ini_file($rcloneConfig, true, INI_SCANNER_RAW) ?: [];
+    $rcloneRemotes = array_keys($rcloneIni);
+    sort($rcloneRemotes, SORT_NATURAL | SORT_FLAG_CASE);
+    foreach ($rcloneRemotes as $r) {
+        $type = $rcloneIni[$r]['type'] ?? 'unknown';
+        $remoteTypes[$r] = $type;
+        if ($type === 'crypt') {
+            $ul = explode(':', $rcloneIni[$r]['remote'] ?? '')[0];
+            if (($rcloneIni[$ul]['type'] ?? '') === 'b2') $remoteTypes[$r] = 'crypt-b2';
+        }
+    }
+}
+$saved = $remotesettings['RCLONE_CONFIG_REMOTE'] ?? '';
+$selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
 ?>
 
 <script>
-  // Resolve the CSRF token from all possible sources: query string, cookie, window global, meta tag, and parent frame
   let csrfToken = "<?= $_GET['csrf_token'] ?? ($_COOKIE['csrf_token'] ?? '') ?>";
-  if (!csrfToken || csrfToken === "undefined" || csrfToken === "") {
+  if (!csrfToken || csrfToken === 'undefined' || csrfToken === '') {
     try {
-      if (typeof window.csrf_token !== "undefined" && window.csrf_token) csrfToken = window.csrf_token;
-      if ((!csrfToken || csrfToken === "") && document.querySelector("meta[name='csrf_token']"))
-        csrfToken = document.querySelector("meta[name='csrf_token']").getAttribute("content");
-      if ((!csrfToken || csrfToken === "") && document.cookie.includes("csrf_token=")) {
-        const m = document.cookie.match(/csrf_token=([^;]+)/);
-        if (m) csrfToken = decodeURIComponent(m[1]);
-      }
-      if ((!csrfToken || csrfToken === "") && window.parent) {
-        try { if (window.parent.csrf_token) csrfToken = window.parent.csrf_token; } catch (e) { }
-      }
-    } catch (err) { console.warn("CSRF token discovery failed:", err); }
+      if (typeof window.csrf_token !== 'undefined' && window.csrf_token) csrfToken = window.csrf_token;
+      if (!csrfToken && document.querySelector("meta[name='csrf_token']")) csrfToken = document.querySelector("meta[name='csrf_token']").getAttribute('content');
+      if (!csrfToken && document.cookie.includes('csrf_token=')) { const m = document.cookie.match(/csrf_token=([^;]+)/); if (m) csrfToken = decodeURIComponent(m[1]); }
+      if (!csrfToken && window.parent) { try { if (window.parent.csrf_token) csrfToken = window.parent.csrf_token; } catch(e){} }
+    } catch(err) { console.warn('CSRF token discovery failed:', err); }
   }
 </script>
-
-<style>
-  :root {
-    --primary-blue: #2ECC40;
-  }
-
-  .flash-backup-wrapper {
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    min-width: 0;
-    height: 100%;
-  }
-
-  #log-section {
-    background: #000;
-    border-radius: 12px;
-    border: 3px solid #2ECC40;
-    color: #f0f8ff;
-    padding: 0;
-    flex: 1 1 0;
-    min-height: 0;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-    width: 100%;
-    box-sizing: border-box;
-  }
-
-  #flash-backup-settings,
-  #flash-backup-settings-remote {
-    background: #000;
-    border-radius: 12px;
-    border: 3px solid #2ECC40;
-    color: #f0f8ff;
-    padding: 20px;
-    flex: 1 1 0;
-    min-height: 0;
-    overflow-y: auto;
-    min-width: 0;
-    width: 100%;
-    box-sizing: border-box;
-    box-shadow: none;
-  }
-
-  label {
-    color: var(--primary-blue);
-    font-weight: bold;
-    margin-bottom: 5px;
-  }
-
-  input,
-  select {
-    background: #000;
-    border: 1px solid var(--primary-blue);
-    border-radius: 5px;
-    color: #d4f5d4;
-    padding: 8px;
-  }
-
-  button {
-    border: none;
-    border-radius: 4px;
-    color: #fff;
-    cursor: pointer;
-    padding: 8px 15px;
-  }
-
-  #flash-backup-settings button,
-  #flash-backup-settings-remote button {
-    margin-right: 10px;
-  }
-
-  input[type="checkbox"] {
-    accent-color: var(--primary-blue);
-    cursor: pointer;
-    height: 16px;
-    width: 16px;
-  }
-
-  .remote-status-row,
-  .status-row {
-    align-items: center;
-    display: flex;
-    margin-bottom: 6px;
-  }
-
-  .remote-status-label,
-  .status-label {
-    color: var(--primary-blue);
-    font-weight: bold;
-    width: 75px;
-  }
-
-  #status-text,
-  #status-text-remote {
-    color: #d4f5d4;
-  }
-
-  #version-text {
-    color: #fff;
-  }
-
-  .form-pair {
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;
-    gap: 10px;
-    margin-bottom: 15px;
-    margin-top: 8px;
-  }
-
-  .input-wrapper {
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-  }
-
-  .form-pair label {
-    width: 150px;
-    color: var(--primary-blue);
-    font-weight: bold;
-    text-align: left;
-    margin-right: 10px;
-  }
-
-  .form-pair input,
-  .form-pair select {
-    background: #000;
-    color: #fff;
-    width: 200px;
-    min-width: fit-content;
-    max-width: 100%;
-  }
-
-  .form-pair input[type="text"],
-  .form-pair input[type="password"] {
-    min-width: fit-content;
-    max-width: 100%;
-  }
-
-  .short-input {
-    flex: 0 0 auto;
-  }
-
-  @keyframes shake {
-
-    0%,
-    100% {
-      transform: translateX(0)
-    }
-
-    25% {
-      transform: translateX(-5px)
-    }
-
-    50% {
-      transform: translateX(5px)
-    }
-
-    75% {
-      transform: translateX(-5px)
-    }
-  }
-
-  #flash-backup-settings.shake {
-    animation: shake .3s;
-  }
-
-  .skipped-line {
-    color: #ffd700;
-  }
-
-  #last-run-log {
-    background: #000;
-    border: none;
-    border-radius: 0 0 10px 10px;
-    color: #d4f5d4;
-    font-family: monospace;
-    font-size: 13px;
-    line-height: 1.6;
-    overflow-y: auto;
-    padding: 10px 14px 12px;
-    white-space: pre-wrap;
-    word-break: break-word;
-    flex: 1 1 0;
-    margin: 0;
-    min-height: 0;
-  }
-
-  #last-run-log .log-highlight {
-    background: rgba(46, 204, 64, 0.15);
-    border-radius: 2px;
-  }
-
-  input[type="number"].short-input {
-    -moz-appearance: auto;
-    -webkit-appearance: auto;
-    appearance: auto;
-  }
-
-  input[type="number"] {
-    padding-right: 0;
-  }
-
-  input[type="number"]::-webkit-inner-spin-button,
-  input[type="number"]::-webkit-outer-spin-button {
-    margin: 0;
-    right: 0;
-    position: absolute;
-  }
-
-  *,
-  *::before,
-  *::after {
-    box-sizing: border-box;
-  }
-
-  :focus-visible {
-    outline: 2px solid var(--primary-blue);
-    outline-offset: 2px;
-  }
-
-  button:hover,
-  input[type="checkbox"]:hover,
-  select:hover,
-  a:hover {
-    filter: brightness(1.1);
-  }
-
-  button:focus-visible,
-  input[type="checkbox"]:focus-visible,
-  select:focus-visible,
-  a:focus-visible {
-    outline: none;
-    box-shadow: none;
-  }
-
-  ::-webkit-scrollbar {
-    width: 8px;
-  }
-
-  ::-webkit-scrollbar-thumb {
-    background: var(--primary-blue);
-    border-radius: 4px;
-  }
-
-  .vm-modal {
-    display: none;
-    position: fixed;
-    z-index: 9999;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.85);
-    box-sizing: border-box;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-  }
-
-  .vm-modal-content {
-    width: 600px;
-    max-width: 100%;
-    max-height: calc(100vh - 40px);
-    overflow-y: auto;
-    margin: 0 auto;
-    background: #000;
-    border: 2px solid #2ECC40;
-    border-radius: 8px;
-    color: #2ECC40;
-    padding: 15px;
-    box-sizing: border-box;
-  }
-
-  .vm-modal-header {
-    display: flex;
-    justify-content: space-between;
-    font-weight: bold;
-    margin-bottom: 10px;
-  }
-
-  .vm-folder-list {
-    max-height: 300px;
-    overflow-y: auto;
-    border: 1px solid #2ECC40;
-    padding: 5px;
-  }
-
-  .vm-folder-item {
-    padding: 6px;
-    cursor: pointer;
-  }
-
-  .vm-folder-item:hover {
-    background: #000;
-  }
-
-  .vm-folder-item label {
-    cursor: pointer;
-  }
-
-  .vm-breadcrumb {
-    margin-bottom: 10px;
-    font-size: 13px;
-    color: #2ECC40;
-  }
-
-  .vm-modal-footer {
-    margin-top: 10px;
-    text-align: right;
-  }
-
-  #folderPickerModal .vm-modal-header span {
-    color: #ffffff;
-  }
-
-  #backup_destination {
-    border: 1px solid #2ECC40 !important;
-    background-color: #000 !important;
-    color: #d4f5d4 !important;
-    padding-left: 6px;
-    border-radius: 3px;
-  }
-
-  .log-toolbar {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 2px 12px;
-    background: #0a0a0a;
-    border-bottom: 1px solid rgba(46, 204, 64, 0.25);
-    border-radius: 10px 10px 0 0;
-    flex-shrink: 0;
-  }
-
-  .log-toolbar-center {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    flex: 1;
-    justify-content: center;
-  }
-
-  .log-scroll-group {
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-    margin-left: auto;
-  }
-
-  .log-scroll-group span {
-    display: block;
-    margin: 0 !important;
-    padding: 0 !important;
-    line-height: 0;
-  }
-
-  .log-scroll-group span + span {
-    margin-top: -7px !important;
-  }
-
-  #log-scroll-top-btn,
-  #log-autoscroll-btn {
-    padding: 1px 7px !important;
-    font-size: 13px !important;
-    line-height: 1.2 !important;
-    min-width: 0 !important;
-    display: block !important;
-  }
-
-  #log-toast {
-    font-size: 11px;
-    color: #2ECC40;
-    white-space: nowrap;
-    pointer-events: none;
-    min-width: 70px;
-    visibility: hidden;
-  }
-
-  #log-toast.visible {
-    visibility: visible;
-  }
-
-  .stop-toast {
-    font-size: 11px;
-    color: #2ECC40;
-    white-space: nowrap;
-    pointer-events: none;
-    visibility: hidden;
-  }
-
-  .stop-toast.visible {
-    visibility: visible;
-  }
-
-  .log-search-wrap {
-    display: flex;
-    align-items: center;
-    gap: 0;
-    background: #111;
-    border: 1px solid rgba(46, 204, 64, 0.3);
-    border-radius: 6px;
-    overflow: hidden;
-    transition: border-color 0.15s;
-  }
-
-  .log-search-wrap:focus-within {
-    border-color: #2ECC40;
-  }
-
-  #log-search {
-    background: transparent !important;
-    border: none !important;
-    border-radius: 0 !important;
-    color: #fff !important;
-    font-size: 12px;
-    padding: 4px 8px !important;
-    width: 130px;
-    outline: none;
-  }
-
-  #log-search::placeholder {
-    color: rgba(255,255,255,0.25);
-  }
-
-  #log-search-count {
-    font-size: 11px;
-    color: rgba(46, 204, 64, 0.6);
-    white-space: nowrap;
-    width: 68px;
-    flex-shrink: 0;
-    display: inline-block;
-    visibility: hidden;
-  }
-  #log-search-count.visible {
-    visibility: visible;
-  }
-
-  input.invalid {
-    border-color: #2ECC40;
-    color: red;
-  }
-
-  #flash-backup-layout {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1.8fr;
-    gap: 20px;
-    width: 100%;
-    max-width: 100%;
-    overflow-x: hidden;
-    margin-top: -30px;
-    padding-top: 0;
-    align-items: stretch;
-    height: calc(83vh - 80px);
-    min-height: 0;
-    --plugin-bg: #1e1e1e;
-    --plugin-panel: #000;
-    --plugin-border: #2ECC40;
-    --plugin-text: #d4f5d4;
-    --plugin-muted: #b0b0b0;
-    --plugin-accent: #2ECC40;
-  }
-
-  #flash-backup-layout select,
-  #flash-backup-layout input[type="text"],
-  #flash-backup-layout input[type="number"] {
-    background-color: var(--plugin-panel);
-    color: var(--plugin-text);
-    border: 1px solid var(--plugin-border);
-    border-radius: 6px;
-    padding: 6px 8px;
-  }
-
-  #flash-backup-layout label {
-    color: var(--primary-blue);
-  }
-
-  #flash-backup-layout input[type="checkbox"] {
-    accent-color: var(--plugin-accent);
-  }
-
-  #flash-backup-layout select option {
-    background-color: var(--plugin-panel);
-    color: var(--plugin-text);
-  }
-
-  #flash-backup-layout select:hover,
-  #flash-backup-layout input:hover {
-    border-color: var(--plugin-accent);
-  }
-
-  #flash-backup-layout select option:hover,
-  #flash-backup-layout select option:focus {
-    background-color: #e6231c;
-    color: #ffffff;
-  }
-
-  #flash-backup-layout select:disabled,
-  #flash-backup-layout input:disabled {
-    background-color: #000;
-    color: var(--plugin-muted);
-    border-color: #2ECC40;
-    cursor: not-allowed;
-  }
-
-  /* 2-column: medium screens */
-  @media (max-width:1100px) {
-    #flash-backup-layout {
-      grid-template-columns: 1fr 1fr;
-      height: auto;
-      min-height: 0;
-    }
-    #flash-backup-settings,
-    #flash-backup-settings-remote {
-      flex: none;
-      height: auto;
-      max-height: 70vh;
-    }
-    #log-section {
-      grid-column: 1 / -1;
-      flex: none;
-      height: 50vh;
-    }
-  }
-
-  /* 1-column: phone screens */
-  @media (max-width:700px) {
-    #flash-backup-layout {
-      grid-template-columns: 1fr;
-      height: auto;
-      align-items: start;
-    }
-    .flash-backup-wrapper {
-      height: 60vh !important;
-      max-height: 60vh !important;
-      overflow: hidden !important;
-    }
-    #flash-backup-settings,
-    #flash-backup-settings-remote {
-      height: 100% !important;
-      max-height: 100% !important;
-      min-height: 0 !important;
-      overflow-y: auto !important;
-    }
-    #log-section {
-      grid-column: 1;
-      height: 40vh !important;
-      min-height: 0 !important;
-    }
-
-  }
-
-  #flash-backup-settings h2,
-  #flash-backup-settings h3 {
-    margin-top: 0;
-    margin-bottom: 12px;
-  }
-
-  #flash-backup-settings {
-    padding-top: 16px !important;
-  }
-
-  #popupMessageremote,
-  #popupMessage {
-    display: none;
-    background: yellow;
-    color: #000;
-    padding: 6px 10px;
-    border-radius: 4px;
-    margin-top: 8px;
-    font-weight: bold;
-  }
-
-  .minimal-backup-label {
-    margin-left: 6px;
-    color: var(--primary-blue);
-    font-weight: bold;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: 2px;
-    position: relative;
-    top: 3px;
-  }
-
-  .minimal-backup-label input[type="checkbox"] {
-    transform: scale(1.1);
-  }
-
-  .flash-multiselect {
-    display: block;
-    width: 200px;
-    height: 2.4em;
-    line-height: 2.4em;
-    border: 1px solid #2ECC40;
-    border-radius: 4px;
-    padding: 0 0.5em;
-    font-size: 1em;
-    background-color: #000;
-    box-sizing: border-box;
-    cursor: pointer;
-    position: relative;
-    min-width: 0;
-    max-width: 200px;
-  }
-
-  .flash-multiselect .selected-placeholder {
-    display: block;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    color: #fff;
-  }
-
-  .flash-multiselect .options-container {
-    display: none;
-    position: absolute;
-    top: 100%;
-    left: 0;
-    width: 100%;
-    border: 1px solid #2ECC40;
-    border-top: none;
-    background: #000;
-    color: #fff;
-    z-index: 10;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.6);
-  }
-
-  .flash-multiselect .options-actions {
-    display: flex;
-    justify-content: space-between;
-    gap: 0.5em;
-    padding: 0.3em 0.4em;
-    background: #0c0c0c;
-  }
-
-  .flash-multiselect .options-list {
-    max-height: 200px;
-    overflow-y: auto;
-  }
-
-  .flash-multiselect .options-actions button {
-    font-size: 0.85em;
-    padding: 0.15em 0.6em;
-    border: 1px solid #2ECC40;
-    background: #000;
-    color: #2ECC40;
-    border-radius: 13px;
-    cursor: pointer;
-    margin-right: 8px;
-  }
-
-  .flash-multiselect .options-actions button:hover {
-    background: #2ECC40;
-    color: #000;
-  }
-
-  .flash-multiselect .option {
-    padding: 0.35em 0.5em;
-    line-height: 1.6em;
-    cursor: pointer;
-  }
-
-  .flash-multiselect .option:hover {
-    background-color: #5a5959;
-  }
-
-  .flash-multiselect .option.selected {
-    background-color: #4aa555;
-    color: #fff;
-  }
-
-  .vm-multiselect {
-    position: relative;
-    width: 200px;
-    border: 1px solid #2ECC40;
-    padding: 6px;
-    background: #000;
-    cursor: pointer;
-    color: #000;
-    white-space: nowrap;
-    border-radius: 4px;
-  }
-
-  .vm-dropdown-label {
-    color: #d4f5d4;
-    user-select: none;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .vm-dropdown-list {
-    padding: 6px;
-    display: none;
-    position: absolute;
-    top: 100%;
-    left: 0;
-    width: 100%;
-    max-height: 200px;
-    overflow-y: auto;
-    border: 1px solid #2ECC40;
-    background: #000;
-    color: #fff;
-    z-index: 10;
-    font-family: 'Segoe UI', sans-serif;
-  }
-
-  .vm-dropdown-list div {
-    padding: 4px 0;
-    text-align: left;
-    line-height: 1.5;
-    height: 28px;
-    display: flex;
-    align-items: center;
-    color: white;
-  }
-
-  .vm-dropdown-list label {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    color: #fff;
-    padding-left: 0px;
-  }
-
-  .vm-dropdown-list input[type="checkbox"] {
-    appearance: none;
-    width: 16px;
-    height: 16px;
-    border: 1px solid #ccc;
-    background: #000;
-    cursor: pointer;
-    position: relative;
-    accent-color: #2ECC40;
-  }
-
-  .vm-dropdown-list input[type="checkbox"]:checked::after {
-    content: '✔';
-    position: absolute;
-    top: -2px;
-    left: 2px;
-    font-size: 14px;
-    color: #fff;
-  }
-
-  .vm-dropdown-list div:hover {
-    background: #000;
-  }
-
-  .flash-backup-schedules-table {
-    table-layout: auto;
-    width: 100%;
-  }
-
-  .flash-backup-schedules-table td {
-    padding-top: 2px !important;
-    padding-bottom: 2px !important;
-  }
-
-  .schedule-actions-cell {
-    white-space: normal;
-  }
-
-  .schedule-actions-cell button {
-    margin-bottom: 3px;
-  }
-
-  label.fbb-has-help,
-  span.fbb-has-help {
-    cursor: help;
-  }
-
-  .fbb-help-text {
-    background: #0d1f0e;
-    border-left: 3px solid var(--primary-blue);
-    border-radius: 4px;
-    color: #cde8ce;
-    font-size: 12px;
-    line-height: 1.5;
-    margin-bottom: 8px;
-    padding: 7px 10px;
-    max-width: 500px;
-    box-sizing: border-box;
-  }
-
-  .vm-schedules-table tbody tr:hover {
-    background: #000 !important;
-  }
-
-#flash-backup-settings,
-#flash-backup-settings-remote {
-  container-type: inline-size;
-  container-name: plugin-panel;
-}
-
-/* Stack form-pair vertically when the panel is narrower than 430px */
-@container plugin-panel (max-width: 430px) {
-  .form-pair {
-    flex-direction: column !important;
-    align-items: flex-start !important;
-    gap: 4px 0 !important;
-  }
-  .form-pair label {
-    width: auto !important;
-    min-width: unset !important;
-  }
-  .input-wrapper {
-    width: 100% !important;
-  }
-}
-
-@media (max-width: 500px) {
-  #folderPickerModal .vm-modal-content {
-    width: 95%;
-    margin: 0;
-  }
-}
-
-#backup_destination:hover,
-#remote_path_in_config:hover {
-  border-color: var(--plugin-accent) !important;
-  filter: brightness(1.1);
-}
-
-.vm-multiselect:hover {
-  border-color: var(--plugin-accent) !important;
-  filter: brightness(1.1);
-}
-</style>
-
 <script>
-  // Saved webhook URLs injected from PHP for pre-populating webhook fields on page load
   const SAVED_WEBHOOKS = {
-    DISCORD: "<?= htmlspecialchars($settings['WEBHOOK_DISCORD'] ?? '') ?>",
-    GOTIFY: "<?= htmlspecialchars($settings['WEBHOOK_GOTIFY'] ?? '') ?>",
-    NTFY: "<?= htmlspecialchars($settings['WEBHOOK_NTFY'] ?? '') ?>",
+    DISCORD:  "<?= htmlspecialchars($settings['WEBHOOK_DISCORD']  ?? '') ?>",
+    GOTIFY:   "<?= htmlspecialchars($settings['WEBHOOK_GOTIFY']   ?? '') ?>",
+    NTFY:     "<?= htmlspecialchars($settings['WEBHOOK_NTFY']     ?? '') ?>",
     PUSHOVER: "<?= htmlspecialchars($settings['WEBHOOK_PUSHOVER'] ?? '') ?>",
-    SLACK: "<?= htmlspecialchars($settings['WEBHOOK_SLACK'] ?? '') ?>"
+    SLACK:    "<?= htmlspecialchars($settings['WEBHOOK_SLACK']    ?? '') ?>"
   };
-  // Remote webhook URLs injected from PHP
   const SAVED_WEBHOOKS_REMOTE = {
-    DISCORD: "<?= htmlspecialchars($remotesettings['WEBHOOK_DISCORD_REMOTE'] ?? '') ?>",
-    GOTIFY: "<?= htmlspecialchars($remotesettings['WEBHOOK_GOTIFY_REMOTE'] ?? '') ?>",
-    NTFY: "<?= htmlspecialchars($remotesettings['WEBHOOK_NTFY_REMOTE'] ?? '') ?>",
+    DISCORD:  "<?= htmlspecialchars($remotesettings['WEBHOOK_DISCORD_REMOTE']  ?? '') ?>",
+    GOTIFY:   "<?= htmlspecialchars($remotesettings['WEBHOOK_GOTIFY_REMOTE']   ?? '') ?>",
+    NTFY:     "<?= htmlspecialchars($remotesettings['WEBHOOK_NTFY_REMOTE']     ?? '') ?>",
     PUSHOVER: "<?= htmlspecialchars($remotesettings['WEBHOOK_PUSHOVER_REMOTE'] ?? '') ?>",
-    SLACK: "<?= htmlspecialchars($remotesettings['WEBHOOK_SLACK_REMOTE'] ?? '') ?>"
+    SLACK:    "<?= htmlspecialchars($remotesettings['WEBHOOK_SLACK_REMOTE']    ?? '') ?>"
   };
-  const SAVED_PUSHOVER_USER_KEY = "<?= htmlspecialchars($settings['PUSHOVER_USER_KEY'] ?? '') ?>";
+  const SAVED_PUSHOVER_USER_KEY        = "<?= htmlspecialchars($settings['PUSHOVER_USER_KEY']              ?? '') ?>";
   const SAVED_PUSHOVER_USER_KEY_REMOTE = "<?= htmlspecialchars($remotesettings['PUSHOVER_USER_KEY_REMOTE'] ?? '') ?>";
 </script>
 
-<div id="flash-backup-layout">
-  <!-- Local backup settings panel -->
-  <div class="flash-backup-wrapper">
-    <form id="flash-backup-settings">
+<style>
+/* ── Design tokens ─────────────────────────────────────────────────────── */
+:root {
+  --c-accent:         #16a34a;
+  --c-accent-light:   #4ade80;
+  --c-accent-dim:     rgba(22,163,74,0.18);
+  --c-accent-glow:    rgba(22,163,74,0.35);
+  --c-bg:             #0d110e;
+  --c-surface:        #111a13;
+  --c-surface-raised: #182019;
+  --c-border:         rgba(22,163,74,0.30);
+  --c-border-strong:  rgba(22,163,74,0.60);
+  --c-text:           #d4e8d8;
+  --c-text-muted:     #7aaa84;
+  --c-label:          #4ade80;
+  --c-danger:         #ef4444;
+  --c-warn:           #f59e0b;
+  --c-success:        #22c55e;
+  --radius-card:      10px;
+  --radius-input:     6px;
+  --shadow-card:      0 4px 24px rgba(0,0,0,0.5);
+  --input-w:          210px;
+  --label-w:          158px;
+}
 
-      <div class="status-row">
-        <span title="Shows which part of the backup to local storage process is currently running"
-          class="flash-backuptip status-label">Status:</span>
-        <span id="status-text">Local Backup Not Running</span>
-      </div>
-      <br>
+/* ── Page shell ─────────────────────────────────────────────────────────── */
+#fbb-page {
+  display:flex; flex-direction:column;
+  width:100%; font-family:'Segoe UI',system-ui,sans-serif;
+  color:var(--c-text); margin-top:-31px;
+}
 
-      <div class="form-pair">
-        <label><span class="flash-backuptip" title="Choose destination for local backup">Backup
-            Destination:</span></label>
-        <span class="flash-backuptip" title="Choose destination for local backup">
-          <!-- Read-only text field; clicking opens the folder picker modal -->
-          <input type="text" id="backup_destination" name="BACKUP_DESTINATION"
-            data-picker-title="Select Backup Destination" placeholder="Click here" readonly style="cursor:pointer;"
-            value="<?php echo htmlspecialchars($settings['BACKUP_DESTINATION'] ?? ''); ?>">
-        </span>
-      </div>
+/* ── 2-column grid (settings card + log panel) ───────────────────────────  */
+#fbb-layout {
+  display:grid;
+  grid-template-columns: minmax(340px,0.85fr) minmax(300px,2.4fr);
+  gap:14px; width:100%; box-sizing:border-box;
+  align-items:stretch; margin-bottom:14px;
+}
+.fbb-panel-wrap { display:flex; flex-direction:column; overflow:visible; }
 
-      <div class="form-pair">
-        <label for="backups_to_keep"><span title="Choose the amount of backups to keep for your local backups"
-            class="flash-backuptip">Backups To Keep:</span></label>
-        <span title="Choose the amount of backups to keep for your local backups" class="flash-backuptip">
-          <!-- 0 = unlimited, 1 = only latest, 2-99 = exact count -->
-          <select id="backups_to_keep" class="short-input" name="BACKUPS_TO_KEEP">
-            <?php $current = $settings['BACKUPS_TO_KEEP'] ?? 0; for ($i = 0; $i <= 99; $i++) { $sel = ((int)$current===$i)?'selected':''; if($i===0) echo "<option value=\"0\" $sel>Unlimited</option>"; elseif($i===1) echo "<option value=\"1\" $sel>Only Latest</option>"; else echo "<option value=\"$i\" $sel>$i</option>"; } ?>
-          </select>
-        </span>
-      </div>
+/* ── Cards ───────────────────────────────────────────────────────────────── */
+.fbb-card {
+  background:var(--c-surface);
+  border:1px solid var(--c-border);
+  border-radius:var(--radius-card);
+  box-shadow:var(--shadow-card);
+  display:flex; flex-direction:column;
+  overflow:visible;
+  margin-top:-27px;
+  height:732px;
+}
+.fbb-card-header {
+  display:flex; align-items:center; gap:10px;
+  padding:10px 16px 9px;
+  background:var(--c-surface-raised);
+  border-bottom:1px solid var(--c-border);
+  flex-shrink:0;
+}
+.fbb-card-title {
+  font-size:13px; font-weight:700; letter-spacing:.4px;
+  text-transform:uppercase; color:var(--c-accent-light); flex:1;
+}
+.fbb-card-status {
+  display:flex; align-items:center; gap:6px;
+  font-size:11px; color:var(--c-text-muted);
+}
+.fbb-status-dot {
+  width:7px; height:7px; border-radius:50%;
+  background:var(--c-text-muted); flex-shrink:0; transition:background .4s;
+}
+.fbb-status-dot.active { background:var(--c-success); box-shadow:0 0 6px var(--c-success); animation:fbb-pulse 1.4s infinite; }
+@keyframes fbb-pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
 
-      <div class="form-pair">
-        <label><span class="flash-backuptip"
-            title="Choose the owner for the local backup if you wanted it owned by one of your created users">Backup
-            Owner:</span></label>
-        <span class="flash-backuptip"
-          title="Choose the owner for the local backup if you wanted it owned by one of your created users">
-          <!-- Options populated via AJAX from list_users_group100.php on page load -->
-          <select id="backup_owner" name="BACKUP_OWNER"
-            data-selected="<?php echo htmlspecialchars($settings['BACKUP_OWNER'] ?? 'nobody'); ?>"></select>
-        </span>
-      </div>
+.fbb-card-body {
+  padding:14px 16px 16px; overflow-y:auto; flex:1;
+  container-type:inline-size; container-name:fbb-panel;
+  border-radius:0 0 var(--radius-card) var(--radius-card);
+}
 
-      <div class="form-pair">
-        <label for="dry_run"><span class="flash-backuptip" title="Enable to simulate the local backup">Dry
-            Run:</span></label>
-        <span class="flash-backuptip" title="Enable to simulate the local backup">
-          <select id="dry_run" class="short-input" name="DRY_RUN">
-            <option value="yes" <?=(($settings['DRY_RUN']??'no')==='yes' )?'selected':''?>>Yes</option>
-            <option value="no" <?=(($settings['DRY_RUN']??'no')==='no' )?'selected':''?>>No</option>
-          </select>
-        </span>
-      </div>
+/* ── Plugin/Mode switcher row ────────────────────────────────────────────── */
+#fbb-mode-row {
+  display:flex; align-items:center; gap:6px;
+  padding:10px 16px 9px;
+  background:var(--c-surface-raised);
+  border-bottom:1px solid var(--c-border);
+  border-radius:var(--radius-card) var(--radius-card) 0 0;
+  flex-shrink:0; flex-wrap:nowrap;
+  box-sizing:border-box; width:100%; overflow:hidden;
+}
+.fbb-topbar-group { display:flex; align-items:center; gap:4px; flex-shrink:1; min-width:0; }
+.fbb-topbar-label {
+  font-size:12px; font-weight:600; color:var(--c-label);
+  letter-spacing:.2px; white-space:nowrap; flex-shrink:0;
+}
+#fbb-mode-row select {
+  height:26px !important; font-size:12px !important;
+  background:var(--c-bg) !important; color:var(--c-text) !important;
+  border:1px solid var(--c-border-strong) !important;
+  border-radius:var(--radius-input) !important;
+  padding:2px 6px 3px !important; cursor:pointer !important;
+  width:100px !important; max-width:100px !important;
+  min-width:0 !important; box-sizing:border-box !important;
+  flex-shrink:1 !important; line-height:1.4 !important;
+}
+#fbb-mode-row select:focus { outline:none !important; box-shadow:0 0 0 2px var(--c-accent-glow) !important; }
 
-      <div class="form-pair">
-        <label for="notifications"><span class="flash-backuptip"
-            title="Send notifications when flash backup to local storage starts and finishes">Notifications:</span></label>
-        <span class="flash-backuptip"
-          title="Send notifications when flash backup to local storage starts and finishes">
-          <select id="notifications" class="short-input" name="NOTIFICATIONS">
-            <option value="yes" <?=(($settings['NOTIFICATIONS']??'no')==='yes' )?'selected':''?>>Yes</option>
-            <option value="no" <?=(($settings['NOTIFICATIONS']??'no')==='no' )?'selected':''?>>No</option>
-          </select>
-        </span>
-      </div>
+/* ── Section dividers ────────────────────────────────────────────────────── */
+.fbb-section-label {
+  font-size:10px; font-weight:700; letter-spacing:1px;
+  text-transform:uppercase; color:var(--c-text-muted);
+  padding:6px 0 4px; margin-bottom:4px;
+  border-bottom:1px solid var(--c-border);
+}
 
-      <!-- Notification service row; shown only when notifications are enabled -->
-      <div class="form-pair" id="notification-service-row" style="display:none;">
-        <label><span class="flash-backuptip"
-            title="Choose which notification service(s) to use">Service:</span></label>
-        <span>
-          <!-- Hidden select keeps the true submitted value; the vm-multiselect div is the visible widget -->
-          <select id="notification_service_hidden" name="NOTIFICATION_SERVICE" multiple style="display:none;">
-            <?php $selSvcs = array_filter(explode(',', $settings['NOTIFICATION_SERVICE'] ?? '')); foreach (['Discord','Gotify','Ntfy','Pushover','Slack','Unraid'] as $svc): ?>
-            <option value="<?=$svc?>" <?=in_array($svc,$selSvcs)?'selected':''?>>
-              <?=$svc?>
-            </option>
+/* ── Labels ─────────────────────────────────────────────────────────────── */
+#fbb-page label,
+#fbb-page label span { color:var(--c-label) !important; font-weight:600 !important; }
+.vm-dropdown-list label,
+.vm-dropdown-list label span,
+.vm-dropdown-list div { color:var(--c-text) !important; font-weight:400 !important; }
+
+/* ── Form pairs ──────────────────────────────────────────────────────────── */
+#fbb-page .form-pair {
+  display:flex !important; flex-direction:row !important;
+  align-items:center !important; flex-wrap:nowrap !important;
+  gap:0 10px !important; margin-bottom:10px !important; margin-top:4px !important;
+}
+#fbb-page .form-pair > label {
+  width:var(--label-w) !important; min-width:var(--label-w) !important;
+  flex:none !important; font-size:12px !important;
+  font-weight:600 !important; color:var(--c-label) !important;
+}
+#fbb-page .form-pair > span { display:contents !important; }
+/* For multiselect fields: span needs real dimensions, not display:contents */
+#fbb-page .form-pair > span.fbb-field-wrap {
+  display:block !important;
+  width:var(--input-w) !important; max-width:var(--input-w) !important;
+  flex:none !important; min-width:0 !important; box-sizing:border-box !important;
+  overflow:visible !important;
+}
+/* input-wrapper must not expand beyond input width */
+#fbb-page .form-pair > .input-wrapper {
+  width:var(--input-w) !important; max-width:var(--input-w) !important;
+  flex:none !important; min-width:0 !important;
+}
+#fbb-page .form-pair input[type="text"],
+#fbb-page .form-pair input[type="password"],
+#fbb-page .form-pair input[type="number"],
+#fbb-page .form-pair select {
+  width:var(--input-w) !important; max-width:var(--input-w) !important;
+  height:auto !important; flex:none !important;
+}
+#fbb-page .form-pair input[type="checkbox"] { width:15px !important; height:15px !important; flex:none !important; }
+#fbb-page #webhook-fields-container .input-wrapper,
+#fbb-page #webhook-fields-container-remote .input-wrapper {
+  display:flex !important; flex-direction:column !important;
+  gap:2px !important; width:var(--input-w) !important;
+}
+.fbb-row-hidden { display:none !important; visibility:hidden !important; height:0 !important; overflow:hidden !important; margin:0 !important; padding:0 !important; }
+.input-wrapper { display:flex; flex-direction:column; min-width:0; }
+
+@container fbb-panel (max-width:380px) {
+  .form-pair { flex-direction:column !important; align-items:flex-start !important; gap:4px 0 !important; }
+  .form-pair > label { width:auto !important; min-width:unset !important; }
+}
+@media (max-width:768px) {
+  .form-pair { flex-direction:column !important; align-items:flex-start !important; gap:4px 0 !important; }
+  .form-pair > label { width:auto !important; min-width:unset !important; }
+}
+
+/* ── Inputs & selects ────────────────────────────────────────────────────── */
+#fbb-page input[type="text"],
+#fbb-page input[type="password"],
+#fbb-page input[type="number"],
+#fbb-page select {
+  background:var(--c-bg) !important;
+  border:1px solid var(--c-border-strong) !important;
+  border-radius:var(--radius-input) !important;
+  color:var(--c-text) !important;
+  padding:5px 8px !important; font-size:12px !important;
+  transition:border-color .15s, box-shadow .15s;
+  width:var(--input-w) !important; max-width:var(--input-w) !important;
+  box-sizing:border-box !important;
+}
+#fbb-page input:focus, #fbb-page select:focus {
+  outline:none !important; border-color:var(--c-accent-light) !important;
+  box-shadow:0 0 0 3px var(--c-accent-glow) !important;
+}
+#fbb-page input:hover, #fbb-page select:hover { border-color:var(--c-accent-light) !important; }
+#fbb-page select:disabled, #fbb-page input:disabled { opacity:.45; cursor:not-allowed; }
+#fbb-page select option { background:var(--c-surface); color:var(--c-text); }
+#fbb-page input[type="checkbox"] { accent-color:var(--c-accent); cursor:pointer; }
+
+/* ── Buttons ─────────────────────────────────────────────────────────────── */
+#fbb-page button {
+  background:var(--c-accent) !important;
+  border:none !important; border-radius:6px !important;
+  color:#fff !important; cursor:pointer !important;
+  font-weight:600 !important; font-size:12px !important;
+  padding:7px 14px !important; letter-spacing:.3px !important;
+  transition:filter .15s !important;
+}
+#fbb-page button:hover { filter:brightness(1.15) !important; }
+#fbb-page button:disabled { opacity:.45 !important; cursor:not-allowed !important; }
+
+/* ── Banner ──────────────────────────────────────────────────────────────── */
+.fbb-banner {
+  display:none;
+  background:rgba(245,158,11,0.12); border:1px solid rgba(245,158,11,0.4);
+  border-radius:6px; padding:7px 12px; margin-bottom:10px;
+  max-width:calc(var(--label-w) + 10px + var(--input-w));
+}
+.fbb-banner-inner { display:flex; align-items:center; gap:10px; }
+.fbb-banner-text { color:var(--c-warn); font-weight:700; font-size:12px; flex:1; }
+.stop-toast { font-size:11px; color:var(--c-accent-light); white-space:nowrap; pointer-events:none; visibility:hidden; }
+.stop-toast.visible { visibility:visible; }
+
+/* ── Actions row ─────────────────────────────────────────────────────────── */
+.backup-actions { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:10px; }
+.minimal-backup-label {
+  display:inline-flex; align-items:center; gap:4px;
+  color:var(--c-label) !important; font-weight:600 !important;
+  font-size:12px; cursor:pointer; margin-left:-8px;
+}
+
+/* ── Multiselect dropdown ────────────────────────────────────────────────── */
+.vm-multiselect {
+  position:relative; width:var(--input-w) !important; max-width:var(--input-w) !important;
+  flex:none !important; flex-shrink:0 !important;
+  border:1px solid var(--c-border-strong) !important;
+  padding:3px 8px !important; background:var(--c-bg) !important;
+  cursor:pointer; color:var(--c-text) !important;
+  white-space:nowrap; border-radius:var(--radius-input) !important;
+  font-size:12px !important; box-sizing:border-box !important;
+}
+#backup_destination,
+#remote_path_in_config,
+#b2_bucket_name,
+.webhook-url-input,
+#fbb-page #webhook-fields-container input[type="text"],
+#fbb-page #webhook-fields-container-remote input[type="text"] {
+  height:29px !important; box-sizing:border-box !important;
+  padding-top:0 !important; padding-bottom:0 !important;
+}
+#rclone-config-row-remote { margin-bottom:0 !important; margin-top:0 !important; }
+div.vm-multiselect.short-input {
+  appearance:none !important; -webkit-appearance:none !important;
+  display:block !important; height:auto !important;
+  padding:5px 8px !important;
+}
+.vm-multiselect:hover { border-color:var(--c-accent-light) !important; }
+.vm-dropdown-label { color:var(--c-text) !important; user-select:none; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.vm-dropdown-list {
+  padding:6px; display:none; position:absolute;
+  top:100%; left:0; width:100%; max-width:100%; min-width:0; box-sizing:border-box;
+  max-height:200px; overflow-y:auto; overflow-x:hidden;
+  border:1px solid var(--c-border-strong) !important;
+  background:var(--c-surface) !important; color:var(--c-text) !important;
+  z-index:10; border-radius:0 0 var(--radius-input) var(--radius-input);
+  box-shadow:0 8px 24px rgba(0,0,0,.6);
+}
+.vm-dropdown-list div { padding:4px 0; display:flex; align-items:center; color:var(--c-text) !important; min-width:0; }
+.vm-dropdown-list div:hover { background:var(--c-surface-raised) !important; }
+.vm-dropdown-list label { display:flex; align-items:center; gap:6px; color:var(--c-text) !important; font-weight:400 !important; min-width:0; overflow:hidden; }
+.vm-dropdown-list label span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
+.vm-dropdown-list input[type="checkbox"] { accent-color:var(--c-accent); flex-shrink:0; }
+
+/* ── Log panel ───────────────────────────────────────────────────────────── */
+#fbb-log-panel {
+  background:var(--c-surface); border:1px solid var(--c-border);
+  border-radius:var(--radius-card); box-shadow:var(--shadow-card);
+  display:flex; flex-direction:column; overflow:hidden;
+  height:732px; margin-top:-27px;
+}
+.fbb-log-toolbar {
+  display:flex; align-items:center; gap:6px; padding:3px 12px;
+  background:var(--c-surface-raised); border-bottom:1px solid var(--c-border); flex-shrink:0;
+}
+.fbb-log-toolbar-right { display:flex; align-items:center; gap:6px; margin-left:auto; }
+#log-toast { font-size:11px; color:var(--c-accent-light); white-space:nowrap; pointer-events:none; min-width:60px; visibility:hidden; }
+#log-toast.visible { visibility:visible; }
+#log-search-count { font-size:11px; color:var(--c-text); white-space:nowrap; width:68px; flex-shrink:0; display:inline-block; visibility:hidden; }
+#log-search-count.visible { visibility:visible; }
+.fbb-log-search-wrap {
+  display:flex; align-items:center; background:var(--c-bg);
+  border:1px solid var(--c-border-strong); border-radius:6px;
+  overflow:hidden; transition:box-shadow .15s; flex-shrink:0;
+  position:relative;
+}
+.fbb-log-search-wrap:focus-within { box-shadow:0 0 0 2px var(--c-accent-glow); }
+#log-search {
+  background:transparent !important; border:none !important; border-radius:0 !important;
+  color:var(--c-text) !important; font-size:12px;
+  padding:4px 24px 4px 8px !important; width:150px; outline:none;
+}
+#log-search::placeholder { color:rgba(255,255,255,.25); }
+#log-search-clear {
+  display:none; align-items:center; justify-content:center;
+  position:absolute; right:6px; top:50%; transform:translateY(-50%);
+  background:transparent; border:none; padding:0; margin:0; cursor:pointer;
+  color:var(--c-text-muted); line-height:0;
+  width:12px; height:12px;
+}
+#log-search-clear:hover { color:var(--c-text); }
+#log-search-clear svg { display:block; pointer-events:none; width:12px; height:12px; }
+#last-run-log {
+  background:var(--c-bg); border:none; border-radius:0 0 var(--radius-card) var(--radius-card);
+  color:#b0b8d0; font-family:'Consolas','JetBrains Mono',monospace;
+  font-size:12px; line-height:1.65; overflow-y:auto;
+  padding:10px 14px 12px; white-space:pre-wrap; word-break:break-word;
+  flex:1 1 0; margin:0; min-height:0;
+}
+#last-run-log .log-highlight { background:rgba(22,163,74,.22); border-radius:2px; color:var(--c-success); }
+
+/* Scroll arrows — side by side */
+.log-scroll-group { display:flex; flex-direction:row; gap:6px; align-items:center; }
+.log-scroll-group span { display:inline-flex; margin:0 !important; padding:0 !important; }
+#log-scroll-top-btn, #log-autoscroll-btn {
+  padding:7px 10px !important; font-size:14px !important;
+  line-height:1 !important; min-width:0 !important; width:34px !important;
+}
+
+/* ── Schedule section ────────────────────────────────────────────────────── */
+#fbb-schedule-section {
+  grid-column: 1 / -1;
+  width:100%; box-sizing:border-box; padding-bottom:16px;
+  color:var(--c-text) !important; overflow:hidden; margin-top:4px !important;
+}
+#schedule-list h3, #schedule-list-remote h3 { display:none !important; }
+.fbb-sched-title {
+  font-size:11px; font-weight:700; letter-spacing:1px; text-transform:uppercase;
+  color:var(--c-text-muted); padding:6px 0 4px; margin-bottom:6px;
+}
+#schedule-list, #schedule-list-remote {
+  color:var(--c-text) !important; width:100%; overflow:hidden; margin-bottom:14px;
+}
+#schedule-list .TableContainer, #schedule-list-remote .TableContainer {
+  width:100%; max-width:100%; box-sizing:border-box;
+  border:2px solid var(--c-border-strong); border-radius:var(--radius-card);
+  overflow-x:auto; display:block;
+}
+/* Both tables — fixed px col widths so browser never compresses below readable size */
+#schedule-list .vm-schedules-table,
+#schedule-list-remote .vm-schedules-table {
+  border-collapse:collapse; table-layout:fixed;
+  width:100%; min-width:890px; background:var(--c-surface) !important;
+}
+/* Col widths (px): Scheduling=160 Minimal=58 Dest/Config=150 Keep/Folder=100 Owner/Keep=70 DryRun=70 Notify=62 Actions=220 — total 890 */
+#schedule-list .vm-schedules-table col:nth-child(1),
+#schedule-list-remote .vm-schedules-table col:nth-child(1) { width:160px; }
+#schedule-list .vm-schedules-table col:nth-child(2),
+#schedule-list-remote .vm-schedules-table col:nth-child(2) { width:58px; }
+#schedule-list .vm-schedules-table col:nth-child(3),
+#schedule-list-remote .vm-schedules-table col:nth-child(3) { width:150px; }
+#schedule-list .vm-schedules-table col:nth-child(4),
+#schedule-list-remote .vm-schedules-table col:nth-child(4) { width:100px; }
+#schedule-list .vm-schedules-table col:nth-child(5),
+#schedule-list-remote .vm-schedules-table col:nth-child(5) { width:70px; }
+#schedule-list .vm-schedules-table col:nth-child(6),
+#schedule-list-remote .vm-schedules-table col:nth-child(6) { width:70px; }
+#schedule-list .vm-schedules-table col:nth-child(7),
+#schedule-list-remote .vm-schedules-table col:nth-child(7) { width:62px; }
+#schedule-list .vm-schedules-table col:nth-child(8),
+#schedule-list-remote .vm-schedules-table col:nth-child(8) { width:220px; }
+.vm-schedules-table thead tr {
+  background:var(--c-surface-raised) !important;
+  border-bottom:2px solid var(--c-border-strong) !important;
+}
+.vm-schedules-table th {
+  padding:10px 14px; font-size:11px; font-weight:700;
+  letter-spacing:.6px; text-transform:uppercase;
+  color:var(--c-accent-light) !important; white-space:nowrap; text-align:center;
+  overflow:visible;
+}
+.vm-schedules-table td {
+  padding:9px 14px !important; vertical-align:middle !important;
+  color:var(--c-text) !important; font-size:12px;
+  background:var(--c-surface) !important; text-align:center;
+  overflow:visible; white-space:nowrap;
+}
+/* Only these cols get ellipsis + tooltip */
+.vm-schedules-table td.sched-ellipsis {
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:0;
+}
+.vm-schedules-table td.sched-ellipsis .flash-backuptip {
+  display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.vm-schedules-table th:first-child { text-align:left !important; padding-left:14px !important; }
+.vm-schedules-table td:first-child { text-align:left !important; padding-left:10px !important; white-space:nowrap; }
+/* Actions col — never clips, wraps to max 2 rows, buttons keep their look */
+.vm-schedules-table td:last-child {
+  white-space:normal !important; overflow:visible !important;
+  vertical-align:middle !important; width:1px;
+}
+.vm-schedules-table th:last-child { white-space:nowrap; }
+.vm-schedules-table td:last-child .sched-actions {
+  display:flex; flex-direction:row; flex-wrap:wrap; gap:4px;
+  justify-content:center; align-items:center;
+  min-width:160px;
+}
+#fbb-page .vm-schedules-table td:last-child .sched-actions button {
+  display:inline-flex !important; align-items:center !important;
+  margin:0 !important; padding:5px 10px !important;
+  font-size:11px !important; white-space:nowrap !important;
+  flex-shrink:0; min-width:0;
+  background:var(--c-accent) !important;
+  border:none !important; border-radius:6px !important;
+  color:#fff !important; cursor:pointer !important;
+  font-weight:600 !important; letter-spacing:.3px !important;
+  transition:filter .15s !important;
+}
+.vm-schedules-table tbody tr:hover td { background:var(--c-surface-raised) !important; }
+.vm-schedules-table tbody tr + tr td { border-top:1px solid var(--c-border) !important; }
+.vm-schedules-table th + th,
+.vm-schedules-table td + td { border-left:1px solid var(--c-border) !important; }
+
+/* ── Modal ───────────────────────────────────────────────────────────────── */
+.vm-modal { display:none; position:fixed; z-index:9999; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,.75); backdrop-filter:blur(3px); }
+.vm-modal-content {
+  width:90%; max-width:580px; margin:8% auto;
+  background:var(--c-surface) !important; border:1px solid var(--c-border-strong) !important;
+  border-radius:10px; color:var(--c-text) !important; padding:0;
+  box-shadow:0 24px 60px rgba(0,0,0,.7); overflow:hidden;
+}
+.vm-modal-header {
+  display:flex; justify-content:space-between; align-items:center;
+  padding:12px 16px; background:var(--c-surface-raised) !important;
+  border-bottom:1px solid var(--c-border-strong);
+  font-weight:700; font-size:13px; color:var(--c-text) !important;
+}
+#folderPickerTitle { color:var(--c-accent-light) !important; }
+.vm-modal-header button, .vm-modal-footer button {
+  border:none !important; border-radius:6px !important; color:#fff !important;
+  cursor:pointer !important; padding:7px 14px !important; font-size:12px !important;
+  font-weight:600 !important; background:var(--c-accent) !important; transition:filter .15s !important;
+}
+.vm-modal-header button:hover, .vm-modal-footer button:hover { filter:brightness(1.12) !important; }
+.vm-folder-list { max-height:300px; overflow-y:auto; padding:6px; font-size:13px; }
+.vm-folder-item { padding:6px 8px; cursor:pointer; color:var(--c-text) !important; border-radius:4px; }
+.vm-folder-item:hover { background:var(--c-surface-raised) !important; }
+.vm-folder-item label { cursor:pointer; color:var(--c-text) !important; font-size:13px; position:relative; top:-3px; font-weight:400 !important; }
+.vm-breadcrumb { margin:10px 16px 6px; font-size:12px; color:var(--c-text-muted) !important; }
+.vm-modal-footer {
+  padding:10px 16px; text-align:right; border-top:1px solid var(--c-border);
+  background:var(--c-surface-raised); display:flex; align-items:center; justify-content:flex-end; gap:8px; position:relative;
+}
+#folderToast {
+  position:absolute; left:20px; bottom:50%; transform:translateY(50%);
+  background:var(--c-surface-raised); color:var(--c-text);
+  border:1px solid var(--c-border-strong); padding:5px 10px;
+  border-radius:4px; font-size:12px; display:none;
+}
+
+/* ── Inline help ─────────────────────────────────────────────────────────── */
+label.fbb-has-help, span.fbb-has-help { cursor:help; }
+.fbb-help-text {
+  background:var(--c-surface-raised); border-left:3px solid var(--c-accent);
+  border-radius:4px; color:var(--c-text-muted); font-size:11px; line-height:1.5;
+  margin-bottom:8px; padding:6px 10px; max-width:500px; box-sizing:border-box;
+}
+
+/* ── Scrollbars ──────────────────────────────────────────────────────────── */
+.fbb-card-body::-webkit-scrollbar,
+#last-run-log::-webkit-scrollbar,
+.vm-dropdown-list::-webkit-scrollbar,
+.vm-folder-list::-webkit-scrollbar { width:6px !important; display:block !important; }
+.fbb-card-body::-webkit-scrollbar-thumb,
+#last-run-log::-webkit-scrollbar-thumb,
+.vm-dropdown-list::-webkit-scrollbar-thumb,
+.vm-folder-list::-webkit-scrollbar-thumb { background:var(--c-accent) !important; border-radius:3px !important; }
+.fbb-card-body::-webkit-scrollbar-track,
+#last-run-log::-webkit-scrollbar-track,
+.vm-dropdown-list::-webkit-scrollbar-track,
+.vm-folder-list::-webkit-scrollbar-track { background:var(--c-bg) !important; }
+.fbb-card-body, #last-run-log { scrollbar-width:thin !important; scrollbar-color:var(--c-accent) var(--c-bg) !important; }
+
+/* ── Shake ───────────────────────────────────────────────────────────────── */
+@keyframes fbb-shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-5px)} 50%{transform:translateX(5px)} 75%{transform:translateX(-5px)} }
+#flash-backup-settings.state-error,
+#flash-backup-settings-remote.state-error { animation:fbb-shake .3s; }
+
+/* ── Status rows (hidden — shown in card header) ─────────────────────────── */
+.status-row { display:none; }
+
+/* ── Popup messages ──────────────────────────────────────────────────────── */
+#popupMessage, #popupMessageremote { display:none; }
+.fbb-popup {
+  display:none; background:rgba(34,197,94,0.15);
+  border:1px solid rgba(34,197,94,.4); color:var(--c-success);
+  padding:6px 10px; border-radius:4px; margin-top:8px;
+  font-weight:600; font-size:12px;
+}
+
+/* ── Misc classes JS relies on ───────────────────────────────────────────── */
+.skipped-line { color:var(--c-warn); }
+input.invalid { border-color:var(--c-danger) !important; color:var(--c-danger) !important; }
+
+/* ── Responsive ──────────────────────────────────────────────────────────── */
+@media (max-width:1200px) {
+  #fbb-layout { grid-template-columns:1fr; }
+  .fbb-card { height:auto; min-height:400px; }
+  #fbb-log-panel { grid-column:1; height:400px; }
+}
+@media (max-width:768px) {
+  #fbb-layout { grid-template-columns:1fr; }
+  #fbb-log-panel { grid-column:1; height:360px; }
+}
+/* Hard floor — page never squishes below this width; browser scrolls instead */
+#fbb-page { min-width:420px; }
+#fbb-layout { min-width:420px; }
+.fbb-card { min-width:340px; }
+#fbb-log-panel { min-width:300px; }
+.fbb-panel-wrap { min-width:300px; }
+</style>
+<div id="fbb-page">
+
+<!-- ══ LAYOUT ════════════════════════════════════════════════════════════ -->
+<div id="fbb-layout">
+
+  <!-- ══ SETTINGS CARD (single card, Mode switches Local ↔ Remote) ════════ -->
+  <div class="fbb-panel-wrap">
+    <div class="fbb-card">
+
+      <!-- Plugin / Mode switcher row — always visible -->
+      <div id="fbb-mode-row">
+        <?php if ($has_siblings_bool): ?>
+        <div class="fbb-topbar-group">
+          <span class="fbb-topbar-label" id="fbb-plugin-label">Plugin:</span>
+          <select onchange="if(this.value)window.location=this.value">
+            <option value="" disabled selected>Switch plugin…</option>
+            <?php foreach ($all_plugin_options_arr as $info_arr): ?>
+            <option value="<?= htmlspecialchars($info_arr['url']) ?>"><?= htmlspecialchars($info_arr['label']) ?></option>
             <?php endforeach; ?>
           </select>
-          <div id="notification_service" class="vm-multiselect flash-backuptip" style="width:200px;"
-            title="Choose which notification service(s) to use">
-            <div class="vm-dropdown-label" id="notification-service-label">Select service(s)</div>
-            <div class="vm-dropdown-list" id="notification-service-list" style="display:none;">
-              <?php foreach (['Discord','Gotify','Ntfy','Pushover','Slack','Unraid'] as $svc): ?>
-              <div><label><input type="checkbox" value="<?=$svc?>" <?=in_array($svc,$selSvcs)?'checked':''?>>
-                  <?=$svc?>
-                </label></div>
-              <?php endforeach; ?>
-            </div>
-          </div>
-        </span>
+        </div>
+        <?php endif; ?>
+        <div class="fbb-topbar-group">
+          <span class="fbb-topbar-label" id="fbb-mode-label">Mode:</span>
+          <select id="fbb-mode-switcher" onchange="fbbSwitchMode(this.value)">
+            <option value="local">Local Backup</option>
+            <option value="remote">Remote Backup</option>
+          </select>
+        </div>
       </div>
 
-      <!-- Webhook URL fields injected here by rebuildWebhookFields() based on selected services -->
-      <div id="webhook-fields-container"></div>
+      <!-- Card header — title + status dot, updated by fbbSwitchMode -->
+      <div class="fbb-card-header">
+        <span id="fbb-active-card-title" class="fbb-card-title">Local Backup</span>
+        <div id="fbb-local-status-wrap" class="fbb-card-status">
+          <div class="fbb-status-dot" id="fbb-local-dot"></div>
+          <span id="status-text">Idle</span>
+        </div>
+        <div id="fbb-remote-status-wrap" class="fbb-card-status" style="display:none;">
+          <div class="fbb-status-dot" id="fbb-remote-dot"></div>
+          <span id="status-text-remote">Idle</span>
+        </div>
+      </div>
 
-      <!-- Scheduling mode selector; sub-options shown/hidden by JS based on selection -->
-      <div class="form-pair" id="cron-expression-row">
-        <label for="cron_mode"><span class="flash-backuptip"
-            title="Select scheduling type">Scheduling:</span></label>
-        <div class="input-wrapper"><span class="flash-backuptip" title="Select scheduling type">
-            <select id="cron_mode" name="CRON_MODE" class="short-input">
-              <option value="hourly">Hourly</option>
-              <option value="daily" selected>Daily</option>
-              <option value="weekly">Weekly</option>
-              <option value="monthly">Monthly</option>
+      <!-- ══ LOCAL BACKUP PANEL ════════════════════════════════════════════ -->
+      <form id="flash-backup-settings" class="fbb-card-body">
+
+        <div class="fbb-section-label">Configuration</div>
+
+        <div class="form-pair">
+          <label><span class="flash-backuptip" title="Choose destination for local backup">Backup Destination:</span></label>
+          <span><input type="text" id="backup_destination" name="BACKUP_DESTINATION"
+            data-picker-title="Select Backup Destination" placeholder="Click to browse…" readonly style="cursor:pointer;height:29px !important;box-sizing:border-box !important;"
+            value="<?= htmlspecialchars($settings['BACKUP_DESTINATION'] ?? '') ?>"></span>
+        </div>
+
+        <div class="form-pair">
+          <label for="backups_to_keep"><span class="flash-backuptip" title="Choose the amount of backups to keep for your local backups">Backups To Keep:</span></label>
+          <span><select id="backups_to_keep" class="short-input" name="BACKUPS_TO_KEEP">
+            <?php $cur=$settings['BACKUPS_TO_KEEP']??0; for($i=0;$i<=99;$i++){$s=((int)$cur===$i)?'selected':''; if($i===0)echo"<option value=\"0\" $s>Unlimited</option>"; elseif($i===1)echo"<option value=\"1\" $s>Only Latest</option>"; else echo"<option value=\"$i\" $s>$i</option>"; } ?>
+          </select></span>
+        </div>
+
+        <div class="form-pair">
+          <label><span class="flash-backuptip" title="Choose the owner for the local backup">Backup Owner:</span></label>
+          <span><select id="backup_owner" name="BACKUP_OWNER"
+            data-selected="<?= htmlspecialchars($settings['BACKUP_OWNER'] ?? 'nobody') ?>"></select></span>
+        </div>
+
+        <div class="form-pair">
+          <label for="dry_run"><span class="flash-backuptip" title="Enable to simulate the local backup">Dry Run:</span></label>
+          <span><select id="dry_run" class="short-input" name="DRY_RUN">
+            <option value="yes" <?=(($settings['DRY_RUN']??'no')==='yes')?'selected':''?>>Yes</option>
+            <option value="no"  <?=(($settings['DRY_RUN']??'no')==='no' )?'selected':''?>>No</option>
+          </select></span>
+        </div>
+
+        <div class="fbb-section-label" style="margin-top:8px;">Notifications</div>
+
+        <div class="form-pair">
+          <label for="notifications"><span class="flash-backuptip" title="Send notifications when flash backup starts and finishes">Notifications:</span></label>
+          <span><select id="notifications" class="short-input" name="NOTIFICATIONS">
+            <option value="yes" <?=(($settings['NOTIFICATIONS']??'no')==='yes')?'selected':''?>>Yes</option>
+            <option value="no"  <?=(($settings['NOTIFICATIONS']??'no')==='no' )?'selected':''?>>No</option>
+          </select></span>
+        </div>
+
+        <div class="form-pair fbb-row-hidden" id="notification-service-row">
+          <label><span class="flash-backuptip" title="Choose which notification service(s) to use">Service:</span></label>
+          <span class="fbb-field-wrap">
+            <select id="notification_service_hidden" name="NOTIFICATION_SERVICE" multiple style="display:none;">
+              <?php $selSvcs=array_filter(explode(',',$settings['NOTIFICATION_SERVICE']??'')); foreach(['Discord','Gotify','Ntfy','Pushover','Slack','Unraid'] as $svc): ?>
+              <option value="<?=$svc?>" <?=in_array($svc,$selSvcs)?'selected':''?>><?=$svc?></option>
+              <?php endforeach; ?>
             </select>
-          </span></div>
-      </div>
-
-      <div id="hourly-options" style="display:none; margin-top:10px;">
-        <div class="form-pair"><label for="hourly_frequency"><span class="flash-backuptip"
-              title="Select hourly frequency">Select Frequency:</span></label>
-          <div class="input-wrapper"><span class="flash-backuptip" title="Select hourly frequency"><select
-                id="hourly_frequency" name="HOURLY_FREQUENCY" class="short-input">
-                <?php foreach([4,6,8] as $i){$s=(($settings['HOURLY_FREQUENCY']??'4')===(string)$i)?'selected':'';echo "<option value=\"$i\" $s>Every $i Hours</option>";}?>
-              </select></span></div>
-        </div>
-      </div>
-
-      <div id="daily-options" style="display:none; margin-top:10px;">
-        <div class="form-pair"><label for="daily_time"><span class="flash-backuptip"
-              title="Select the hour">Hour:</span></label>
-          <div class="input-wrapper"><span class="flash-backuptip" title="Select the hour"><select id="daily_time"
-                name="DAILY_TIME" class="short-input">
-                <?php for($h=0;$h<24;$h++){$hr=str_pad($h,2,'0',STR_PAD_LEFT);echo "<option value=\"$hr\"".((($settings['DAILY_TIME']??'00')===$hr)?' selected':'').">$hr</option>";}?>
-              </select></span></div>
-        </div>
-        <div class="form-pair"><label for="daily_minute"><span class="flash-backuptip"
-              title="Select the minute">Minute:</span></label>
-          <div class="input-wrapper"><span class="flash-backuptip" title="Select the minute"><select
-                id="daily_minute" name="DAILY_MINUTE" class="short-input">
-                <?php for($m=0;$m<60;$m++){$mn=str_pad($m,2,'0',STR_PAD_LEFT);echo "<option value=\"$mn\"".((($settings['DAILY_MINUTE']??'00')===$mn)?' selected':'').">$mn</option>";}?>
-              </select></span></div>
-        </div>
-      </div>
-
-      <div id="weekly-options" style="display:none; margin-top:10px;">
-        <div class="form-pair"><label for="weekly_day"><span class="flash-backuptip"
-              title="Select day of the week">Day Of Week:</span></label>
-          <div class="input-wrapper"><span class="flash-backuptip" title="Select day of the week"><select
-                id="weekly_day" name="WEEKLY_DAY" class="short-input">
-                <?php foreach(["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"] as $day){echo "<option value=\"$day\"".((($settings['WEEKLY_DAY']??'')===$day)?' selected':'').">$day</option>";}?>
-              </select></span></div>
-        </div>
-        <div class="form-pair"><label for="weekly_time"><span class="flash-backuptip"
-              title="Select the hour">Hour:</span></label>
-          <div class="input-wrapper"><span class="flash-backuptip" title="Select the hour"><select id="weekly_time"
-                name="WEEKLY_TIME" class="short-input">
-                <?php for($h=0;$h<24;$h++){$hr=str_pad($h,2,'0',STR_PAD_LEFT);echo "<option value=\"$hr\"".((($settings['WEEKLY_TIME']??'00')===$hr)?' selected':'').">$hr</option>";}?>
-              </select></span></div>
-        </div>
-        <div class="form-pair"><label for="weekly_minute"><span class="flash-backuptip"
-              title="Select the minute">Minute:</span></label>
-          <div class="input-wrapper"><span class="flash-backuptip" title="Select the minute"><select
-                id="weekly_minute" name="WEEKLY_MINUTE" class="short-input">
-                <?php for($m=0;$m<60;$m++){$mn=str_pad($m,2,'0',STR_PAD_LEFT);echo "<option value=\"$mn\"".((($settings['WEEKLY_MINUTE']??'00')===$mn)?' selected':'').">$mn</option>";}?>
-              </select></span></div>
-        </div>
-      </div>
-
-      <div id="monthly-options" style="display:none; margin-top:10px;">
-        <div class="form-pair"><label for="monthly_day"><span class="flash-backuptip"
-              title="Select day of the month">Day Of Month:</span></label>
-          <div class="input-wrapper"><span class="flash-backuptip" title="Select day of the month"><select
-                id="monthly_day" name="MONTHLY_DAY" class="short-input">
-                <?php for($d=1;$d<=31;$d++){$dy=str_pad($d,2,'0',STR_PAD_LEFT);echo "<option value=\"$dy\"".((($settings['MONTHLY_DAY']??'')===$dy)?' selected':'').">$dy</option>";}?>
-              </select></span></div>
-        </div>
-        <div class="form-pair"><label for="monthly_time"><span class="flash-backuptip"
-              title="Select the hour">Hour:</span></label>
-          <div class="input-wrapper"><span class="flash-backuptip" title="Select the hour"><select
-                id="monthly_time" name="MONTHLY_TIME" class="short-input">
-                <?php for($h=0;$h<24;$h++){$hr=str_pad($h,2,'0',STR_PAD_LEFT);echo "<option value=\"$hr\"".((($settings['MONTHLY_TIME']??'00')===$hr)?' selected':'').">$hr</option>";}?>
-              </select></span></div>
-        </div>
-        <div class="form-pair"><label for="monthly_minute"><span class="flash-backuptip"
-              title="Select the minute">Minute:</span></label>
-          <div class="input-wrapper"><span class="flash-backuptip" title="Select the minute"><select
-                id="monthly_minute" name="MONTHLY_MINUTE" class="short-input">
-                <?php for($m=0;$m<60;$m++){$mn=str_pad($m,2,'0',STR_PAD_LEFT);echo "<option value=\"$mn\"".((($settings['MONTHLY_MINUTE']??'00')===$mn)?' selected':'').">$mn</option>";}?>
-              </select></span></div>
-        </div>
-      </div>
-
-
-
-      <!-- In-progress banner shown while a local backup is running; hidden by default -->
-      <div id="backup-banner-local" style="display:none; max-width:373px; margin-bottom:8px;">
-        <div style="display:flex; align-items:center; gap:10px;">
-          <span id="backup-banner-text-local" style="color:yellow; font-weight:bold;"></span>
-          <button type="button" id="stop-banner-btn-local" onclick="stopFromBanner()">Stop</button>
-          <span id="stop-toast-banner-local" class="stop-toast">Stop requested</span>
-        </div>
-      </div>
-
-      <div class="backup-actions">
-        <span title="Run backup of flash drive to local storage" class="flash-backuptip"><button type="button"
-            id="backupbtn">Backup Now</button></span>
-        <span class="flash-backuptip"
-          data-tooltip="Create a local backup schedule using the settings shown in the fields above"><button
-            type="button" id="schedule-local-backup" class="button schedule-button">Schedule It</button></span>
-        <!-- Cancel button shown only when editing an existing schedule -->
-        <span title="Cancel editing of schedule" class="flash-backuptip"><button type="button" id="cancelEditBtn"
-            style="display:none;">Cancel</button></span>
-        <label class="minimal-backup-label flash-backuptip"
-          title="Enable to have the local backup only include the config and extra folders, and the syslinux.cfg file">
-          <input type="checkbox" id="minimal_backup" name="MINIMAL_BACKUP" value="yes" <?php echo
-            (($settings['MINIMAL_BACKUP']??'no')==='yes' )?'checked':'';?>>
-          Minimal Backup
-        </label>
-      </div>
-
-      <div id="popupMessage"></div>
-    </form>
-  </div>
-
-  <!-- Remote backup settings panel -->
-  <div class="flash-backup-wrapper">
-    <form id="flash-backup-settings-remote">
-
-      <div class="status-row">
-        <span title="Shows which part of the backup to remote storage process is currently running"
-          class="flash-backuptip status-label">Status:</span>
-        <span id="status-text-remote">Remote Backup Not Running</span>
-      </div>
-      <br>
-
-      <?php
-      // Parse the rclone config to build the list of available remotes and their types
-      $rcloneConfig = '/boot/config/plugins/rclone/.rclone.conf';
-      $rcloneIni = []; $rcloneRemotes = []; $remoteTypes = [];
-      if (file_exists($rcloneConfig)) {
-          $rcloneIni = parse_ini_file($rcloneConfig, true, INI_SCANNER_RAW);
-          if (is_array($rcloneIni)) {
-              $rcloneRemotes = array_keys($rcloneIni);
-              sort($rcloneRemotes, SORT_NATURAL | SORT_FLAG_CASE);
-              foreach ($rcloneRemotes as $remote) {
-                  $type = $rcloneIni[$remote]['type'] ?? 'unknown';
-                  $remoteTypes[$remote] = $type;
-                  // If a crypt remote wraps a B2 remote, tag it as crypt-b2 so the B2 bucket field appears
-                  if ($type === 'crypt') {
-                      $underlying = $rcloneIni[$remote]['remote'] ?? '';
-                      $underlyingRemote = explode(':', $underlying)[0];
-                      if (($rcloneIni[$underlyingRemote]['type'] ?? '') === 'b2') $remoteTypes[$remote] = 'crypt-b2';
-                  }
-              }
-          }
-      }
-      $saved = $remotesettings['RCLONE_CONFIG_REMOTE'] ?? '';
-      $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
-      ?>
-
-      <div class="form-pair">
-        <label><span class="flash-backuptip"
-            title="Choose which rclone config(s) to use for the remote backup">Rclone Config:</span></label>
-        <span class="form-input">
-          <!-- Hidden multi-select holds the submitted values; vm-multiselect div is the visible widget -->
-          <select id="rclone_config_remote_hidden" name="RCLONE_CONFIG_REMOTE[]" multiple style="display:none;">
-            <?php foreach ($rcloneRemotes as $remote): ?>
-            <option value="<?=htmlspecialchars($remote)?>" <?=in_array($remote,$selectedRemotes,true)?'selected':''?>>
-              <?=htmlspecialchars($remote)?>
-            </option>
-            <?php endforeach; ?>
-          </select>
-          <div id="rclone_config_remote" class="vm-multiselect flash-backuptip"
-            title="Choose which rclone config(s) to use for the remote backup">
-            <div class="vm-dropdown-label" id="rclone-config-label-remote">
-              <?=!empty($selectedRemotes)?implode(', ',$selectedRemotes):'Select config(s)'?>
+            <div id="notification_service" class="vm-multiselect short-input flash-backuptip" title="Choose which notification service(s) to use" style="width:var(--input-w);max-width:var(--input-w);flex:none;box-sizing:border-box;">
+              <div class="vm-dropdown-label" id="notification-service-label">Select service(s)</div>
+              <div class="vm-dropdown-list" id="notification-service-list" style="display:none;">
+                <?php foreach(['Discord','Gotify','Ntfy','Pushover','Slack','Unraid'] as $svc): ?>
+                <div><label><input type="checkbox" value="<?=$svc?>" <?=in_array($svc,$selSvcs)?'checked':''?>><?=$svc?></label></div>
+                <?php endforeach; ?>
+              </div>
             </div>
-            <div class="vm-dropdown-list" id="rclone-config-list-remote" style="display:none;">
-              <?php foreach ($rcloneRemotes as $remote): ?>
-              <?php $type=$rcloneIni[$remote]['type']??'unknown';?>
-              <div><label><input type="checkbox" value="<?=htmlspecialchars($remote)?>"
-                    <?=in_array($remote,$selectedRemotes,true)?'checked':''?>>
-                  <?=htmlspecialchars("$type - $remote")?>
-                </label></div>
-              <?php endforeach; ?>
-            </div>
+          </span>
+        </div>
+
+        <div id="webhook-fields-container"></div>
+
+        <div class="fbb-section-label" style="margin-top:8px;">Scheduling</div>
+
+        <div class="form-pair" id="cron-expression-row">
+          <label for="cron_mode"><span class="flash-backuptip" title="Select scheduling type">Scheduling:</span></label>
+          <span><select id="cron_mode" name="CRON_MODE" class="short-input">
+            <option value="hourly">Hourly</option>
+            <option value="daily" selected>Daily</option>
+            <option value="weekly">Weekly</option>
+            <option value="monthly">Monthly</option>
+          </select></span>
+        </div>
+
+        <div id="hourly-options" style="display:none;">
+          <div class="form-pair"><label for="hourly_frequency"><span class="flash-backuptip" title="Select hourly frequency">Frequency:</span></label>
+            <span><select id="hourly_frequency" name="HOURLY_FREQUENCY" class="short-input">
+              <?php foreach([4,6,8] as $i){$s=(($settings['HOURLY_FREQUENCY']??'4')===(string)$i)?'selected':'';echo"<option value=\"$i\" $s>Every $i Hours</option>";}?>
+            </select></span>
           </div>
-        </span>
-      </div>
-
-      <!-- B2 bucket name row; shown only when a b2 or crypt-b2 remote is selected -->
-      <div class="form-pair" id="b2_bucket_row" style="display:none;">
-        <label><span class="flash-backuptip"
-            title="Required for Backblaze B2 remotes — the bucket name to upload into">B2 Bucketname:</span></label>
-        <span class="form-input"><input type="text" id="b2_bucket_name" name="B2_BUCKET_NAME" placeholder="/folder/"
-            autocomplete="off" value="<?=htmlspecialchars($remotesettings['B2_BUCKET_NAME']??'')?>"></span>
-      </div>
-
-      <div class="form-pair">
-        <label><span class="flash-backuptip"
-            title="Optional: subfolder where backups will be stored. If left empty /Flash_Backups/ will be used">Folder:</span></label>
-        <span class="flash-backuptip"
-          title="Optional: subfolder where backups will be stored. If left empty /Flash_Backups/ will be used">
-          <input type="text" name="REMOTE_PATH_IN_CONFIG" id="remote_path_in_config" placeholder="/folder/subfolder"
-            value="<?=htmlspecialchars($remotesettings['REMOTE_PATH_IN_CONFIG']??'')?>">
-        </span>
-      </div>
-
-      <div class="form-pair">
-        <label for="backups_to_keep_remote"><span title="Choose the amount of backups to keep for your remote backups"
-            class="flash-backuptip">Backups To Keep:</span></label>
-        <span title="Choose the amount of backups to keep for your remote backups" class="flash-backuptip">
-          <select id="backups_to_keep_remote" class="short-input" name="BACKUPS_TO_KEEP_REMOTE">
-            <?php $current=$remotesettings['BACKUPS_TO_KEEP_REMOTE']??0; for($i=0;$i<=99;$i++){$sel=((int)$current===$i)?'selected':''; if($i===0)echo "<option value=\"0\" $sel>Unlimited</option>"; elseif($i===1)echo "<option value=\"1\" $sel>Only Latest</option>"; else echo "<option value=\"$i\" $sel>$i</option>";}?>
-          </select>
-        </span>
-      </div>
-
-      <div class="form-pair">
-        <label for="dry_run_remote"><span class="flash-backuptip" title="Enable to simulate the remote backup">Dry
-            Run:</span></label>
-        <span class="flash-backuptip" title="Enable to simulate the remote backup">
-          <select id="dry_run_remote" class="short-input" name="DRY_RUN_REMOTE">
-            <option value="yes" <?=(($remotesettings['DRY_RUN_REMOTE']??'no')==='yes' )?'selected':''?>>Yes</option>
-            <option value="no" <?=(($remotesettings['DRY_RUN_REMOTE']??'no')==='no' )?'selected':''?>>No</option>
-          </select>
-        </span>
-      </div>
-
-      <div class="form-pair">
-        <label for="notifications_remote"><span class="flash-backuptip"
-            title="Send notifications when flash backup to remote storage starts and finishes">Notifications:</span></label>
-        <span class="flash-backuptip"
-          title="Send notifications when flash backup to remote storage starts and finishes">
-          <select id="notifications_remote" class="short-input" name="NOTIFICATIONS_REMOTE">
-            <option value="yes" <?=(($remotesettings['NOTIFICATIONS_REMOTE']??'no')==='yes' )?'selected':''?>>Yes
-            </option>
-            <option value="no" <?=(($remotesettings['NOTIFICATIONS_REMOTE']??'no')==='no' )?'selected':''?>>No</option>
-          </select>
-        </span>
-      </div>
-
-      <!-- Remote notification service row; shown only when remote notifications are enabled -->
-      <div class="form-pair" id="notification-service-row-remote" style="display:none;">
-        <label><span class="flash-backuptip"
-            title="Choose which notification service(s) to use">Service:</span></label>
-        <span>
-          <select id="notification_service_remote_hidden" name="NOTIFICATION_SERVICE_REMOTE" multiple
-            style="display:none;">
-            <?php $selSvcsR=array_filter(explode(',', $remotesettings['NOTIFICATION_SERVICE_REMOTE']??'')); foreach(['Discord','Gotify','Ntfy','Pushover','Slack','Unraid'] as $svc): ?>
-            <option value="<?=$svc?>" <?=in_array($svc,$selSvcsR)?'selected':''?>>
-              <?=$svc?>
-            </option>
-            <?php endforeach; ?>
-          </select>
-          <div id="notification_service_remote" class="vm-multiselect flash-backuptip" style="width:200px;"
-            title="Choose which notification service(s) to use">
-            <div class="vm-dropdown-label" id="notification-service-label-remote">Select service(s)</div>
-            <div class="vm-dropdown-list" id="notification-service-list-remote" style="display:none;">
-              <?php foreach(['Discord','Gotify','Ntfy','Pushover','Slack','Unraid'] as $svc): ?>
-              <div><label><input type="checkbox" value="<?=$svc?>" <?=in_array($svc,$selSvcsR)?'checked':''?>>
-                  <?=$svc?>
-                </label></div>
-              <?php endforeach; ?>
-            </div>
+        </div>
+        <div id="daily-options" style="display:none;">
+          <div class="form-pair"><label for="daily_time"><span class="flash-backuptip" title="Select the hour">Hour:</span></label>
+            <span><select id="daily_time" name="DAILY_TIME" class="short-input">
+              <?php for($h=0;$h<24;$h++){$hr=str_pad($h,2,'0',STR_PAD_LEFT);echo"<option value=\"$hr\"".((($settings['DAILY_TIME']??'00')===$hr)?' selected':'').">$hr</option>";}?>
+            </select></span>
           </div>
-        </span>
-      </div>
+          <div class="form-pair"><label for="daily_minute"><span class="flash-backuptip" title="Select the minute">Minute:</span></label>
+            <span><select id="daily_minute" name="DAILY_MINUTE" class="short-input">
+              <?php for($m=0;$m<60;$m++){$mn=str_pad($m,2,'0',STR_PAD_LEFT);echo"<option value=\"$mn\"".((($settings['DAILY_MINUTE']??'00')===$mn)?' selected':'').">$mn</option>";}?>
+            </select></span>
+          </div>
+        </div>
+        <div id="weekly-options" style="display:none;">
+          <div class="form-pair"><label for="weekly_day"><span class="flash-backuptip" title="Select day of the week">Day Of Week:</span></label>
+            <span><select id="weekly_day" name="WEEKLY_DAY" class="short-input">
+              <?php foreach(['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'] as $day){echo"<option value=\"$day\"".((($settings['WEEKLY_DAY']??'')===$day)?' selected':'').">$day</option>";}?>
+            </select></span>
+          </div>
+          <div class="form-pair"><label for="weekly_time"><span class="flash-backuptip" title="Select the hour">Hour:</span></label>
+            <span><select id="weekly_time" name="WEEKLY_TIME" class="short-input">
+              <?php for($h=0;$h<24;$h++){$hr=str_pad($h,2,'0',STR_PAD_LEFT);echo"<option value=\"$hr\"".((($settings['WEEKLY_TIME']??'00')===$hr)?' selected':'').">$hr</option>";}?>
+            </select></span>
+          </div>
+          <div class="form-pair"><label for="weekly_minute"><span class="flash-backuptip" title="Select the minute">Minute:</span></label>
+            <span><select id="weekly_minute" name="WEEKLY_MINUTE" class="short-input">
+              <?php for($m=0;$m<60;$m++){$mn=str_pad($m,2,'0',STR_PAD_LEFT);echo"<option value=\"$mn\"".((($settings['WEEKLY_MINUTE']??'00')===$mn)?' selected':'').">$mn</option>";}?>
+            </select></span>
+          </div>
+        </div>
+        <div id="monthly-options" style="display:none;">
+          <div class="form-pair"><label for="monthly_day"><span class="flash-backuptip" title="Select day of the month">Day Of Month:</span></label>
+            <span><select id="monthly_day" name="MONTHLY_DAY" class="short-input">
+              <?php for($d=1;$d<=31;$d++){$dy=str_pad($d,2,'0',STR_PAD_LEFT);echo"<option value=\"$dy\"".((($settings['MONTHLY_DAY']??'')===$dy)?' selected':'').">$dy</option>";}?>
+            </select></span>
+          </div>
+          <div class="form-pair"><label for="monthly_time"><span class="flash-backuptip" title="Select the hour">Hour:</span></label>
+            <span><select id="monthly_time" name="MONTHLY_TIME" class="short-input">
+              <?php for($h=0;$h<24;$h++){$hr=str_pad($h,2,'0',STR_PAD_LEFT);echo"<option value=\"$hr\"".((($settings['MONTHLY_TIME']??'00')===$hr)?' selected':'').">$hr</option>";}?>
+            </select></span>
+          </div>
+          <div class="form-pair"><label for="monthly_minute"><span class="flash-backuptip" title="Select the minute">Minute:</span></label>
+            <span><select id="monthly_minute" name="MONTHLY_MINUTE" class="short-input">
+              <?php for($m=0;$m<60;$m++){$mn=str_pad($m,2,'0',STR_PAD_LEFT);echo"<option value=\"$mn\"".((($settings['MONTHLY_MINUTE']??'00')===$mn)?' selected':'').">$mn</option>";}?>
+            </select></span>
+          </div>
+        </div>
 
-      <!-- Remote webhook URL fields injected here by rebuildWebhookFields() -->
-      <div id="webhook-fields-container-remote"></div>
+        <!-- In-progress banner -->
+        <div id="backup-banner-local" class="fbb-banner">
+          <div class="fbb-banner-inner">
+            <span id="backup-banner-text-local" class="fbb-banner-text"></span>
+            <button type="button" id="stop-banner-btn-local" onclick="stopFromBanner()">Stop</button>
+            <span id="stop-toast-banner-local" class="stop-toast">Stop requested</span>
+          </div>
+        </div>
 
-      <!-- Remote scheduling mode selector -->
-      <div class="form-pair" id="cron-expression-row-remote">
-        <label for="cron_mode_remote"><span class="flash-backuptip"
-            title="Select scheduling selection">Scheduling:</span></label>
-        <div class="input-wrapper"><span class="flash-backuptip" title="Select scheduling selection">
-            <select id="cron_mode_remote" name="CRON_MODE_REMOTE" class="short-input">
-              <option value="hourly">Hourly</option>
-              <option value="daily" selected>Daily</option>
-              <option value="weekly">Weekly</option>
-              <option value="monthly">Monthly</option>
+        <div class="backup-actions">
+          <span title="Run backup of flash drive to local storage" class="flash-backuptip"><button type="button" id="backupbtn">Backup Now</button></span>
+          <span class="flash-backuptip" data-tooltip="Create a local backup schedule using the settings shown in the fields above"><button type="button" id="schedule-local-backup" class="button schedule-button">Schedule It</button></span>
+          <span title="Cancel editing of schedule" class="flash-backuptip"><button type="button" id="cancelEditBtn" style="display:none;">Cancel</button></span>
+          <label class="minimal-backup-label flash-backuptip" title="Enable to have the local backup only include the config and extra folders, and the syslinux.cfg file">
+            <input type="checkbox" id="minimal_backup" name="MINIMAL_BACKUP" value="yes" <?=(($settings['MINIMAL_BACKUP']??'no')==='yes')?'checked':''?>>
+            Minimal Backup
+          </label>
+        </div>
+        <div id="popupMessage" class="fbb-popup"></div>
+      </form>
+
+      <!-- ══ REMOTE BACKUP PANEL (hidden by default) ════════════════════════ -->
+      <form id="flash-backup-settings-remote" class="fbb-card-body" style="display:none;">
+
+        <div class="fbb-section-label">Rclone Configuration</div>
+
+        <div class="form-pair" id="rclone-config-row-remote">
+          <label><span class="flash-backuptip" title="Choose which rclone config(s) to use for the remote backup">Rclone Config:</span></label>
+          <span class="fbb-field-wrap">
+            <select id="rclone_config_remote_hidden" name="RCLONE_CONFIG_REMOTE[]" multiple style="display:none;">
+              <?php foreach($rcloneRemotes as $r): ?>
+              <option value="<?=htmlspecialchars($r)?>" <?=in_array($r,$selectedRemotes,true)?'selected':''?>><?=htmlspecialchars($r)?></option>
+              <?php endforeach; ?>
             </select>
-          </span></div>
-      </div>
-
-      <div id="hourly-options-remote" style="display:none; margin-top:10px;">
-        <div class="form-pair"><label for="hourly_frequency_remote"><span class="flash-backuptip"
-              title="Select hourly frequency">Select Frequency:</span></label>
-          <div class="input-wrapper"><span class="flash-backuptip" title="Select hourly frequency"><select
-                id="hourly_frequency_remote" name="HOURLY_FREQUENCY_REMOTE" class="short-input">
-                <?php foreach([4,6,8] as $i){$s=(($remotesettings['HOURLY_FREQUENCY_REMOTE']??'4')===(string)$i)?'selected':'';echo "<option value=\"$i\" $s>Every $i Hours</option>";}?>
-              </select></span></div>
+            <div id="rclone_config_remote" class="vm-multiselect short-input flash-backuptip" title="Choose which rclone config(s) to use" style="width:var(--input-w);max-width:var(--input-w);flex:none;box-sizing:border-box;">
+              <div class="vm-dropdown-label" id="rclone-config-label-remote"><?=!empty($selectedRemotes)?implode(', ',$selectedRemotes):'Select config(s)'?></div>
+              <div class="vm-dropdown-list" id="rclone-config-list-remote" style="display:none;">
+                <?php foreach($rcloneRemotes as $r): $t=$rcloneIni[$r]['type']??'unknown'; ?>
+                <div><label><input type="checkbox" value="<?=htmlspecialchars($r)?>" <?=in_array($r,$selectedRemotes,true)?'checked':''?>><?=htmlspecialchars("$t - $r")?></label></div>
+                <?php endforeach; ?>
+              </div>
+            </div>
+          </span>
         </div>
-      </div>
 
-      <div id="daily-options-remote" style="display:none; margin-top:10px;">
-        <div class="form-pair"><label for="daily_time_remote"><span class="flash-backuptip"
-              title="Select the hour">Hour:</span></label>
-          <div class="input-wrapper"><span class="flash-backuptip" title="Select the hour"><select
-                id="daily_time_remote" name="DAILY_TIME_REMOTE" class="short-input">
-                <?php for($h=0;$h<24;$h++){$hr=str_pad($h,2,'0',STR_PAD_LEFT);echo "<option value=\"$hr\"".((($remotesettings['DAILY_TIME_REMOTE']??'00')===$hr)?' selected':'').">$hr</option>";}?>
-              </select></span></div>
+        <div class="form-pair fbb-row-hidden" id="b2_bucket_row">
+          <label><span class="flash-backuptip" title="Required for Backblaze B2 remotes — the bucket name">B2 Bucketname:</span></label>
+          <span><input type="text" id="b2_bucket_name" name="B2_BUCKET_NAME" placeholder="/folder/" autocomplete="off" style="height:29px !important;box-sizing:border-box !important;" value="<?=htmlspecialchars($remotesettings['B2_BUCKET_NAME']??'')?>"></span>
         </div>
-        <div class="form-pair"><label for="daily_minute_remote"><span class="flash-backuptip"
-              title="Select the minute">Minute:</span></label>
-          <div class="input-wrapper"><span class="flash-backuptip" title="Select the minute"><select
-                id="daily_minute_remote" name="DAILY_MINUTE_REMOTE" class="short-input">
-                <?php for($m=0;$m<60;$m++){$mn=str_pad($m,2,'0',STR_PAD_LEFT);echo "<option value=\"$mn\"".((($remotesettings['DAILY_MINUTE_REMOTE']??'00')===$mn)?' selected':'').">$mn</option>";}?>
-              </select></span></div>
-        </div>
-      </div>
 
-      <div id="weekly-options-remote" style="display:none; margin-top:10px;">
-        <div class="form-pair"><label for="weekly_day_remote"><span class="flash-backuptip"
-              title="Select day of the week">Day Of Week:</span></label>
-          <div class="input-wrapper"><span class="flash-backuptip" title="Select day of the week"><select
-                id="weekly_day_remote" name="WEEKLY_DAY_REMOTE" class="short-input">
-                <?php foreach(["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"] as $day){echo "<option value=\"$day\"".((($remotesettings['WEEKLY_DAY_REMOTE']??'')===$day)?' selected':'').">$day</option>";}?>
-              </select></span></div>
+        <div class="form-pair">
+          <label><span class="flash-backuptip" title="Optional: subfolder where backups will be stored. If left empty /Flash_Backups/ will be used">Folder:</span></label>
+          <span><input type="text" name="REMOTE_PATH_IN_CONFIG" id="remote_path_in_config" placeholder="/folder/subfolder" style="height:29px !important;box-sizing:border-box !important;" value="<?=htmlspecialchars($remotesettings['REMOTE_PATH_IN_CONFIG']??'')?>"></span>
         </div>
-        <div class="form-pair"><label for="weekly_time_remote"><span class="flash-backuptip"
-              title="Select the hour">Hour:</span></label>
-          <div class="input-wrapper"><span class="flash-backuptip" title="Select the hour"><select
-                id="weekly_time_remote" name="WEEKLY_TIME_REMOTE" class="short-input">
-                <?php for($h=0;$h<24;$h++){$hr=str_pad($h,2,'0',STR_PAD_LEFT);echo "<option value=\"$hr\"".((($remotesettings['WEEKLY_TIME_REMOTE']??'00')===$hr)?' selected':'').">$hr</option>";}?>
-              </select></span></div>
+
+        <div class="form-pair">
+          <label for="backups_to_keep_remote"><span class="flash-backuptip" title="Choose the amount of backups to keep for your remote backups">Backups To Keep:</span></label>
+          <span><select id="backups_to_keep_remote" class="short-input" name="BACKUPS_TO_KEEP_REMOTE">
+            <?php $cur=$remotesettings['BACKUPS_TO_KEEP_REMOTE']??0; for($i=0;$i<=99;$i++){$s=((int)$cur===$i)?'selected':''; if($i===0)echo"<option value=\"0\" $s>Unlimited</option>"; elseif($i===1)echo"<option value=\"1\" $s>Only Latest</option>"; else echo"<option value=\"$i\" $s>$i</option>"; } ?>
+          </select></span>
         </div>
-        <div class="form-pair"><label for="weekly_minute_remote"><span class="flash-backuptip"
-              title="Select the minute">Minute:</span></label>
-          <div class="input-wrapper"><span class="flash-backuptip" title="Select the minute"><select
-                id="weekly_minute_remote" name="WEEKLY_MINUTE_REMOTE" class="short-input">
-                <?php for($m=0;$m<60;$m++){$mn=str_pad($m,2,'0',STR_PAD_LEFT);echo "<option value=\"$mn\"".((($remotesettings['WEEKLY_MINUTE_REMOTE']??'00')===$mn)?' selected':'').">$mn</option>";}?>
-              </select></span></div>
+
+        <div class="form-pair">
+          <label for="dry_run_remote"><span class="flash-backuptip" title="Enable to simulate the remote backup">Dry Run:</span></label>
+          <span><select id="dry_run_remote" class="short-input" name="DRY_RUN_REMOTE">
+            <option value="yes" <?=(($remotesettings['DRY_RUN_REMOTE']??'no')==='yes')?'selected':''?>>Yes</option>
+            <option value="no"  <?=(($remotesettings['DRY_RUN_REMOTE']??'no')==='no' )?'selected':''?>>No</option>
+          </select></span>
         </div>
-      </div>
 
-      <div id="monthly-options-remote" style="display:none; margin-top:10px;">
-        <div class="form-pair"><label for="monthly_day_remote"><span class="flash-backuptip"
-              title="Select day of the month">Day Of Month:</span></label>
-          <div class="input-wrapper"><span class="flash-backuptip" title="Select day of the month"><select
-                id="monthly_day_remote" name="MONTHLY_DAY_REMOTE" class="short-input">
-                <?php for($d=1;$d<=31;$d++){$dy=str_pad($d,2,'0',STR_PAD_LEFT);echo "<option value=\"$dy\"".((($remotesettings['MONTHLY_DAY_REMOTE']??'')===$dy)?' selected':'').">$dy</option>";}?>
-              </select></span></div>
+        <div class="fbb-section-label" style="margin-top:8px;">Notifications</div>
+
+        <div class="form-pair">
+          <label for="notifications_remote"><span class="flash-backuptip" title="Send notifications when flash backup to remote storage starts and finishes">Notifications:</span></label>
+          <span><select id="notifications_remote" class="short-input" name="NOTIFICATIONS_REMOTE">
+            <option value="yes" <?=(($remotesettings['NOTIFICATIONS_REMOTE']??'no')==='yes')?'selected':''?>>Yes</option>
+            <option value="no"  <?=(($remotesettings['NOTIFICATIONS_REMOTE']??'no')==='no' )?'selected':''?>>No</option>
+          </select></span>
         </div>
-        <div class="form-pair"><label for="monthly_time_remote"><span class="flash-backuptip"
-              title="Select the hour">Hour:</span></label>
-          <div class="input-wrapper"><span class="flash-backuptip" title="Select the hour"><select
-                id="monthly_time_remote" name="MONTHLY_TIME_REMOTE" class="short-input">
-                <?php for($h=0;$h<24;$h++){$hr=str_pad($h,2,'0',STR_PAD_LEFT);echo "<option value=\"$hr\"".((($remotesettings['MONTHLY_TIME_REMOTE']??'00')===$hr)?' selected':'').">$hr</option>";}?>
-              </select></span></div>
+
+        <div class="form-pair fbb-row-hidden" id="notification-service-row-remote">
+          <label><span class="flash-backuptip" title="Choose which notification service(s) to use">Service:</span></label>
+          <span class="fbb-field-wrap">
+            <select id="notification_service_remote_hidden" name="NOTIFICATION_SERVICE_REMOTE" multiple style="display:none;">
+              <?php $selSvcsR=array_filter(explode(',',$remotesettings['NOTIFICATION_SERVICE_REMOTE']??'')); foreach(['Discord','Gotify','Ntfy','Pushover','Slack','Unraid'] as $svc): ?>
+              <option value="<?=$svc?>" <?=in_array($svc,$selSvcsR)?'selected':''?>><?=$svc?></option>
+              <?php endforeach; ?>
+            </select>
+            <div id="notification_service_remote" class="vm-multiselect short-input flash-backuptip" title="Choose which notification service(s) to use" style="width:var(--input-w);max-width:var(--input-w);flex:none;box-sizing:border-box;">
+              <div class="vm-dropdown-label" id="notification-service-label-remote">Select service(s)</div>
+              <div class="vm-dropdown-list" id="notification-service-list-remote" style="display:none;">
+                <?php foreach(['Discord','Gotify','Ntfy','Pushover','Slack','Unraid'] as $svc): ?>
+                <div><label><input type="checkbox" value="<?=$svc?>" <?=in_array($svc,$selSvcsR)?'checked':''?>><?=$svc?></label></div>
+                <?php endforeach; ?>
+              </div>
+            </div>
+          </span>
         </div>
-        <div class="form-pair"><label for="monthly_minute_remote"><span class="flash-backuptip"
-              title="Select the minute">Minute:</span></label>
-          <div class="input-wrapper"><span class="flash-backuptip" title="Select the minute"><select
-                id="monthly_minute_remote" name="MONTHLY_MINUTE_REMOTE" class="short-input">
-                <?php for($m=0;$m<60;$m++){$mn=str_pad($m,2,'0',STR_PAD_LEFT);echo "<option value=\"$mn\"".((($remotesettings['MONTHLY_MINUTE_REMOTE']??'00')===$mn)?' selected':'').">$mn</option>";}?>
-              </select></span></div>
+
+        <div id="webhook-fields-container-remote"></div>
+
+        <div class="fbb-section-label" style="margin-top:8px;">Scheduling</div>
+
+        <div class="form-pair" id="cron-expression-row-remote">
+          <label for="cron_mode_remote"><span class="flash-backuptip" title="Select scheduling type">Scheduling:</span></label>
+          <span><select id="cron_mode_remote" name="CRON_MODE_REMOTE" class="short-input">
+            <option value="hourly">Hourly</option>
+            <option value="daily" selected>Daily</option>
+            <option value="weekly">Weekly</option>
+            <option value="monthly">Monthly</option>
+          </select></span>
         </div>
-      </div>
 
-
-
-      <!-- In-progress banner shown while a remote backup is running; hidden by default -->
-      <div id="backup-banner-remote" style="display:none; max-width:373px; margin-bottom:8px;">
-        <div style="display:flex; align-items:center; gap:10px;">
-          <span id="backup-banner-text-remote" style="color:yellow; font-weight:bold;"></span>
-          <button type="button" id="stop-banner-btn-remote" onclick="stopFromBanner()">Stop</button>
-          <span id="stop-toast-banner-remote" class="stop-toast">Stop requested</span>
+        <div id="hourly-options-remote" style="display:none;">
+          <div class="form-pair"><label for="hourly_frequency_remote"><span class="flash-backuptip" title="Select hourly frequency">Frequency:</span></label>
+            <span><select id="hourly_frequency_remote" name="HOURLY_FREQUENCY_REMOTE" class="short-input">
+              <?php foreach([4,6,8] as $i){$s=(($remotesettings['HOURLY_FREQUENCY_REMOTE']??'4')===(string)$i)?'selected':'';echo"<option value=\"$i\" $s>Every $i Hours</option>";}?>
+            </select></span>
+          </div>
         </div>
-      </div>
+        <div id="daily-options-remote" style="display:none;">
+          <div class="form-pair"><label for="daily_time_remote"><span class="flash-backuptip" title="Select the hour">Hour:</span></label>
+            <span><select id="daily_time_remote" name="DAILY_TIME_REMOTE" class="short-input">
+              <?php for($h=0;$h<24;$h++){$hr=str_pad($h,2,'0',STR_PAD_LEFT);echo"<option value=\"$hr\"".((($remotesettings['DAILY_TIME_REMOTE']??'00')===$hr)?' selected':'').">$hr</option>";}?>
+            </select></span>
+          </div>
+          <div class="form-pair"><label for="daily_minute_remote"><span class="flash-backuptip" title="Select the minute">Minute:</span></label>
+            <span><select id="daily_minute_remote" name="DAILY_MINUTE_REMOTE" class="short-input">
+              <?php for($m=0;$m<60;$m++){$mn=str_pad($m,2,'0',STR_PAD_LEFT);echo"<option value=\"$mn\"".((($remotesettings['DAILY_MINUTE_REMOTE']??'00')===$mn)?' selected':'').">$mn</option>";}?>
+            </select></span>
+          </div>
+        </div>
+        <div id="weekly-options-remote" style="display:none;">
+          <div class="form-pair"><label for="weekly_day_remote"><span class="flash-backuptip" title="Select day of the week">Day Of Week:</span></label>
+            <span><select id="weekly_day_remote" name="WEEKLY_DAY_REMOTE" class="short-input">
+              <?php foreach(['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'] as $day){echo"<option value=\"$day\"".((($remotesettings['WEEKLY_DAY_REMOTE']??'')===$day)?' selected':'').">$day</option>";}?>
+            </select></span>
+          </div>
+          <div class="form-pair"><label for="weekly_time_remote"><span class="flash-backuptip" title="Select the hour">Hour:</span></label>
+            <span><select id="weekly_time_remote" name="WEEKLY_TIME_REMOTE" class="short-input">
+              <?php for($h=0;$h<24;$h++){$hr=str_pad($h,2,'0',STR_PAD_LEFT);echo"<option value=\"$hr\"".((($remotesettings['WEEKLY_TIME_REMOTE']??'00')===$hr)?' selected':'').">$hr</option>";}?>
+            </select></span>
+          </div>
+          <div class="form-pair"><label for="weekly_minute_remote"><span class="flash-backuptip" title="Select the minute">Minute:</span></label>
+            <span><select id="weekly_minute_remote" name="WEEKLY_MINUTE_REMOTE" class="short-input">
+              <?php for($m=0;$m<60;$m++){$mn=str_pad($m,2,'0',STR_PAD_LEFT);echo"<option value=\"$mn\"".((($remotesettings['WEEKLY_MINUTE_REMOTE']??'00')===$mn)?' selected':'').">$mn</option>";}?>
+            </select></span>
+          </div>
+        </div>
+        <div id="monthly-options-remote" style="display:none;">
+          <div class="form-pair"><label for="monthly_day_remote"><span class="flash-backuptip" title="Select day of the month">Day Of Month:</span></label>
+            <span><select id="monthly_day_remote" name="MONTHLY_DAY_REMOTE" class="short-input">
+              <?php for($d=1;$d<=31;$d++){$dy=str_pad($d,2,'0',STR_PAD_LEFT);echo"<option value=\"$dy\"".((($remotesettings['MONTHLY_DAY_REMOTE']??'')===$dy)?' selected':'').">$dy</option>";}?>
+            </select></span>
+          </div>
+          <div class="form-pair"><label for="monthly_time_remote"><span class="flash-backuptip" title="Select the hour">Hour:</span></label>
+            <span><select id="monthly_time_remote" name="MONTHLY_TIME_REMOTE" class="short-input">
+              <?php for($h=0;$h<24;$h++){$hr=str_pad($h,2,'0',STR_PAD_LEFT);echo"<option value=\"$hr\"".((($remotesettings['MONTHLY_TIME_REMOTE']??'00')===$hr)?' selected':'').">$hr</option>";}?>
+            </select></span>
+          </div>
+          <div class="form-pair"><label for="monthly_minute_remote"><span class="flash-backuptip" title="Select the minute">Minute:</span></label>
+            <span><select id="monthly_minute_remote" name="MONTHLY_MINUTE_REMOTE" class="short-input">
+              <?php for($m=0;$m<60;$m++){$mn=str_pad($m,2,'0',STR_PAD_LEFT);echo"<option value=\"$mn\"".((($remotesettings['MONTHLY_MINUTE_REMOTE']??'00')===$mn)?' selected':'').">$mn</option>";}?>
+            </select></span>
+          </div>
+        </div>
 
-      <div class="backup-actions">
-        <span title="Run remote backup" class="flash-backuptip"><button type="button" id="backupbtn_remote">Backup
-            Now</button></span>
-        <span title="Create a remote backup schedule using the settings shown in the fields above"
-          class="flash-backuptip"><button type="button" id="schedule-remote-backup"
-            class="button schedule-button">Schedule It</button></span>
-        <!-- Cancel button shown only when editing an existing remote schedule -->
-        <span title="Cancel editing of remote schedule" class="flash-backuptip"><button type="button"
-            id="cancelEditBtnremote" style="display:none;">Cancel</button></span>
-        <label class="minimal-backup-label flash-backuptip"
-          title="Enable to have the remote backup only include the config and extra folders, and the syslinux.cfg file">
-          <input type="checkbox" id="minimal_backup_remote" name="MINIMAL_BACKUP_REMOTE" value="yes" <?php echo
-            (($remotesettings['MINIMAL_BACKUP_REMOTE']??'no')==='yes' )?'checked':'';?>>
-          Minimal Backup
-        </label>
-      </div>
+        <!-- In-progress banner -->
+        <div id="backup-banner-remote" class="fbb-banner">
+          <div class="fbb-banner-inner">
+            <span id="backup-banner-text-remote" class="fbb-banner-text"></span>
+            <button type="button" id="stop-banner-btn-remote" onclick="stopFromBanner()">Stop</button>
+            <span id="stop-toast-banner-remote" class="stop-toast">Stop requested</span>
+          </div>
+        </div>
 
-      <div id="popupMessageremote"></div>
-    </form>
-  </div>
+        <div class="backup-actions">
+          <span title="Run remote backup" class="flash-backuptip"><button type="button" id="backupbtn_remote">Backup Now</button></span>
+          <span title="Create a remote backup schedule using the settings shown in the fields above" class="flash-backuptip"><button type="button" id="schedule-remote-backup" class="button schedule-button">Schedule It</button></span>
+          <span title="Cancel editing of remote schedule" class="flash-backuptip"><button type="button" id="cancelEditBtnremote" style="display:none;">Cancel</button></span>
+          <label class="minimal-backup-label flash-backuptip" title="Enable to have the remote backup only include the config and extra folders, and the syslinux.cfg file">
+            <input type="checkbox" id="minimal_backup_remote" name="MINIMAL_BACKUP_REMOTE" value="yes" <?=(($remotesettings['MINIMAL_BACKUP_REMOTE']??'no')==='yes')?'checked':''?>>
+            Minimal Backup
+          </label>
+        </div>
+        <div id="popupMessageremote" class="fbb-popup"></div>
+      </form>
 
-  <!-- Log panel: displays the last run log with search, clear, copy, and scroll controls -->
-  <div id="log-section">
-    <div class="log-toolbar">
-      <div class="log-search-wrap">
+    </div><!-- .fbb-card -->
+  </div><!-- .fbb-panel-wrap -->
+
+  <!-- ══ LOG PANEL ══════════════════════════════════════════════════════════ -->
+  <div id="fbb-log-panel">
+    <div class="fbb-card-header" style="border-radius:var(--radius-card) var(--radius-card) 0 0;">
+      <span class="fbb-card-title">Activity Log</span>
+      <span id="fbb-log-last-run" style="font-size:11px;color:var(--c-text-muted);margin-left:10px;">No last run available</span>
+    </div>
+    <div class="fbb-log-toolbar">
+      <div class="fbb-log-search-wrap">
         <input type="text" id="log-search" placeholder="Search…" autocomplete="off">
+        <span id="log-search-clear" tabindex="-1" aria-label="Clear search" role="button">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M1 1L11 11M11 1L1 11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+        </span>
       </div>
       <span id="log-search-count"></span>
-      <div class="log-toolbar-center">
+      <div class="fbb-log-toolbar-right">
+        <span id="log-toast"></span>
         <span title="Clear the flash backup log" class="flash-backuptip"><button type="button" id="clear-last-run-log">Clear Log</button></span>
         <span title="Copy log to clipboard" class="flash-backuptip"><button type="button" id="copy-last-run-log">Copy Log</button></span>
-        <span id="log-toast"></span>
-      </div>
-      <div class="log-scroll-group">
-        <span title="Scroll to top of log" class="flash-backuptip"><button type="button" id="log-scroll-top-btn">&#8679;</button></span>
-        <span title="Scroll to bottom of log" class="flash-backuptip"><button type="button" id="log-autoscroll-btn">&#8681;</button></span>
+        <span title="Scroll to top / Enable auto scroll" class="flash-backuptip"><button type="button" id="log-scroll-top-btn">&#8679;</button></span>
+        <span title="Scroll to bottom / Disable auto scroll" class="flash-backuptip"><button type="button" id="log-autoscroll-btn">&#8681;</button></span>
       </div>
     </div>
     <pre id="last-run-log">Flash backup log not found</pre>
   </div>
 
-</div>
+  <!-- ══ SCHEDULE TABLES (full width, below both columns) ═══════════════════ -->
+  <div id="fbb-schedule-section">
+    <div id="fbb-sched-title-local" class="fbb-sched-title" style="display:none;">Scheduled Local Backup Jobs</div>
+    <div id="schedule-list"></div>
+    <div id="fbb-sched-title-remote" class="fbb-sched-title" style="display:none;">Scheduled Remote Backup Jobs</div>
+    <div id="schedule-list-remote"></div>
+  </div>
 
-<!-- Schedule tables injected below the main layout by loadSchedules() and loadSchedulesremote() -->
-<div id="schedule-section" style="width:100%; margin-top:20px;">
-  <div id="schedule-list"></div>
-  <div id="schedule-list-remote"></div>
-</div>
+</div><!-- #fbb-layout -->
 
-<!-- Folder picker modal: browse and select a destination path -->
+</div><!-- #fbb-page -->
+
+<!-- Folder picker modal -->
 <div id="folderPickerModal" class="vm-modal">
   <div class="vm-modal-content">
     <div class="vm-modal-header">
@@ -1492,25 +1056,60 @@ if (file_exists("/etc/unraid-version")) {
     </div>
     <div id="folderBreadcrumb" class="vm-breadcrumb"></div>
     <div id="folderList" class="vm-folder-list"></div>
-    <div class="vm-modal-footer"
-      style="display:flex; align-items:center; justify-content:flex-end; gap:12px; position:relative;">
-      <div class="vm-modal-footer" style="position:relative;">
-        <!-- Toast shown briefly after folder selection actions -->
-        <div id="folderToast"
-          style="position:absolute; left:-43%; bottom:50%; transform:translateY(50%); background:#6f8d7b; color:white; padding:6px 12px; border-radius:4px; font-size:13px; box-shadow:0 2px 6px rgba(0,0,0,0.25); display:none;">
-        </div>
-        <button type="button" id="createFolderBtn">Create Folder</button>
-        <span id="newFolderInputWrap" style="display:none;">
-          <input type="text" id="newFolderName" placeholder="Folder name">
-          <button type="button" id="newFolderOk">OK</button>
-          <button type="button" id="newFolderCancel">Cancel</button>
-        </span>
-        <button type="button" id="clearSelectedFolders">Clear Selected</button>
-        <button type="button" id="confirmFolderSelection">Done</button>
-      </div>
+    <div class="vm-modal-footer">
+      <div id="folderToast"></div>
+      <button type="button" id="createFolderBtn">Create Folder</button>
+      <span id="newFolderInputWrap" style="display:none;">
+        <input type="text" id="newFolderName" placeholder="Folder name">
+        <button type="button" id="newFolderOk">OK</button>
+        <button type="button" id="newFolderCancel">Cancel</button>
+      </span>
+      <button type="button" id="clearSelectedFolders">Clear Selected</button>
+      <button type="button" id="confirmFolderSelection">Done</button>
     </div>
   </div>
 </div>
+
+<script>
+// ── Mode switcher ───────────────────────────────────────────────────────────
+function fbbSwitchMode(mode) {
+  const isLocal = (mode === 'local');
+  document.getElementById('flash-backup-settings').style.display        = isLocal ? '' : 'none';
+  document.getElementById('flash-backup-settings-remote').style.display = isLocal ? 'none' : '';
+  document.getElementById('fbb-active-card-title').textContent = isLocal ? 'Local Backup' : 'Remote Backup';
+  document.getElementById('fbb-local-status-wrap').style.display  = isLocal ? '' : 'none';
+  document.getElementById('fbb-remote-status-wrap').style.display = isLocal ? 'none' : '';
+  if (isLocal) {
+    if (typeof resetScheduleUIremote === 'function') resetScheduleUIremote();
+  } else {
+    if (typeof resetScheduleUI === 'function') resetScheduleUI();
+    $.get('/plugins/flash-backup/helpers/schedule_list_remote.php', function(html) {
+      $('#schedule-list-remote').html(html);
+      if ($('#schedule-list-remote .TableContainer').length > 0) {
+        const localVisible = $('#fbb-sched-title-local').is(':visible');
+        $('#fbb-sched-title-remote').css('margin-top', localVisible ? '12px' : '0').show();
+      } else {
+        $('#fbb-sched-title-remote').hide();
+      }
+    });
+  }
+}
+// Wire status dots to status text
+(function() {
+  function updateDot(dotId, textId) {
+    const dot = document.getElementById(dotId);
+    const text = document.getElementById(textId);
+    if (!dot || !text) return;
+    const s = (text.textContent || '').toLowerCase();
+    const running = s !== 'idle' && s.indexOf('not running') === -1 && s.trim() !== '';
+    dot.classList.toggle('active', running);
+  }
+  setInterval(function() {
+    updateDot('fbb-local-dot',  'status-text');
+    updateDot('fbb-remote-dot', 'status-text-remote');
+  }, 1000);
+})();
+</script>
 
 <script>
   // Initialize tooltipster on hover for button wrappers, checkbox labels, buttons, and table tips only
@@ -1658,13 +1257,13 @@ if (file_exists("/etc/unraid-version")) {
     const webhookContainer = s ? '#webhook-fields-container-' + s : '#webhook-fields-container';
 
     if ($(notifSelectId).val() === 'yes') {
-      $(serviceRowId).show();
+      $(serviceRowId).removeClass('fbb-row-hidden');
       if (window._fbbProcessLabels) {
         window._fbbProcessLabels($(serviceRowId));
       }
       rebuildWebhookFields(s);
     } else {
-      $(serviceRowId).hide();
+      $(serviceRowId).addClass('fbb-row-hidden');
       $(webhookContainer).empty();
     }
   }
@@ -1778,8 +1377,8 @@ if (file_exists("/etc/unraid-version")) {
   function updateB2BucketVisibility() {
     const selected = $('#rclone_config_remote_hidden').val() || [];
     const anyB2 = selected.some(r => remoteTypes[r] === 'b2' || remoteTypes[r] === 'crypt-b2');
-    if (anyB2) { $('#b2_bucket_row').show(); }
-    else { $('#b2_bucket_row').hide(); $('#b2_bucket_name').val(''); }
+    if (anyB2) { $('#b2_bucket_row').removeClass('fbb-row-hidden'); }
+    else { $('#b2_bucket_row').addClass('fbb-row-hidden'); $('#b2_bucket_name').val(''); }
   }
 
   updateB2BucketVisibility();
@@ -1995,6 +1594,15 @@ if (file_exists("/etc/unraid-version")) {
         logEl.dataset.raw = text;
         applyLogSearch();
         if (logAutoScroll) { logEl.scrollTop = logEl.scrollHeight; }
+        // Extract timestamp from last line (newest first) for Last Run display
+        var lines = text.split('\n').filter(function(l){ return l.trim(); });
+        var ts = null;
+        for (var i = 0; i < lines.length; i++) {
+          var m = lines[i].match(/\[?(\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2})/);
+          if (m) { ts = new Date(m[1].replace(' ','T')); break; }
+        }
+        var el = document.getElementById('fbb-log-last-run');
+        if (el) el.dataset.ts = ts ? ts.toISOString() : '';
       })
       .catch(() => {
         var logEl = document.getElementById('last-run-log');
@@ -2005,7 +1613,37 @@ if (file_exists("/etc/unraid-version")) {
   loadLastRunLog();
   setInterval(loadLastRunLog, 1000);
 
-  document.getElementById('log-search').addEventListener('input', applyLogSearch);
+  // Update "Last Run: X ago" display every second
+  function fbbTimeAgo(date) {
+    var sec = Math.floor((Date.now() - date.getTime()) / 1000);
+    if (sec < 5)  return 'just now';
+    if (sec < 60) return sec + 's ago';
+    var min = Math.floor(sec / 60);
+    if (min < 60) return min + 'm ago';
+    var hr = Math.floor(min / 60);
+    if (hr < 24)  return hr + 'h ago';
+    return Math.floor(hr / 24) + 'd ago';
+  }
+  setInterval(function() {
+    var el = document.getElementById('fbb-log-last-run');
+    if (!el) return;
+    var ts = el.dataset.ts;
+    el.textContent = ts ? 'Last Run: ' + fbbTimeAgo(new Date(ts)) : 'No last run available';
+  }, 1000);
+
+  var logSearchEl = document.getElementById('log-search');
+  var logSearchClear = document.getElementById('log-search-clear');
+  function fbbUpdateSearchClear() {
+    logSearchClear.style.display = logSearchEl.value ? 'flex' : 'none';
+  }
+  logSearchEl.addEventListener('input', function() { applyLogSearch(); fbbUpdateSearchClear(); });
+  logSearchClear.addEventListener('mousedown', function(e) {
+    e.preventDefault(); // prevent blur on input
+    logSearchEl.value = '';
+    applyLogSearch();
+    fbbUpdateSearchClear();
+    logSearchEl.focus();
+  });
 
   // Toggle auto-scroll; if re-enabled, immediately jump to the bottom
   var autoScrollBtn = document.getElementById('log-autoscroll-btn');
@@ -2125,6 +1763,13 @@ if (file_exists("/etc/unraid-version")) {
     // Process all labels on page load
     processHelpLabels($(document));
 
+    // Manually attach help tooltips to mode-row labels
+    const $modeRow = $('#fbb-mode-row');
+    if ($('#fbb-plugin-label').length) {
+      attachHelp($('#fbb-plugin-label'), 'Easily switch between your installed jcofer555 plugins', $modeRow);
+    }
+    attachHelp($('#fbb-mode-label'), 'Switch between modes', $modeRow);
+
     // Attach inline help to status label spans in both local and remote status rows
     $('span.status-label.flash-backuptip[title], span.remote-status-label.flash-backuptip[title]').each(function () {
       const $span = $(this);
@@ -2142,6 +1787,7 @@ if (file_exists("/etc/unraid-version")) {
     // Strip tooltipster class/title from remaining input and select wrapper spans
     $('span.flash-backuptip').each(function () {
       if ($(this).children('button').length > 0) return;
+      if ($(this).closest('table').length > 0) return;
       $(this).removeAttr('title').removeClass('flash-backuptip');
     });
 
@@ -2448,7 +2094,7 @@ if (file_exists("/etc/unraid-version")) {
 
   window.editingScheduleId = null;
   // Load local schedules HTML and inject it into #schedule-list
-  function loadSchedules() { return $.get('/plugins/flash-backup/helpers/schedule_list.php', function (html) { $('#schedule-list').html(html); }).always(() => unlockScheduleUI()); }
+  function loadSchedules() { return $.get('/plugins/flash-backup/helpers/schedule_list.php', function (html) { $('#schedule-list').html(html); $('#fbb-sched-title-local').toggle($('#schedule-list .TableContainer').length > 0); }).always(() => unlockScheduleUI()); }
 
   // Build a local cron expression from the current scheduling UI selections
   function buildCronFromUI() {
@@ -2483,6 +2129,7 @@ if (file_exists("/etc/unraid-version")) {
 
   // Load a saved schedule's settings into the local settings form for editing
   function editSchedule(id) {
+    fbbSwitchMode('local'); $('#fbb-mode-switcher').val('local');
     if (scheduleUILocked) return; lockScheduleUI();
     $.getJSON('/plugins/flash-backup/helpers/schedule_load.php', { id }, function (s) {
       const settings = s.SETTINGS || {};
@@ -2517,6 +2164,7 @@ if (file_exists("/etc/unraid-version")) {
 
   // Trigger an immediate run of a saved local schedule and poll the lock until it finishes
   function runScheduleBackup(id, btn) {
+    fbbSwitchMode('local'); $('#fbb-mode-switcher').val('local');
     if (scheduleUILocked) return;
     if (!confirm("Are you sure you want to run this backup now?")) return;
     lockScheduleUI(); btn.disabled = true;
@@ -2542,7 +2190,7 @@ if (file_exists("/etc/unraid-version")) {
 
   window.editingScheduleIdremote = null;
   // Load remote schedules HTML and inject it into #schedule-list-remote
-  function loadSchedulesremote() { return $.get('/plugins/flash-backup/helpers/schedule_list_remote.php', function (html) { $('#schedule-list-remote').html(html); }).always(() => unlockScheduleUIremote()); }
+  function loadSchedulesremote() { return $.get('/plugins/flash-backup/helpers/schedule_list_remote.php', function (html) { $('#schedule-list-remote').html(html); if ($('#schedule-list-remote .TableContainer').length > 0) { const localVisible = $('#fbb-sched-title-local').is(':visible'); $('#fbb-sched-title-remote').css('margin-top', localVisible ? '12px' : '0').show(); } else { $('#fbb-sched-title-remote').hide(); } }).always(() => unlockScheduleUIremote()); }
 
   // Build a remote cron expression from the current remote scheduling UI selections
   function buildCronFromUIremote() {
@@ -2577,12 +2225,25 @@ if (file_exists("/etc/unraid-version")) {
 
   // Load a saved remote schedule's settings into the remote settings form for editing
   function editScheduleremote(id) {
+    fbbSwitchMode('remote'); $('#fbb-mode-switcher').val('remote');
     if (scheduleUILockedremote) return; lockScheduleUIremote();
     $.getJSON('/plugins/flash-backup/helpers/schedule_load_remote.php', { id }, function (s) {
       const settings = s.SETTINGS || {};
       if (s.TYPE) $('[name="type_remote"]').val(s.TYPE).trigger('change');
       var _cmrMode = detectCronMode(s.CRON); document.getElementById('cron_mode_remote').value = _cmrMode; if (window._toggleCronOptionsRemote) window._toggleCronOptionsRemote(_cmrMode);
       for (const k in settings) { const el = $('[name="' + k + '"]'); if (!el.length) continue; if (el.is(':checkbox')) { const v = String(settings[k]).toLowerCase(); el.prop('checked', v === 'yes' || v === '1' || v === 'true'); } else if (el.is(':radio')) $('[name="' + k + '"][value="' + settings[k] + '"]').prop('checked', true); else el.val(settings[k]).trigger('change'); }
+      // Populate rclone config multiselect (custom widget — not caught by the loop above)
+      if (settings.RCLONE_CONFIG_REMOTE !== undefined) {
+        const vals = String(settings.RCLONE_CONFIG_REMOTE).split(',').map(v => v.trim()).filter(Boolean);
+        $('#rclone-config-list-remote input[type=checkbox]').each(function () {
+          $(this).prop('checked', vals.includes($(this).val()));
+        });
+        $('#rclone-config-label-remote').text(vals.length ? vals.join(', ') : 'Select config(s)');
+        $('#rclone_config_remote_hidden option').each(function () {
+          $(this).prop('selected', vals.includes($(this).val()));
+        });
+        updateB2BucketVisibility();
+      }
       window.editingScheduleIdremote = id;
       $('#schedule-remote-backup').text('Update');
       const $tip = $('#schedule-remote-backup').closest('span');
@@ -2608,6 +2269,7 @@ if (file_exists("/etc/unraid-version")) {
 
   // Trigger an immediate run of a saved remote schedule and poll the lock until it finishes
   function runScheduleBackupremote(id, btn) {
+    fbbSwitchMode('remote'); $('#fbb-mode-switcher').val('remote');
     if (scheduleUILockedremote) return;
     if (!confirm("Are you sure you want to run this remote backup now?")) return;
     lockScheduleUIremote(); btn.disabled = true;
@@ -2656,6 +2318,11 @@ if (file_exists("/etc/unraid-version")) {
 
   // Resolve a picked path via the server and write it back to the target input field
   function resolveAndApplyPath(selectedPath, targetInputId) {
+    // Bypass server realpath() — prevents /mnt/user -> /mnt/cache resolution
+    $('#' + targetInputId).val(selectedPath).trigger('input').trigger('change');
+    $('#folderPickerModal').hide();
+  }
+  function _resolveAndApplyPath_orig(selectedPath, targetInputId) {
     const params = new URLSearchParams({ path: selectedPath, csrf_token: csrf_token });
     fetch('/plugins/flash-backup/helpers/resolve_path.php', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: params.toString() })
       .then(r => r.text()).then(resolvedPath => { const $field = $('#' + targetInputId); $field.val(resolvedPath || selectedPath).trigger('input').trigger('change'); $('#folderPickerModal').hide(); })

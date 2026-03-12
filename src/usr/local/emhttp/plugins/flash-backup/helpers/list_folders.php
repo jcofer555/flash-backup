@@ -2,10 +2,8 @@
 
 // Root path that all browsing is constrained to
 define('PICKER_BASE', '/mnt');
-// Minimum depth for a folder to be selectable in the standard backup destination picker
-define('MIN_SELECTABLE_DEPTH',            3);
-// Minimum depth for a folder to be selectable in the restore destination picker
-define('RESTORE_DESTINATION_MIN_DEPTH',   2);
+// Minimum depth for a folder to be selectable in the backup destination picker
+define('MIN_SELECTABLE_DEPTH', 3);
 
 // ------------------------------------------------------------------------------
 // respond() — JSON response with explicit HTTP code, then exit
@@ -18,11 +16,13 @@ function respond(int $code, array $payload): void {
 }
 
 // ------------------------------------------------------------------------------
-// resolve_path()
+// resolve_path() — constrains browsing to PICKER_BASE.
+// NOTE: Uses realpath() only for path NAVIGATION (resolving .. etc).
+// The selected path written to the input field bypasses this via resolveAndApplyPath()
+// in the JS, which sets the raw path directly without calling this file.
 // ------------------------------------------------------------------------------
 function resolve_path(string $path): string {
     $resolved = realpath($path);
-    // Fall back to the base if the path resolves outside it
     if ($resolved === false || strpos($resolved, PICKER_BASE) !== 0) {
         return PICKER_BASE;
     }
@@ -39,13 +39,9 @@ function get_depth(string $full_path): int {
 }
 
 // ------------------------------------------------------------------------------
-// is_selectable() — selectability by field and depth
+// is_selectable() — depth >= 3 required for all fields in this plugin
 // ------------------------------------------------------------------------------
 function is_selectable(int $depth, string $field): bool {
-    // The restore destination picker allows selection one level shallower
-    if ($field === 'restore_destination' && $depth === RESTORE_DESTINATION_MIN_DEPTH) {
-        return true;
-    }
     return $depth >= MIN_SELECTABLE_DEPTH;
 }
 
@@ -53,32 +49,21 @@ function is_selectable(int $depth, string $field): bool {
 // scan_folders() — returns folder list
 // ------------------------------------------------------------------------------
 function scan_folders(string $path, string $field): array {
-    if (!is_dir($path)) {
-        return [];
-    }
-
+    if (!is_dir($path)) return [];
     $items = scandir($path);
-    if (!is_array($items)) {
-        return [];
-    }
-
+    if (!is_array($items)) return [];
     $folders = [];
     foreach ($items as $item) {
-        // Skip dot entries
         if ($item === '.' || $item === '..') continue;
-
         $full = $path . '/' . $item;
         if (!is_dir($full)) continue;
-
         $depth = get_depth($full);
-
         $folders[] = [
             'name'       => $item,
             'path'       => $full,
             'selectable' => is_selectable($depth, $field),
         ];
     }
-
     return $folders;
 }
 
@@ -88,11 +73,8 @@ function scan_folders(string $path, string $field): array {
 function main(): void {
     $path  = resolve_path($_GET['path'] ?? PICKER_BASE);
     $field = trim($_GET['field'] ?? '');
-
     $folders = scan_folders($path, $field);
-    // Parent is null when already at the root of the picker
     $parent  = ($path !== PICKER_BASE) ? dirname($path) : null;
-
     respond(200, [
         'current' => $path,
         'parent'  => $parent,
