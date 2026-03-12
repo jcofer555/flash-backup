@@ -13,4 +13,4 @@
 - Ability to set an owner for your local backups
 - Logging available in the webui and at /tmp/flash-backup
 
-<img width="1916" height="918" alt="image" src="https://github.com/user-attachments/assets/dffb3584-1543-4dfb-bcf6-942eafe26339" />
+<img width="1000" height="462" alt="image" src="https://github.com/user-attachments/assets/47f2d7b8-7247-47c0-9514-40c56572f93f" />
