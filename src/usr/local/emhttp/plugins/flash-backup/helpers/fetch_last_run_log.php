@@ -1,38 +1,13 @@
 <?php
+$debug   = !empty($_GET['debug']) && $_GET['debug'] === '1';
+$logFile = $debug
+    ? '/tmp/flash-backup/flash-backup-debug.log'
+    : '/tmp/flash-backup/flash-backup.log';
 
-// Path to the main plugin log file
-define('LOG_FILE',      '/tmp/flash-backup/flash-backup.log');
-// Maximum number of lines to return — avoids sending a very large log to the browser
-define('LOG_TAIL_LINES', 500);
-
-// ------------------------------------------------------------------------------
-// respond_text() — plain-text response with explicit HTTP code
-// ------------------------------------------------------------------------------
-function respond_text(int $code, string $body): void {
-    http_response_code($code);
-    header('Content-Type: text/plain');
-    echo $body;
-    exit;
+if (file_exists($logFile)) {
+    header('Content-Type: text/plain; charset=utf-8');
+    readfile($logFile);
+} else {
+    header('Content-Type: text/plain; charset=utf-8');
+    echo '';
 }
-
-// ------------------------------------------------------------------------------
-// main()
-// ------------------------------------------------------------------------------
-function main(): void {
-    if (!file_exists(LOG_FILE)) {
-        respond_text(404, 'Flash backup log not found');
-    }
-
-    $lines = file(LOG_FILE, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-    if (!is_array($lines)) {
-        respond_text(500, 'Failed to read log file');
-    }
-
-    // Return only the most recent lines, reversed so newest is first
-    $tail     = array_slice($lines, -LOG_TAIL_LINES);
-    $reversed = array_reverse($tail);
-
-    respond_text(200, implode("\n", $reversed));
-}
-
-main();
