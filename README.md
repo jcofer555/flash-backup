@@ -4,8 +4,8 @@
 
 ## Features ##
 - Backing up to local storage
-- Backing up to cloud storage using rclone (need your configs setup using the rclone plugin)
-- Confirmed working with box, onedrive, google drive, backblaze b2, and dropbox cloud storages
+- Backing up to cloud storage using rclone (can use the plugin, any of the current docker containers, or the built in rclone if using unraid 7.3+)
+- Confirmed working with box, onedrive, google drive, backblaze b2, dropbox, and s3 providers cloud storages
 - Offers scheduling of both local and remote cloud storage backups
 - Ability to set how many backups you want to keep
 - Dry run support
