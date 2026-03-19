@@ -1,7 +1,7 @@
 <?php
 header('Content-Type: application/json');
 
-// Path to the remote settings config and a temp file used
+// Path to the remote settings config and a temp file used during atomic write
 $config = '/boot/config/plugins/flash-backup/settings_remote.cfg';
 $tmp    = $config . '.tmp';
 
@@ -13,21 +13,35 @@ $notifications_remote        = $_POST['NOTIFICATIONS_REMOTE']        ?? 'no';
 $notification_service_remote = $_POST['NOTIFICATION_SERVICE_REMOTE'] ?? '';
 $pushover_user_key_remote    = $_POST['PUSHOVER_USER_KEY_REMOTE']    ?? '';
 
+// Per-remote bucket names — received as a JSON object {"remoteName":"bucket/", ...}
+// Stored base64-encoded so it survives parse_ini_file without quoting issues.
+$bucket_names_stored = '';
+$bucket_names_raw    = $_POST['BUCKET_NAMES'] ?? '';
+if ($bucket_names_raw !== '') {
+    $decoded = json_decode($bucket_names_raw, true);
+    if (!is_array($decoded)) {
+        echo json_encode(['status' => 'error', 'message' => 'Invalid BUCKET_NAMES JSON']);
+        exit;
+    }
+    // Sanitize keys and values
+    $sanitized = [];
+    foreach ($decoded as $remote => $bucket) {
+        $remote = str_replace(['"', "'", "\n", "\r", '='], '', (string)$remote);
+        $bucket = str_replace(['"', "'", "\n", "\r"],       '', (string)$bucket);
+        if ($remote !== '') $sanitized[$remote] = $bucket;
+    }
+    if (!empty($sanitized)) {
+        // base64 is all alphanumeric + / + = — safe inside double-quoted INI values
+        $bucket_names_stored = base64_encode(json_encode($sanitized, JSON_UNESCAPED_SLASHES));
+    }
+}
+
 // Accept either an array (multi-select) or a comma string
 $rclone_raw = $_POST['RCLONE_CONFIG_REMOTE'] ?? '';
 if (is_array($rclone_raw)) {
     $rclone_config_remote = implode(',', array_map('trim', $rclone_raw));
 } else {
     $rclone_config_remote = trim((string)$rclone_raw);
-}
-
-// No leading slash, trailing slash enforced
-$b2_bucket_name = trim($_POST['B2_BUCKET_NAME'] ?? '');
-if ($b2_bucket_name !== '') {
-    $b2_bucket_name = ltrim($b2_bucket_name, '/');
-    if (substr($b2_bucket_name, -1) !== '/') {
-        $b2_bucket_name .= '/';
-    }
 }
 
 // Leading and trailing slash enforced, default applied if empty
@@ -57,8 +71,9 @@ function sanitize(string $val): string {
 
 // Build the config key-value array in alphabetical order
 $lines = [
-    'B2_BUCKET_NAME'              => $b2_bucket_name,
+    'B2_BUCKET_NAME'              => '',   // legacy — kept so old schedules that reference it still load cleanly
     'BACKUPS_TO_KEEP_REMOTE'      => $backups_to_keep_remote,
+    'BUCKET_NAMES'                => $bucket_names_stored,  // base64-encoded JSON
     'DRY_RUN_REMOTE'              => $dry_run_remote,
     'MINIMAL_BACKUP_REMOTE'       => $minimal_backup_remote,
     'NOTIFICATION_SERVICE_REMOTE' => $notification_service_remote,

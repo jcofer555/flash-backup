@@ -106,8 +106,9 @@ function main(): void {
 
     // Allowlist: only store fields that belong in a remote schedule
     $allowed = [
-        'B2_BUCKET_NAME',
+        'B2_BUCKET_NAME',           // legacy — kept so old saved schedules can still be read
         'BACKUPS_TO_KEEP_REMOTE',
+        'BUCKET_NAMES',             // base64-encoded JSON map of per-remote bucket names
         'DRY_RUN_REMOTE',
         'MINIMAL_BACKUP_REMOTE',
         'NOTIFICATION_SERVICE_REMOTE',

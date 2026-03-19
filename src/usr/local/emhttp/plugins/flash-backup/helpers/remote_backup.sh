@@ -32,6 +32,7 @@ BACKUPS_TO_KEEP_REMOTE="${BACKUPS_TO_KEEP_REMOTE//\"/}"
 NOTIFICATIONS_REMOTE="${NOTIFICATIONS_REMOTE//\"/}"
 REMOTE_PATH_IN_CONFIG="${REMOTE_PATH_IN_CONFIG//\"/}"
 B2_BUCKET_NAME="${B2_BUCKET_NAME//\"/}"
+BUCKET_NAMES="${BUCKET_NAMES//\"/}"
 NOTIFICATION_SERVICE_REMOTE="${NOTIFICATION_SERVICE_REMOTE//\"/}"
 WEBHOOK_DISCORD_REMOTE="${WEBHOOK_DISCORD_REMOTE//\"/}"
 WEBHOOK_GOTIFY_REMOTE="${WEBHOOK_GOTIFY_REMOTE//\"/}"
@@ -180,8 +181,66 @@ get_rclone_flags() {
 }
 
 # ------------------------------------------------------------------------------
-# Notification helper
+# remote_needs_bucket() — true for remote types that require a bucket name in the path
 # ------------------------------------------------------------------------------
+remote_needs_bucket() {
+    local remote_type="$1"
+    local underlying_type="$2"
+
+    # For crypt remotes, check the underlying type
+    local effective_type="$remote_type"
+    [[ "$remote_type" == "crypt" ]] && effective_type="$underlying_type"
+
+    case "$effective_type" in
+        b2|s3) return 0 ;;
+        *)     return 1 ;;
+    esac
+}
+
+# ------------------------------------------------------------------------------
+# get_bucket_for_remote() — look up the bucket name for a given remote
+# Checks BUCKET_NAMES (base64-encoded JSON map) first, falls back to legacy B2_BUCKET_NAME
+# BUCKET_NAMES stores: base64({"remoteName":"bucketname/","other":"bucket2/"})
+# ------------------------------------------------------------------------------
+get_bucket_for_remote() {
+    local remote="$1"
+
+    # Try BUCKET_NAMES base64-encoded JSON map first (new multi-remote format)
+    if [[ -n "$BUCKET_NAMES" ]]; then
+        local decoded_json
+        decoded_json=$(echo "$BUCKET_NAMES" | base64 -d 2>/dev/null)
+        if [[ -n "$decoded_json" ]]; then
+            if command -v python3 &>/dev/null; then
+                local bucket
+                bucket=$(python3 -c "
+import json, sys
+try:
+    data = json.loads(sys.argv[1])
+    print(data.get(sys.argv[2], ''))
+except Exception:
+    print('')
+" "$decoded_json" "$remote" 2>/dev/null)
+                if [[ -n "$bucket" ]]; then
+                    echo "$bucket"
+                    return 0
+                fi
+            else
+                # Fallback: basic grep for "remoteName":"value" pattern
+                local bucket
+                bucket=$(echo "$decoded_json" | grep -oP "\"${remote}\"\\s*:\\s*\"\\K[^\"]+")
+                if [[ -n "$bucket" ]]; then
+                    echo "$bucket"
+                    return 0
+                fi
+            fi
+        fi
+    fi
+
+    # Fall back to legacy single-bucket field for backward compatibility
+    echo "$B2_BUCKET_NAME"
+}
+
+
 notify_remote() {
     local level="$1"
     local subject="$2"
@@ -510,9 +569,16 @@ process_remote() {
     rclone_flags=$(get_rclone_flags "$remote_type" "$underlying_type")
     debug_log "rclone flags: $rclone_flags"
 
+    # Resolve the bucket name for this specific remote
+    local bucket_name
+    bucket_name=$(get_bucket_for_remote "$remote")
+    debug_log "bucket_name for $remote: ${bucket_name:-(none)}"
+
     local dest
-    if [[ "$remote_type" == "b2" || "$remote_type" == "crypt" ]]; then
-        dest="${remote}:${B2_BUCKET_NAME}${REMOTE_SUBPATH}"
+    # B2 and S3-compatible remotes (including Wasabi) require a bucket name in the path.
+    # Crypt remotes also need the bucket when the underlying remote is b2 or s3.
+    if remote_needs_bucket "$remote_type" "$underlying_type"; then
+        dest="${remote}:${bucket_name}${REMOTE_SUBPATH}"
     else
         dest="${remote}:${REMOTE_SUBPATH}"
     fi
@@ -521,9 +587,11 @@ process_remote() {
 
     set_status "Uploading flash backup to config $remote"
 
-    # Ensure remote folder exists — skip for b2/crypt which don't support empty dirs
-    if [[ "$remote_type" == "b2" || "$remote_type" == "crypt" ]]; then
-        debug_log "Skipping mkdir for b2/crypt remote"
+    # Ensure remote folder exists.
+    # Skip mkdir for b2, s3, and crypt remotes — these providers either don't support
+    # empty directory creation or handle it implicitly on first upload.
+    if remote_needs_bucket "$remote_type" "$underlying_type" || [[ "$remote_type" == "crypt" ]]; then
+        debug_log "Skipping mkdir for b2/s3/crypt remote"
     elif [[ "$DRY_RUN_REMOTE" == "yes" ]]; then
         echo "[DRY RUN] Would ensure remote folder exists -> $dest"
         debug_log "[DRY RUN] Would mkdir: $dest"
@@ -596,6 +664,7 @@ fi
     debug_log "NOTIFICATION_SERVICE_REMOTE=$NOTIFICATION_SERVICE_REMOTE"
     debug_log "REMOTE_PATH_IN_CONFIG=$REMOTE_PATH_IN_CONFIG"
     debug_log "B2_BUCKET_NAME=${B2_BUCKET_NAME:+(set)}"
+    debug_log "BUCKET_NAMES=${BUCKET_NAMES:+(set)}"
     debug_log "WEBHOOK_DISCORD_REMOTE=${WEBHOOK_DISCORD_REMOTE:+(set)}"
     debug_log "WEBHOOK_GOTIFY_REMOTE=${WEBHOOK_GOTIFY_REMOTE:+(set)}"
     debug_log "WEBHOOK_NTFY_REMOTE=${WEBHOOK_NTFY_REMOTE:+(set)}"
@@ -663,6 +732,23 @@ fi
     fi
 
     debug_log "REMOTE_SUBPATH=$REMOTE_SUBPATH"
+
+    # Validate that every bucket-needing remote has a bucket name configured
+    for remote in "${REMOTE_ARRAY[@]}"; do
+        local _rtype _utype
+        read -r _rtype _utype <<< "$(resolve_remote_type "$remote")"
+        if remote_needs_bucket "$_rtype" "$_utype"; then
+            local _bucket
+            _bucket=$(get_bucket_for_remote "$remote")
+            if [[ -z "$_bucket" ]]; then
+                debug_log "ERROR: No bucket name configured for remote: $remote"
+                echo "[ERROR] No bucket name configured for remote: $remote"
+                set_status "Missing bucket name for $remote"
+                notify_remote "alert" "Flash Backup Error" "No bucket name configured for remote: $remote"
+                exit 1
+            fi
+        fi
+    done
 
     notify_remote "normal" "Flash Backup" "Remote backup started"
 
