@@ -13,4 +13,4 @@
 - Ability to set an owner for your local backups
 - Logging available in the webui and at /tmp/flash-backup
 
-https://media.invisioncic.com/u329766/monthly_2026_03/image.thumb.png.43a621e665c73b0b6dd4f79a1739e77e.png
+<img width="1000" height="482" alt="image" src="https://github.com/user-attachments/assets/f227514f-9c83-4135-8f56-e727594c3692" />
