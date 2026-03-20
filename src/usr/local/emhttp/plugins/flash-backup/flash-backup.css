@@ -90,34 +90,71 @@
   box-sizing:border-box; width:100%; overflow:hidden;
 }
 .fbb-topbar-group { display:flex; align-items:center; gap:4px; flex-shrink:1; min-width:0; }
+#fbb-mode-row .fbb-topbar-group:first-child { padding-left:3px; }
 .fbb-topbar-label {
-  font-size:12px; font-weight:600; color:var(--c-label);
+  font-size:11px; font-weight:600; color:var(--c-label);
   letter-spacing:.2px; white-space:nowrap; flex-shrink:0;
 }
 
-/* ── Select arrow applied universally inside fbb-page ────────────────────── */
-#fbb-page select,
-#fbb-mode-row select {
+/* -- Strip native arrow from all form selects (mode row excluded) ---------- */
+#fbb-page select {
   -webkit-appearance:none !important;
+  -moz-appearance:none !important;
   appearance:none !important;
-  background-image:var(--select-arrow) !important;
-  background-repeat:no-repeat !important;
-  background-position:right 8px center !important;
-  padding-right:24px !important;
+  background-image:none !important;
+  padding-right:26px !important;
 }
 
+/* -- Mode row selects: native appearance, narrower, no custom arrow --------- */
 #fbb-mode-row select {
+  -webkit-appearance:auto !important;
+  -moz-appearance:auto !important;
+  appearance:auto !important;
+  background-image:none !important;
   height:26px !important; font-size:12px !important;
   background-color:var(--c-bg) !important; color:var(--c-text) !important;
   border:1px solid var(--c-border-strong) !important;
   border-radius:var(--radius-input) !important;
-  padding-left:6px !important; padding-top:2px !important; padding-bottom:3px !important;
+  padding:2px 7px 3px 6px !important;
   cursor:pointer !important;
-  width:100px !important; max-width:100px !important;
+  width:20px !important; max-width:20px !important;
   min-width:0 !important; box-sizing:border-box !important;
   flex-shrink:1 !important; line-height:1.4 !important;
 }
 #fbb-mode-row select:focus { outline:none !important; box-shadow:0 0 0 2px var(--c-accent-glow) !important; }
+
+/* -- .fbb-select-wrap: JS injects this around every form select ------------- */
+/* The ::after draws the solid triangle on all wrapped fields                 */
+.fbb-select-wrap {
+  position:relative;
+  display:inline-block;
+  width:var(--input-w);
+  max-width:var(--input-w);
+  flex:none;
+}
+.fbb-select-wrap select {
+  width:100% !important;
+  max-width:100% !important;
+}
+/* Triangle arrow on wrapped selects and multiselect divs */
+.fbb-select-wrap::after,
+.vm-multiselect::after {
+  content:'';
+  position:absolute;
+  right:9px; top:50%;
+  transform:translateY(-50%);
+  width:0; height:0;
+  border-left:5px solid transparent;
+  border-right:5px solid transparent;
+  border-top:6px solid var(--c-accent-light);
+  pointer-events:none;
+}
+/* Multiselects: position:relative for ::after, clear bg-image */
+.vm-multiselect {
+  position:relative !important;
+  background-image:none !important;
+  padding-right:26px !important;
+}
 
 /* ── Section dividers ────────────────────────────────────────────────────── */
 .fbb-section-label {
@@ -264,7 +301,7 @@
   position:relative; width:var(--input-w) !important; max-width:var(--input-w) !important;
   flex:none !important; flex-shrink:0 !important;
   border:1px solid var(--c-border-strong) !important;
-  padding:3px 8px !important; background:var(--c-bg) !important;
+  padding:5px 26px 5px 8px !important; background:var(--c-bg) !important;
   cursor:pointer; color:var(--c-text) !important;
   white-space:nowrap; border-radius:var(--radius-input) !important;
   font-size:12px !important; box-sizing:border-box !important;
@@ -282,7 +319,7 @@
 div.vm-multiselect.short-input {
   appearance:none !important; -webkit-appearance:none !important;
   display:block !important; height:auto !important;
-  padding:5px 8px !important;
+  /* padding intentionally not set here — inherited from .vm-multiselect */
 }
 .vm-multiselect:hover { border-color:var(--c-accent-light) !important; }
 /* Disabled state — no rclone configs found */
@@ -458,20 +495,11 @@ div.vm-multiselect.short-input {
 .vm-schedules-table th + th,
 .vm-schedules-table td + td { border-left:1px solid var(--c-border) !important; }
 
-/* ── Backup destination input — chevron arrow ────────────────────────────── */
+/* -- Picker input: wrapped by JS, clear bg-image --------------------------- */
+/* #rclone_config_remote is a .vm-multiselect div, handled separately        */
 #backup_destination {
-  background-image:var(--select-arrow) !important;
-  background-repeat:no-repeat !important;
-  background-position:right 8px center !important;
-  padding-right:24px !important;
-}
-
-/* ── Rclone config multiselect — chevron arrow ───────────────────────────── */
-#rclone_config_remote {
-  background-image:var(--select-arrow) !important;
-  background-repeat:no-repeat !important;
-  background-position:right 8px center !important;
-  padding-right:24px !important;
+  background-image:none !important;
+  padding-right:26px !important;
 }
 
 /* ── Folder picker modal ─────────────────────────────────────────────────── */

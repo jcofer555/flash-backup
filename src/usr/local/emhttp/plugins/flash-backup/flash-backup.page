@@ -79,7 +79,6 @@ $all_plugin_options_arr = $sibling_plugins_arr;
 uasort($all_plugin_options_arr, fn($a,$b) => strcmp($a['label'],$b['label']));
 ?>
 <?php
-// ── RCLONE CONFIG DISCOVERY ──────────────────────────────────────────────────
 $rcloneConfigs = [
     '/boot/config/plugins/rclone/.rclone.conf',
     '/mnt/user/appdata/rclone/rclone.conf',
@@ -118,10 +117,8 @@ $saved = $remotesettings['RCLONE_CONFIG_REMOTE'] ?? '';
 $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
 ?>
 
-<!-- ── External CSS ──────────────────────────────────────────────────────────── -->
 <link rel="stylesheet" href="/plugins/flash-backup/flash-backup.css?v=<?=filemtime('/usr/local/emhttp/plugins/flash-backup/flash-backup.css')?>">
 
-<!-- ── Inline JS constants (PHP-generated, must stay in .page) ──────────────── -->
 <script>
 'use strict';
 let csrfToken = "<?= $_GET['csrf_token'] ?? ($_COOKIE['csrf_token'] ?? '') ?>";
@@ -153,18 +150,17 @@ const SAVED_BUCKET_NAMES = (function() {
   try { const b64 = "<?= addslashes($remotesettings['BUCKET_NAMES'] ?? '') ?>"; if (!b64) return {}; return JSON.parse(atob(b64)) || {}; } catch(e) { return {}; }
 })();
 const SAVED_B2_BUCKET_NAME_LEGACY = "<?= htmlspecialchars($remotesettings['B2_BUCKET_NAME'] ?? '') ?>";
-// remoteTypes is used by updateBucketVisibility() in the external JS
 const remoteTypes = JSON.parse('<?= addslashes(json_encode($remoteTypes)) ?>');
 </script>
 
 <div id="fbb-page">
 <div id="fbb-layout">
 
-  <!-- ══ SETTINGS CARD ════════════════════════════════════════════════════ -->
   <div class="fbb-panel-wrap">
     <div class="fbb-card">
 
       <div id="fbb-mode-row">
+        <!-- Plugin group — left -->
         <?php if ($has_siblings_bool): ?>
         <div class="fbb-topbar-group">
           <span class="fbb-topbar-label" id="fbb-plugin-label">Plugin:</span>
@@ -176,7 +172,8 @@ const remoteTypes = JSON.parse('<?= addslashes(json_encode($remoteTypes)) ?>');
           </select>
         </div>
         <?php endif; ?>
-        <div class="fbb-topbar-group">
+        <!-- Mode group — right -->
+        <div class="fbb-topbar-group" style="margin-left:auto;">
           <span class="fbb-topbar-label" id="fbb-mode-label">Mode:</span>
           <select id="fbb-mode-switcher" onchange="fbbSwitchMode(this.value)">
             <option value="local">Local Backup</option>
@@ -197,31 +194,22 @@ const remoteTypes = JSON.parse('<?= addslashes(json_encode($remoteTypes)) ?>');
         </div>
       </div>
 
-      <!-- ══ LOCAL BACKUP PANEL ══════════════════════════════════════════ -->
       <form id="flash-backup-settings" class="fbb-card-body">
-
         <div class="fbb-section-label">Configuration</div>
-
         <div class="form-pair">
           <label><span class="flash-backuptip" title="Choose destination for local backup">Backup Destination:</span></label>
-          <span><input type="text" id="backup_destination" name="BACKUP_DESTINATION"
-            data-picker-title="Select Backup Destination" placeholder="Click to browse…" readonly style="cursor:pointer;height:29px !important;box-sizing:border-box !important;"
-            value="<?= htmlspecialchars($settings['BACKUP_DESTINATION'] ?? '') ?>"></span>
+          <span><input type="text" id="backup_destination" name="BACKUP_DESTINATION" data-picker-title="Select Backup Destination" placeholder="Click to browse…" readonly style="cursor:pointer;height:29px !important;box-sizing:border-box !important;" value="<?= htmlspecialchars($settings['BACKUP_DESTINATION'] ?? '') ?>"></span>
         </div>
-
         <div class="form-pair">
           <label for="backups_to_keep"><span class="flash-backuptip" title="Choose the amount of backups to keep for your local backups">Backups To Keep:</span></label>
           <span><select id="backups_to_keep" class="short-input" name="BACKUPS_TO_KEEP">
             <?php $cur=$settings['BACKUPS_TO_KEEP']??0; for($i=0;$i<=99;$i++){$s=((int)$cur===$i)?'selected':''; if($i===0)echo"<option value=\"0\" $s>Unlimited</option>"; elseif($i===1)echo"<option value=\"1\" $s>Only Latest</option>"; else echo"<option value=\"$i\" $s>$i</option>"; } ?>
           </select></span>
         </div>
-
         <div class="form-pair">
           <label><span class="flash-backuptip" title="Choose the owner for the local backup">Backup Owner:</span></label>
-          <span><select id="backup_owner" name="BACKUP_OWNER"
-            data-selected="<?= htmlspecialchars($settings['BACKUP_OWNER'] ?? 'nobody') ?>"></select></span>
+          <span><select id="backup_owner" name="BACKUP_OWNER" data-selected="<?= htmlspecialchars($settings['BACKUP_OWNER'] ?? 'nobody') ?>"></select></span>
         </div>
-
         <div class="form-pair">
           <label for="dry_run"><span class="flash-backuptip" title="Enable to simulate the local backup">Dry Run:</span></label>
           <span><select id="dry_run" class="short-input" name="DRY_RUN">
@@ -229,9 +217,7 @@ const remoteTypes = JSON.parse('<?= addslashes(json_encode($remoteTypes)) ?>');
             <option value="no"  <?=(($settings['DRY_RUN']??'no')==='no' )?'selected':''?>>No</option>
           </select></span>
         </div>
-
         <div class="fbb-section-label" style="margin-top:8px;">Notifications</div>
-
         <div class="form-pair">
           <label for="notifications"><span class="flash-backuptip" title="Send notifications when flash backup starts and finishes">Notifications:</span></label>
           <span><select id="notifications" class="short-input" name="NOTIFICATIONS">
@@ -239,7 +225,6 @@ const remoteTypes = JSON.parse('<?= addslashes(json_encode($remoteTypes)) ?>');
             <option value="no"  <?=(($settings['NOTIFICATIONS']??'no')==='no' )?'selected':''?>>No</option>
           </select></span>
         </div>
-
         <div class="form-pair fbb-row-hidden" id="notification-service-row">
           <label><span class="flash-backuptip" title="Choose which notification service(s) to use">Service:</span></label>
           <span class="fbb-field-wrap">
@@ -258,11 +243,8 @@ const remoteTypes = JSON.parse('<?= addslashes(json_encode($remoteTypes)) ?>');
             </div>
           </span>
         </div>
-
         <div id="webhook-fields-container"></div>
-
         <div class="fbb-section-label" style="margin-top:8px;">Scheduling</div>
-
         <div class="form-pair" id="cron-expression-row">
           <label for="cron_mode"><span class="flash-backuptip" title="Select scheduling type">Scheduling:</span></label>
           <span><select id="cron_mode" name="CRON_MODE" class="short-input">
@@ -272,7 +254,6 @@ const remoteTypes = JSON.parse('<?= addslashes(json_encode($remoteTypes)) ?>');
             <option value="monthly">Monthly</option>
           </select></span>
         </div>
-
         <div id="hourly-options" style="display:none;">
           <div class="form-pair"><label for="hourly_frequency"><span class="flash-backuptip" title="Select hourly frequency">Frequency:</span></label>
             <span><select id="hourly_frequency" name="HOURLY_FREQUENCY" class="short-input">
@@ -326,7 +307,6 @@ const remoteTypes = JSON.parse('<?= addslashes(json_encode($remoteTypes)) ?>');
             </select></span>
           </div>
         </div>
-
         <div id="backup-banner-local" class="fbb-banner">
           <div class="fbb-banner-inner">
             <span id="backup-banner-text-local" class="fbb-banner-text"></span>
@@ -334,7 +314,6 @@ const remoteTypes = JSON.parse('<?= addslashes(json_encode($remoteTypes)) ?>');
             <span id="stop-toast-banner-local" class="stop-toast">Stop requested</span>
           </div>
         </div>
-
         <div class="backup-actions">
           <span title="Run backup of flash drive to local storage" class="flash-backuptip"><button type="button" id="backupbtn">Backup Now</button></span>
           <span class="flash-backuptip" data-tooltip="Create a local backup schedule using the settings shown in the fields above"><button type="button" id="schedule-local-backup" class="button schedule-button">Schedule It</button></span>
@@ -352,11 +331,8 @@ const remoteTypes = JSON.parse('<?= addslashes(json_encode($remoteTypes)) ?>');
         <div id="popupMessage" class="fbb-popup"></div>
       </form>
 
-      <!-- ══ REMOTE BACKUP PANEL ══════════════════════════════════════════ -->
       <form id="flash-backup-settings-remote" class="fbb-card-body" style="display:none;">
-
         <div class="fbb-section-label">Rclone Configuration</div>
-
         <div class="form-pair" id="rclone-config-row-remote">
           <label><span class="flash-backuptip" title="Choose which rclone config(s) to use for the remote backup">Rclone Config:</span></label>
           <span class="fbb-field-wrap">
@@ -375,21 +351,17 @@ const remoteTypes = JSON.parse('<?= addslashes(json_encode($remoteTypes)) ?>');
             </div>
           </span>
         </div>
-
         <div id="bucket-fields-container"></div>
-
         <div class="form-pair">
           <label><span class="flash-backuptip" title="Optional: subfolder where backups will be stored. If left empty /Flash_Backups/ will be used">Folder:</span></label>
           <span><input type="text" name="REMOTE_PATH_IN_CONFIG" id="remote_path_in_config" placeholder="/folder/subfolder" style="height:29px !important;box-sizing:border-box !important;" value="<?=htmlspecialchars($remotesettings['REMOTE_PATH_IN_CONFIG']??'')?>"></span>
         </div>
-
         <div class="form-pair">
           <label for="backups_to_keep_remote"><span class="flash-backuptip" title="Choose the amount of backups to keep for your remote backups">Backups To Keep:</span></label>
           <span><select id="backups_to_keep_remote" class="short-input" name="BACKUPS_TO_KEEP_REMOTE">
             <?php $cur=$remotesettings['BACKUPS_TO_KEEP_REMOTE']??0; for($i=0;$i<=99;$i++){$s=((int)$cur===$i)?'selected':''; if($i===0)echo"<option value=\"0\" $s>Unlimited</option>"; elseif($i===1)echo"<option value=\"1\" $s>Only Latest</option>"; else echo"<option value=\"$i\" $s>$i</option>"; } ?>
           </select></span>
         </div>
-
         <div class="form-pair">
           <label for="dry_run_remote"><span class="flash-backuptip" title="Enable to simulate the remote backup">Dry Run:</span></label>
           <span><select id="dry_run_remote" class="short-input" name="DRY_RUN_REMOTE">
@@ -397,9 +369,7 @@ const remoteTypes = JSON.parse('<?= addslashes(json_encode($remoteTypes)) ?>');
             <option value="no"  <?=(($remotesettings['DRY_RUN_REMOTE']??'no')==='no' )?'selected':''?>>No</option>
           </select></span>
         </div>
-
         <div class="fbb-section-label" style="margin-top:8px;">Notifications</div>
-
         <div class="form-pair">
           <label for="notifications_remote"><span class="flash-backuptip" title="Send notifications when flash backup to remote storage starts and finishes">Notifications:</span></label>
           <span><select id="notifications_remote" class="short-input" name="NOTIFICATIONS_REMOTE">
@@ -407,7 +377,6 @@ const remoteTypes = JSON.parse('<?= addslashes(json_encode($remoteTypes)) ?>');
             <option value="no"  <?=(($remotesettings['NOTIFICATIONS_REMOTE']??'no')==='no' )?'selected':''?>>No</option>
           </select></span>
         </div>
-
         <div class="form-pair fbb-row-hidden" id="notification-service-row-remote">
           <label><span class="flash-backuptip" title="Choose which notification service(s) to use">Service:</span></label>
           <span class="fbb-field-wrap">
@@ -426,11 +395,8 @@ const remoteTypes = JSON.parse('<?= addslashes(json_encode($remoteTypes)) ?>');
             </div>
           </span>
         </div>
-
         <div id="webhook-fields-container-remote"></div>
-
         <div class="fbb-section-label" style="margin-top:8px;">Scheduling</div>
-
         <div class="form-pair" id="cron-expression-row-remote">
           <label for="cron_mode_remote"><span class="flash-backuptip" title="Select scheduling type">Scheduling:</span></label>
           <span><select id="cron_mode_remote" name="CRON_MODE_REMOTE" class="short-input">
@@ -440,7 +406,6 @@ const remoteTypes = JSON.parse('<?= addslashes(json_encode($remoteTypes)) ?>');
             <option value="monthly">Monthly</option>
           </select></span>
         </div>
-
         <div id="hourly-options-remote" style="display:none;">
           <div class="form-pair"><label for="hourly_frequency_remote"><span class="flash-backuptip" title="Select hourly frequency">Frequency:</span></label>
             <span><select id="hourly_frequency_remote" name="HOURLY_FREQUENCY_REMOTE" class="short-input">
@@ -494,7 +459,6 @@ const remoteTypes = JSON.parse('<?= addslashes(json_encode($remoteTypes)) ?>');
             </select></span>
           </div>
         </div>
-
         <div id="backup-banner-remote" class="fbb-banner">
           <div class="fbb-banner-inner">
             <span id="backup-banner-text-remote" class="fbb-banner-text"></span>
@@ -502,7 +466,6 @@ const remoteTypes = JSON.parse('<?= addslashes(json_encode($remoteTypes)) ?>');
             <span id="stop-toast-banner-remote" class="stop-toast">Stop requested</span>
           </div>
         </div>
-
         <div class="backup-actions">
           <span title="Run remote backup" class="flash-backuptip"><button type="button" id="backupbtn_remote">Backup Now</button></span>
           <span title="Create a remote backup schedule using the settings shown in the fields above" class="flash-backuptip"><button type="button" id="schedule-remote-backup" class="button schedule-button">Schedule It</button></span>
@@ -520,10 +483,9 @@ const remoteTypes = JSON.parse('<?= addslashes(json_encode($remoteTypes)) ?>');
         <div id="popupMessageremote" class="fbb-popup"></div>
       </form>
 
-    </div><!-- .fbb-card -->
-  </div><!-- .fbb-panel-wrap -->
+    </div>
+  </div>
 
-  <!-- ══ LOG PANEL ══════════════════════════════════════════════════════════ -->
   <div id="fbb-log-panel">
     <div class="fbb-card-header" style="border-radius:var(--radius-card) var(--radius-card) 0 0;">
       <span class="fbb-card-title">Activity Log</span>
@@ -555,7 +517,6 @@ const remoteTypes = JSON.parse('<?= addslashes(json_encode($remoteTypes)) ?>');
     <pre id="last-run-log">Flash backup log not found</pre>
   </div>
 
-  <!-- ══ SCHEDULE TABLES ════════════════════════════════════════════════════ -->
   <div id="fbb-schedule-section">
     <div id="fbb-sched-title-local" class="fbb-sched-title" style="display:none;">Scheduled Local Backup Jobs</div>
     <div id="schedule-list"></div>
@@ -563,10 +524,9 @@ const remoteTypes = JSON.parse('<?= addslashes(json_encode($remoteTypes)) ?>');
     <div id="schedule-list-remote"></div>
   </div>
 
-</div><!-- #fbb-layout -->
-</div><!-- #fbb-page -->
+</div>
+</div>
 
-<!-- ══ Folder picker modal ═══════════════════════════════════════════════════ -->
 <div id="folderPickerModal" class="vm-modal">
   <div class="vm-modal-content">
     <div class="vm-modal-header">
@@ -574,7 +534,6 @@ const remoteTypes = JSON.parse('<?= addslashes(json_encode($remoteTypes)) ?>');
       <button type="button" id="closeFolderPicker">Close</button>
     </div>
     <div id="folderBreadcrumb" class="vm-breadcrumb"></div>
-    <!-- Inline create-folder bar — shown/hidden by JS, sits above the list -->
     <div id="fbb-create-folder-bar">
       <input type="text" id="newFolderName" placeholder="New folder name…" autocomplete="off">
       <button type="button" id="newFolderOk">Create</button>
@@ -594,7 +553,6 @@ const remoteTypes = JSON.parse('<?= addslashes(json_encode($remoteTypes)) ?>');
   </div>
 </div>
 
-<!-- ══ Custom confirm dialog ══════════════════════════════════════════════════ -->
 <div class="fbb-dialog-overlay" id="fbb-confirm-overlay">
   <div class="fbb-dialog-box">
     <div class="fbb-dialog-header"><span id="fbb-confirm-title">Confirm</span></div>
@@ -606,7 +564,6 @@ const remoteTypes = JSON.parse('<?= addslashes(json_encode($remoteTypes)) ?>');
   </div>
 </div>
 
-<!-- ══ Custom alert dialog ════════════════════════════════════════════════════ -->
 <div class="fbb-dialog-overlay" id="fbb-alert-overlay">
   <div class="fbb-dialog-box">
     <div class="fbb-dialog-header"><span id="fbb-alert-title">Notice</span></div>
@@ -617,5 +574,4 @@ const remoteTypes = JSON.parse('<?= addslashes(json_encode($remoteTypes)) ?>');
   </div>
 </div>
 
-<!-- ── External JS ───────────────────────────────────────────────────────────── -->
 <script src="/plugins/flash-backup/flash-backup.js?v=<?=filemtime('/usr/local/emhttp/plugins/flash-backup/flash-backup.js')?>"></script>

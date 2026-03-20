@@ -193,7 +193,7 @@ function toggleNotificationRows(suffix) {
   if ($(notifSelectId).val() === 'yes') {
     $(serviceRowId).removeClass('fbb-row-hidden');
     if (window._fbbProcessLabels) window._fbbProcessLabels($(serviceRowId));
-    rebuildWebhookFields(s);
+    rebuildWebhookFields(s); setTimeout(fbbWrapSelects, 50);
   } else {
     $(serviceRowId).addClass('fbb-row-hidden');
     $(webhookContainer).empty();
@@ -675,6 +675,38 @@ if (clearLastRunBtn) {
 }
 
 // ── Backup owner dropdown ─────────────────────────────────────────────────────
+// -- Select/picker wrap: identical solid triangle on all fields --------------
+// Excluded: mode-row selects, webhook text inputs, log search input
+function fbbWrapSelects() {
+  // Mark mode-row selects so they are never touched
+  document.querySelectorAll('#fbb-mode-row select').forEach(function(el) {
+    el.classList.add('fbb-wrapped');
+  });
+  // Wrap all other <select> elements inside #fbb-page
+  // Exclude: .vm-multiselect descendants, hidden selects, selects inside .fbb-field-wrap
+  // (hidden selects beside .vm-multiselect divs would create a phantom ::after arrow)
+  document.querySelectorAll('#fbb-page select:not(.fbb-wrapped)').forEach(function(sel) {
+    if (sel.closest('.fbb-select-wrap')) return;
+    if (sel.closest('.vm-multiselect')) return;
+    if (sel.style.display === 'none' || sel.hasAttribute('multiple') && sel.style.display === 'none') return;
+    if (getComputedStyle(sel).display === 'none') return;
+    const wrap = document.createElement('div');
+    wrap.className = 'fbb-select-wrap';
+    sel.parentNode.insertBefore(wrap, sel);
+    wrap.appendChild(sel);
+    sel.classList.add('fbb-wrapped');
+  });
+  // Wrap picker text input (#backup_destination only)
+  // #rclone_config_remote is a .vm-multiselect div — already has ::after via CSS
+  const bdInp = document.getElementById('backup_destination');
+  if (bdInp && !bdInp.closest('.fbb-select-wrap')) {
+    const wrap = document.createElement('div');
+    wrap.className = 'fbb-select-wrap';
+    bdInp.parentNode.insertBefore(wrap, bdInp);
+    wrap.appendChild(bdInp);
+  }
+}
+
 $(document).ready(function() {
   const select   = $('#backup_owner');
   const selected = select.data('selected') || 'nobody';
@@ -1165,6 +1197,7 @@ function detectCronMode(cron) {
 // ── CA plugin update check ────────────────────────────────────────────────────
 if (typeof caPluginUpdateCheck === 'function') {
   caPluginUpdateCheck('flash-backup.plg', { name: 'flash-backup' });
+  fbbWrapSelects();
 }
 
 // ── Folder picker ─────────────────────────────────────────────────────────────
