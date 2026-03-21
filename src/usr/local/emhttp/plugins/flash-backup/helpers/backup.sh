@@ -266,18 +266,17 @@ build_tar_paths() {
 	TAR_PATHS=()
 
 	if [[ "$MINIMAL_BACKUP" == "yes" ]]; then
-		echo "Minimal backup mode only backing up /config, /extra, and /syslinux/syslinux.cfg"
+		echo "Minimal backup mode only backing up /config, /extra, and /syslinux/syslinux.cfg or /grub/grub.cfg"
 		debug_log "Minimal backup mode enabled"
 		local path
-		for path in "/boot/config" "/boot/extra" "/boot/syslinux/syslinux.cfg"; do
-			if [[ -e "$path" ]]; then
-				TAR_PATHS+=("${path#/}")
-				debug_log "Including path: $path"
-			else
-				echo "Skipping missing path -> $path"
-				debug_log "Skipping missing path: $path"
-			fi
-		done
+        for path in "/boot/config" "/boot/extra" "/boot/syslinux/syslinux.cfg" "/boot/grub/grub.cfg"; do
+            if [[ -e "$path" ]]; then
+                TAR_PATHS+=("${path#/}")
+                debug_log "Including path: $path"
+            else
+                debug_log "Skipping missing path (optional): $path"
+            fi
+        done
 		if ((${#TAR_PATHS[@]} == 0)); then
 			debug_log "ERROR: No valid paths found for minimal backup"
 			echo "[ERROR] No valid paths found"

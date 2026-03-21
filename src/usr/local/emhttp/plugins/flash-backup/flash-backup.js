@@ -3,9 +3,9 @@
 // ── Custom confirm/alert dialogs ──────────────────────────────────────────────
 function fbbAlert(msg, title) {
   const overlay = document.getElementById('fbb-alert-overlay');
-  const msgEl   = document.getElementById('fbb-alert-msg');
-  const titEl   = document.getElementById('fbb-alert-title');
-  const okBtn   = document.getElementById('fbb-alert-ok');
+  const msgEl = document.getElementById('fbb-alert-msg');
+  const titEl = document.getElementById('fbb-alert-title');
+  const okBtn = document.getElementById('fbb-alert-ok');
   if (!overlay) { return; }
   if (titEl) titEl.textContent = title || 'Notice';
   msgEl.textContent = msg;
@@ -15,35 +15,35 @@ function fbbAlert(msg, title) {
 }
 
 function fbbConfirm(msg, onOk, title) {
-  const overlay  = document.getElementById('fbb-confirm-overlay');
-  const msgEl    = document.getElementById('fbb-confirm-msg');
-  const titEl    = document.getElementById('fbb-confirm-title');
-  const okBtn    = document.getElementById('fbb-confirm-ok');
-  const canBtn   = document.getElementById('fbb-confirm-cancel');
+  const overlay = document.getElementById('fbb-confirm-overlay');
+  const msgEl = document.getElementById('fbb-confirm-msg');
+  const titEl = document.getElementById('fbb-confirm-title');
+  const okBtn = document.getElementById('fbb-confirm-ok');
+  const canBtn = document.getElementById('fbb-confirm-cancel');
   if (!overlay) { if (onOk) onOk(); return; }
   if (titEl) titEl.textContent = title || 'Confirm';
   msgEl.textContent = msg;
   overlay.classList.add('open');
   function cleanup() { overlay.classList.remove('open'); okBtn.removeEventListener('click', handleOk); canBtn.removeEventListener('click', handleCancel); }
-  function handleOk()     { cleanup(); if (onOk) onOk(); }
+  function handleOk() { cleanup(); if (onOk) onOk(); }
   function handleCancel() { cleanup(); }
-  okBtn.addEventListener('click',  handleOk);
+  okBtn.addEventListener('click', handleOk);
   canBtn.addEventListener('click', handleCancel);
 }
 
 // ── Mode switcher ─────────────────────────────────────────────────────────────
 function fbbSwitchMode(mode) {
   const isLocal = (mode === 'local');
-  document.getElementById('flash-backup-settings').style.display        = isLocal ? '' : 'none';
+  document.getElementById('flash-backup-settings').style.display = isLocal ? '' : 'none';
   document.getElementById('flash-backup-settings-remote').style.display = isLocal ? 'none' : '';
   document.getElementById('fbb-active-card-title').textContent = isLocal ? 'Local Backup' : 'Remote Backup';
-  document.getElementById('fbb-local-status-wrap').style.display  = isLocal ? '' : 'none';
+  document.getElementById('fbb-local-status-wrap').style.display = isLocal ? '' : 'none';
   document.getElementById('fbb-remote-status-wrap').style.display = isLocal ? 'none' : '';
   if (isLocal) {
     if (typeof resetScheduleUIremote === 'function') resetScheduleUIremote();
   } else {
     if (typeof resetScheduleUI === 'function') resetScheduleUI();
-    $.get('/plugins/flash-backup/helpers/schedule_list_remote.php', function(html) {
+    $.get('/plugins/flash-backup/helpers/schedule_list_remote.php', function (html) {
       $('#schedule-list-remote').html(html);
       if ($('#schedule-list-remote .TableContainer').length > 0) {
         const localVisible = $('#fbb-sched-title-local').is(':visible');
@@ -54,17 +54,17 @@ function fbbSwitchMode(mode) {
 }
 
 // ── Status dot updater ────────────────────────────────────────────────────────
-(function() {
+(function () {
   function updateDot(dotId, textId) {
-    const dot  = document.getElementById(dotId);
+    const dot = document.getElementById(dotId);
     const text = document.getElementById(textId);
     if (!dot || !text) return;
     const s = (text.textContent || '').toLowerCase();
     const running = s !== 'idle' && s.indexOf('not running') === -1 && s.trim() !== '';
     dot.classList.toggle('active', running);
   }
-  setInterval(function() {
-    updateDot('fbb-local-dot',  'status-text');
+  setInterval(function () {
+    updateDot('fbb-local-dot', 'status-text');
     updateDot('fbb-remote-dot', 'status-text-remote');
   }, 1000);
 })();
@@ -74,8 +74,8 @@ $(document).on('mouseenter', '.flash-backuptip', function () {
   const $el = $(this);
   const isButtonWrapper = $el.is('span') && $el.children('button').length > 0;
   const isCheckboxLabel = $el.is('label') && $el.find('input[type="checkbox"]').length > 0;
-  const isButton        = $el.is('button');
-  const isTableTip      = $el.is('span') && $el.closest('table').length > 0;
+  const isButton = $el.is('button');
+  const isTableTip = $el.is('span') && $el.closest('table').length > 0;
   if (!isButtonWrapper && !isCheckboxLabel && !isButton && !isTableTip) return;
   if (!$el.hasClass('tooltipstered')) {
     const tipContent = $el.attr('title') || $el.data('tooltip') || '';
@@ -104,12 +104,12 @@ function fbbSetTooltip($span, text, attr) {
 
 // ── Webhook / notification helpers ────────────────────────────────────────────
 const SERVICE_CONFIG = {
-  Discord:  { label:'Discord Webhook URL',    tooltip:'Enter your Discord webhook URL e.g. https://discord.com/api/webhooks/WEBHOOK or just WEBHOOK', placeholder:'https://discord.com/api/webhooks/WEBHOOK', prefix:'https://discord.com/api/webhooks/', needsUserKey:false, needsUrl:true },
-  Gotify:   { label:'Gotify URL',             tooltip:'Enter your Gotify server message URL',     placeholder:'https://gotify.example.com/message?token=TOKEN', prefix:'https://gotify.example.com/message?token=', needsUserKey:false, needsUrl:true },
-  Ntfy:     { label:'Ntfy URL',               tooltip:'Enter your Ntfy topic URL e.g. https://ntfy.sh/yourtopic', placeholder:'https://ntfy.sh/yourtopic', prefix:'https://ntfy.sh/', needsUserKey:false, needsUrl:true },
-  Pushover: { label:'Pushover App Token URL', tooltip:'Enter your Pushover app token URL',        placeholder:'https://api.pushover.net/YOURAPPTOKEN', prefix:'https://api.pushover.net/', needsUserKey:true, needsUrl:true },
-  Slack:    { label:'Slack Webhook URL',      tooltip:'Enter your Slack webhook URL',             placeholder:'https://hooks.slack.com/services/ID', prefix:'https://hooks.slack.com/services/', needsUserKey:false, needsUrl:true },
-  Unraid:   { label:null, tooltip:"Uses Unraid's built-in notification system", placeholder:null, prefix:null, needsUserKey:false, needsUrl:false }
+  Discord: { label: 'Discord Webhook URL', tooltip: 'Enter your Discord webhook URL e.g. https://discord.com/api/webhooks/WEBHOOK or just WEBHOOK', placeholder: 'https://discord.com/api/webhooks/WEBHOOK', prefix: 'https://discord.com/api/webhooks/', needsUserKey: false, needsUrl: true },
+  Gotify: { label: 'Gotify URL', tooltip: 'Enter your Gotify server message URL', placeholder: 'https://gotify.example.com/message?token=TOKEN', prefix: 'https://gotify.example.com/message?token=', needsUserKey: false, needsUrl: true },
+  Ntfy: { label: 'Ntfy URL', tooltip: 'Enter your Ntfy topic URL e.g. https://ntfy.sh/yourtopic', placeholder: 'https://ntfy.sh/yourtopic', prefix: 'https://ntfy.sh/', needsUserKey: false, needsUrl: true },
+  Pushover: { label: 'Pushover App Token URL', tooltip: 'Enter your Pushover app token URL', placeholder: 'https://api.pushover.net/YOURAPPTOKEN', prefix: 'https://api.pushover.net/', needsUserKey: true, needsUrl: true },
+  Slack: { label: 'Slack Webhook URL', tooltip: 'Enter your Slack webhook URL', placeholder: 'https://hooks.slack.com/services/ID', prefix: 'https://hooks.slack.com/services/', needsUserKey: false, needsUrl: true },
+  Unraid: { label: null, tooltip: "Uses Unraid's built-in notification system", placeholder: null, prefix: null, needsUserKey: false, needsUrl: false }
 };
 
 function normalizeWebhookUrl(val, service) {
@@ -128,30 +128,30 @@ function validateWebhookUrl(val, service) {
 }
 function getSelectedServices(suffix) {
   const listId = suffix ? '#notification-service-list-' + suffix : '#notification-service-list';
-  return $(listId).find('input:checked').map(function() { return $(this).val(); }).get();
+  return $(listId).find('input:checked').map(function () { return $(this).val(); }).get();
 }
 function updateServiceLabel(suffix) {
   const services = getSelectedServices(suffix);
-  const labelId  = suffix ? '#notification-service-label-' + suffix : '#notification-service-label';
+  const labelId = suffix ? '#notification-service-label-' + suffix : '#notification-service-label';
   $(labelId).text(services.length ? services.join(', ') : 'Select service(s)');
 }
 function rebuildWebhookFields(suffix) {
-  const s           = suffix || '';
+  const s = suffix || '';
   const containerId = s ? '#webhook-fields-container-' + s : '#webhook-fields-container';
-  const services    = getSelectedServices(s);
-  const container   = $(containerId);
+  const services = getSelectedServices(s);
+  const container = $(containerId);
   container.empty();
-  const savedWebhooks    = s ? SAVED_WEBHOOKS_REMOTE : SAVED_WEBHOOKS;
+  const savedWebhooks = s ? SAVED_WEBHOOKS_REMOTE : SAVED_WEBHOOKS;
   const savedPushoverKey = s ? SAVED_PUSHOVER_USER_KEY_REMOTE : SAVED_PUSHOVER_USER_KEY;
-  services.forEach(function(service) {
+  services.forEach(function (service) {
     const cfg = SERVICE_CONFIG[service]; if (!cfg) return;
-    const s_dash  = s ? '-' + s : '';
+    const s_dash = s ? '-' + s : '';
     const s_under = s ? '_' + s : '';
     if (cfg.needsUrl) {
       const urlFieldId = 'webhook_url_' + service.toLowerCase() + s_under;
-      const fieldName  = 'WEBHOOK_' + service.toUpperCase() + (s ? '_' + s.toUpperCase() : '');
-      const errorId    = 'webhook-error-' + service.toLowerCase() + s_dash;
-      const savedVal   = savedWebhooks[service.toUpperCase()] || '';
+      const fieldName = 'WEBHOOK_' + service.toUpperCase() + (s ? '_' + s.toUpperCase() : '');
+      const errorId = 'webhook-error-' + service.toLowerCase() + s_dash;
+      const savedVal = savedWebhooks[service.toUpperCase()] || '';
       const urlRow = $(`
         <div class="form-pair" id="webhook-row-${service.toLowerCase()}${s_dash}">
           <label><span class="flash-backuptip" title="${cfg.tooltip}">${cfg.label}:</span></label>
@@ -179,23 +179,23 @@ function rebuildWebhookFields(suffix) {
       container.append(pkRow);
     }
   });
-  container.find('.webhook-url-input').on('input', function() {
+  container.find('.webhook-url-input').on('input', function () {
     const service = $(this).data('service');
-    const val     = $(this).val().trim();
+    const val = $(this).val().trim();
     const errorId = '#webhook-error-' + service.toLowerCase() + (s ? '-' + s : '');
-    const valid   = val === '' || validateWebhookUrl(val, service);
+    const valid = val === '' || validateWebhookUrl(val, service);
     $(errorId).toggle(!valid);
-  }).on('blur', function() {
-    const service    = $(this).data('service');
+  }).on('blur', function () {
+    const service = $(this).data('service');
     const normalized = normalizeWebhookUrl($(this).val(), service);
     $(this).val(normalized).trigger('input');
   });
   if (window._fbbProcessLabels) window._fbbProcessLabels(container);
 }
 function toggleNotificationRows(suffix) {
-  const s                = suffix || '';
-  const notifSelectId    = s ? '#notifications_' + s : '#notifications';
-  const serviceRowId     = s ? '#notification-service-row-' + s : '#notification-service-row';
+  const s = suffix || '';
+  const notifSelectId = s ? '#notifications_' + s : '#notifications';
+  const serviceRowId = s ? '#notification-service-row-' + s : '#notification-service-row';
   const webhookContainer = s ? '#webhook-fields-container-' + s : '#webhook-fields-container';
   if ($(notifSelectId).val() === 'yes') {
     $(serviceRowId).removeClass('fbb-row-hidden');
@@ -208,36 +208,36 @@ function toggleNotificationRows(suffix) {
 }
 
 // ── Dropdown wiring ───────────────────────────────────────────────────────────
-$('#notification_service').on('click',        function(e) { e.stopPropagation(); $('#notification-service-list').toggle(); });
-$('#notification_service_remote').on('click', function(e) { e.stopPropagation(); $('#notification-service-list-remote').toggle(); });
-$('#notification-service-list').on('click',        function(e) { e.stopPropagation(); });
-$('#notification-service-list-remote').on('click', function(e) { e.stopPropagation(); });
-$(document).on('click', function(e) {
-  if (!$(e.target).closest('#notification_service').length)        $('#notification-service-list').hide();
+$('#notification_service').on('click', function (e) { e.stopPropagation(); $('#notification-service-list').toggle(); });
+$('#notification_service_remote').on('click', function (e) { e.stopPropagation(); $('#notification-service-list-remote').toggle(); });
+$('#notification-service-list').on('click', function (e) { e.stopPropagation(); });
+$('#notification-service-list-remote').on('click', function (e) { e.stopPropagation(); });
+$(document).on('click', function (e) {
+  if (!$(e.target).closest('#notification_service').length) $('#notification-service-list').hide();
   if (!$(e.target).closest('#notification_service_remote').length) $('#notification-service-list-remote').hide();
 });
-$('#notification-service-list').on('change', 'input[type=checkbox]', function() {
-  const checked = $('#notification-service-list input:checked').map(function() { return $(this).val(); }).get();
-  $('#notification_service_hidden option').each(function() { $(this).prop('selected', checked.includes($(this).val())); });
+$('#notification-service-list').on('change', 'input[type=checkbox]', function () {
+  const checked = $('#notification-service-list input:checked').map(function () { return $(this).val(); }).get();
+  $('#notification_service_hidden option').each(function () { $(this).prop('selected', checked.includes($(this).val())); });
   updateServiceLabel(''); rebuildWebhookFields('');
 });
-$('#notification-service-list-remote').on('change', 'input[type=checkbox]', function() {
-  const checked = $('#notification-service-list-remote input:checked').map(function() { return $(this).val(); }).get();
-  $('#notification_service_remote_hidden option').each(function() { $(this).prop('selected', checked.includes($(this).val())); });
+$('#notification-service-list-remote').on('change', 'input[type=checkbox]', function () {
+  const checked = $('#notification-service-list-remote input:checked').map(function () { return $(this).val(); }).get();
+  $('#notification_service_remote_hidden option').each(function () { $(this).prop('selected', checked.includes($(this).val())); });
   updateServiceLabel('remote'); rebuildWebhookFields('remote');
 });
-$('#notifications').on('change',        function() { toggleNotificationRows(''); });
-$('#notifications_remote').on('change', function() { toggleNotificationRows('remote'); });
+$('#notifications').on('change', function () { toggleNotificationRows(''); });
+$('#notifications_remote').on('change', function () { toggleNotificationRows('remote'); });
 toggleNotificationRows(''); toggleNotificationRows('remote');
 updateServiceLabel(''); updateServiceLabel('remote');
 
-$('#rclone_config_remote').on('click', function(e) { e.stopPropagation(); $('#rclone-config-list-remote').toggle(); });
-$('#rclone-config-list-remote').on('click', function(e) { e.stopPropagation(); });
-$(document).on('click', function(e) { if (!$(e.target).closest('#rclone_config_remote').length) $('#rclone-config-list-remote').hide(); });
-$('#rclone-config-list-remote').on('change', 'input[type=checkbox]', function() {
-  const selected = $('#rclone-config-list-remote').find('input:checked').map(function() { return $(this).val(); }).get();
+$('#rclone_config_remote').on('click', function (e) { e.stopPropagation(); $('#rclone-config-list-remote').toggle(); });
+$('#rclone-config-list-remote').on('click', function (e) { e.stopPropagation(); });
+$(document).on('click', function (e) { if (!$(e.target).closest('#rclone_config_remote').length) $('#rclone-config-list-remote').hide(); });
+$('#rclone-config-list-remote').on('change', 'input[type=checkbox]', function () {
+  const selected = $('#rclone-config-list-remote').find('input:checked').map(function () { return $(this).val(); }).get();
   $('#rclone-config-label-remote').text(selected.length ? selected.join(', ') : 'Select config(s)');
-  $('#rclone_config_remote_hidden option').each(function() { $(this).prop('selected', selected.includes($(this).val())); });
+  $('#rclone_config_remote_hidden option').each(function () { $(this).prop('selected', selected.includes($(this).val())); });
   updateBucketVisibility();
 });
 
@@ -248,8 +248,8 @@ let _fbbRcloneSnapshot = '';
     .then(r => r.json())
     .then(data => {
       const remotes = (data.remotes || []);
-      const types   = (data.types   || {});
-      const snap    = JSON.stringify(remotes);
+      const types = (data.types || {});
+      const snap = JSON.stringify(remotes);
       if (snap === _fbbRcloneSnapshot) return;
       _fbbRcloneSnapshot = snap;
       const currentlySelected = $('#rclone_config_remote_hidden').val() || [];
@@ -260,10 +260,10 @@ let _fbbRcloneSnapshot = '';
       $list.empty();
       const rtype = remoteTypes || {};
       remotes.forEach(r => { const t = types[r] || rtype[r] || 'unknown'; const chk = currentlySelected.includes(r) ? ' checked' : ''; $list.append(`<div><label><input type="checkbox" value="${r}"${chk}>${t} - ${r}</label></div>`); });
-      $list.off('change', 'input[type=checkbox]').on('change', 'input[type=checkbox]', function() {
-        const sel = $list.find('input:checked').map(function() { return $(this).val(); }).get();
+      $list.off('change', 'input[type=checkbox]').on('change', 'input[type=checkbox]', function () {
+        const sel = $list.find('input:checked').map(function () { return $(this).val(); }).get();
         $('#rclone-config-label-remote').text(sel.length ? sel.join(', ') : 'Select config(s)');
-        $hidden.find('option').each(function() { $(this).prop('selected', sel.includes($(this).val())); });
+        $hidden.find('option').each(function () { $(this).prop('selected', sel.includes($(this).val())); });
         updateBucketVisibility();
       });
       const stillSelected = currentlySelected.filter(r => remotes.includes(r));
@@ -273,22 +273,22 @@ let _fbbRcloneSnapshot = '';
       else { $widget.removeClass('fbb-rclone-disabled'); if (!stillSelected.length) $('#rclone-config-label-remote').text('Select config(s)'); }
       updateBucketVisibility();
     })
-    .catch(() => {})
+    .catch(() => { })
     .finally(() => setTimeout(pollRcloneConfigs, 1000));
 })();
 
 // ── Schedule UI lock helpers ──────────────────────────────────────────────────
 let scheduleUILocked = false;
-function lockScheduleUI()   { scheduleUILocked = true;  $('.schedule-action-btn').prop('disabled', true); }
+function lockScheduleUI() { scheduleUILocked = true; $('.schedule-action-btn').prop('disabled', true); }
 function unlockScheduleUI() { scheduleUILocked = false; $('.schedule-action-btn').prop('disabled', false); }
 let scheduleUILockedremote = false;
-function lockScheduleUIremote()   { scheduleUILockedremote = true;  $('.schedule-action-btn-remote').prop('disabled', true); }
+function lockScheduleUIremote() { scheduleUILockedremote = true; $('.schedule-action-btn-remote').prop('disabled', true); }
 function unlockScheduleUIremote() { scheduleUILockedremote = false; $('.schedule-action-btn-remote').prop('disabled', false); }
 
 // ── Edit mode flags ───────────────────────────────────────────────────────────
 // Single flag per panel routes the Backup Now button to cancel during edit
 // without removing or re-adding any event handlers.
-let _editModeLocal  = false;
+let _editModeLocal = false;
 let _editModeRemote = false;
 
 // ── Validation helpers ────────────────────────────────────────────────────────
@@ -303,24 +303,24 @@ function normalizeBucketName(val, isB2Only) {
 }
 function collectBucketNames() {
   const map = {};
-  $('#bucket-fields-container .bucket-name-input').each(function() {
+  $('#bucket-fields-container .bucket-name-input').each(function () {
     const remote = $(this).data('remote'); const val = $(this).val().trim();
     if (remote && val) map[remote] = val;
   });
   return map;
 }
 function updateBucketVisibility() {
-  const selected  = $('#rclone_config_remote_hidden').val() || [];
+  const selected = $('#rclone_config_remote_hidden').val() || [];
   const container = $('#bucket-fields-container');
-  const existing  = collectBucketNames();
+  const existing = collectBucketNames();
   container.empty();
   const bucketRemotes = selected.filter(r => BUCKET_REMOTE_TYPES.includes(remoteTypes[r]));
-  bucketRemotes.forEach(function(remote) {
-    const isB2        = remoteTypes[remote] === 'b2' || remoteTypes[remote] === 'crypt-b2';
-    const typeLabel   = isB2 ? 'B2' : 'S3';
+  bucketRemotes.forEach(function (remote) {
+    const isB2 = remoteTypes[remote] === 'b2' || remoteTypes[remote] === 'crypt-b2';
+    const typeLabel = isB2 ? 'B2' : 'S3';
     const placeholder = isB2 ? 'my-b2-bucket' : 'my-s3-bucket';
-    const fieldId     = 'bucket_name_' + remote.replace(/[^a-zA-Z0-9_]/g, '_');
-    const tooltip     = `Bucket name for ${remote} (${typeLabel}) — do not include a leading slash`;
+    const fieldId = 'bucket_name_' + remote.replace(/[^a-zA-Z0-9_]/g, '_');
+    const tooltip = `Bucket name for ${remote} (${typeLabel}) — do not include a leading slash`;
     let savedVal = existing[remote] || SAVED_BUCKET_NAMES[remote] || '';
     if (!savedVal && isB2 && SAVED_B2_BUCKET_NAME_LEGACY) savedVal = SAVED_B2_BUCKET_NAME_LEGACY;
     const row = $(`
@@ -334,11 +334,11 @@ function updateBucketVisibility() {
       </div>`);
     container.append(row);
   });
-  container.find('.bucket-name-input').off('blur').on('blur', function() {
+  container.find('.bucket-name-input').off('blur').on('blur', function () {
     const isB2 = $(this).data('is-b2') === '1' || $(this).data('is-b2') === 1;
     $(this).val(normalizeBucketName($(this).val(), isB2));
   });
-  container.find('.bucket-name-input').each(function() {
+  container.find('.bucket-name-input').each(function () {
     const isB2 = $(this).data('is-b2') === '1' || $(this).data('is-b2') === 1;
     if ($(this).val().trim()) $(this).val(normalizeBucketName($(this).val(), isB2));
   });
@@ -360,7 +360,7 @@ function validateBackupPrereqsremote() {
   if (!selectedRemotes.length) { fbbAlert('Please select at least one rclone config'); return false; }
   const remotePath = $('#remote_path_in_config').val().trim();
   if (remotePath !== '' && !remotePath.startsWith('/')) { fbbAlert('Path In Config must start with a "/" or be left blank to use default /Flash_Backups'); return false; }
-  if (remotePath !== '' && !remotePath.endsWith('/'))   { fbbAlert('Path In Config must end with a "/" or be left blank to use default /Flash_Backups'); return false; }
+  if (remotePath !== '' && !remotePath.endsWith('/')) { fbbAlert('Path In Config must end with a "/" or be left blank to use default /Flash_Backups'); return false; }
   if (remotePath !== '') {
     const inner = remotePath.replace(/^\/+|\/+$/g, ''); const parts = inner.split('/');
     const validName = /^[A-Za-z0-9._+\-@ ]+$/;
@@ -406,28 +406,28 @@ updateRestoreStatus(); setInterval(updateRestoreStatus, 1000);
 (function waitForSchedulingToggle() {
   function initSchedulingToggle() {
     const cronModeSelect = document.getElementById('cron_mode'); if (!cronModeSelect) return false;
-    const hourlyOptions  = document.getElementById('hourly-options');
-    const dailyOptions   = document.getElementById('daily-options');
-    const weeklyOptions  = document.getElementById('weekly-options');
+    const hourlyOptions = document.getElementById('hourly-options');
+    const dailyOptions = document.getElementById('daily-options');
+    const weeklyOptions = document.getElementById('weekly-options');
     const monthlyOptions = document.getElementById('monthly-options');
-    const hourlyFreq     = document.getElementById('hourly_frequency');
-    const dailyTime      = document.getElementById('daily_time');
-    const weeklyDay      = document.getElementById('weekly_day');
-    const weeklyTime     = document.getElementById('weekly_time');
-    const monthlyDay     = document.getElementById('monthly_day');
-    const monthlyTime    = document.getElementById('monthly_time');
+    const hourlyFreq = document.getElementById('hourly_frequency');
+    const dailyTime = document.getElementById('daily_time');
+    const weeklyDay = document.getElementById('weekly_day');
+    const weeklyTime = document.getElementById('weekly_time');
+    const monthlyDay = document.getElementById('monthly_day');
+    const monthlyTime = document.getElementById('monthly_time');
     function toggleCronOptions(value) {
-      hourlyOptions.style.display  = (value === 'hourly')  ? 'block' : 'none';
-      dailyOptions.style.display   = (value === 'daily')   ? 'block' : 'none';
-      weeklyOptions.style.display  = (value === 'weekly')  ? 'block' : 'none';
+      hourlyOptions.style.display = (value === 'hourly') ? 'block' : 'none';
+      dailyOptions.style.display = (value === 'daily') ? 'block' : 'none';
+      weeklyOptions.style.display = (value === 'weekly') ? 'block' : 'none';
       monthlyOptions.style.display = (value === 'monthly') ? 'block' : 'none';
       updateCronExpression();
     }
     function updateCronExpression() {
       let cronString = '';
-      if      (cronModeSelect.value === 'hourly'  && hourlyFreq)  cronString = `0 */${parseInt(hourlyFreq.value, 10)} * * *`;
-      else if (cronModeSelect.value === 'daily'   && dailyTime)   cronString = `${parseInt(document.getElementById('daily_minute').value, 10)} ${parseInt(dailyTime.value, 10)} * * *`;
-      else if (cronModeSelect.value === 'weekly'  && weeklyDay && weeklyTime) { const dm = {Sunday:0,Monday:1,Tuesday:2,Wednesday:3,Thursday:4,Friday:5,Saturday:6}; cronString = `${parseInt(document.getElementById('weekly_minute').value, 10)} ${parseInt(weeklyTime.value, 10)} * * ${dm[weeklyDay.value]}`; }
+      if (cronModeSelect.value === 'hourly' && hourlyFreq) cronString = `0 */${parseInt(hourlyFreq.value, 10)} * * *`;
+      else if (cronModeSelect.value === 'daily' && dailyTime) cronString = `${parseInt(document.getElementById('daily_minute').value, 10)} ${parseInt(dailyTime.value, 10)} * * *`;
+      else if (cronModeSelect.value === 'weekly' && weeklyDay && weeklyTime) { const dm = { Sunday: 0, Monday: 1, Tuesday: 2, Wednesday: 3, Thursday: 4, Friday: 5, Saturday: 6 }; cronString = `${parseInt(document.getElementById('weekly_minute').value, 10)} ${parseInt(weeklyTime.value, 10)} * * ${dm[weeklyDay.value]}`; }
       else if (cronModeSelect.value === 'monthly' && monthlyDay && monthlyTime) cronString = `${parseInt(document.getElementById('monthly_minute').value, 10)} ${parseInt(monthlyTime.value, 10)} ${parseInt(monthlyDay.value, 10)} * *`;
       let hidden = document.getElementById('cron_expression_hidden');
       if (!hidden) { hidden = document.createElement('input'); hidden.type = 'hidden'; hidden.id = 'cron_expression_hidden'; hidden.name = 'CRON_EXPRESSION'; cronModeSelect.closest('.form-pair').appendChild(hidden); }
@@ -447,34 +447,34 @@ updateRestoreStatus(); setInterval(updateRestoreStatus, 1000);
     document.getElementById('monthly_minute')?.addEventListener('change', updateCronExpression);
     return true;
   }
-  if (!initSchedulingToggle()) { const obs = new MutationObserver(() => { if (initSchedulingToggle()) obs.disconnect(); }); obs.observe(document.body, { childList:true, subtree:true }); }
+  if (!initSchedulingToggle()) { const obs = new MutationObserver(() => { if (initSchedulingToggle()) obs.disconnect(); }); obs.observe(document.body, { childList: true, subtree: true }); }
 })();
 
 (function waitForSchedulingToggleRemote() {
   function initSchedulingToggleRemote() {
     const cronModeSelect = document.getElementById('cron_mode_remote'); if (!cronModeSelect) return false;
-    const hourlyOptions  = document.getElementById('hourly-options-remote');
-    const dailyOptions   = document.getElementById('daily-options-remote');
-    const weeklyOptions  = document.getElementById('weekly-options-remote');
+    const hourlyOptions = document.getElementById('hourly-options-remote');
+    const dailyOptions = document.getElementById('daily-options-remote');
+    const weeklyOptions = document.getElementById('weekly-options-remote');
     const monthlyOptions = document.getElementById('monthly-options-remote');
-    const hourlyFreq     = document.getElementById('hourly_frequency_remote');
-    const dailyTime      = document.getElementById('daily_time_remote');
-    const weeklyDay      = document.getElementById('weekly_day_remote');
-    const weeklyTime     = document.getElementById('weekly_time_remote');
-    const monthlyDay     = document.getElementById('monthly_day_remote');
-    const monthlyTime    = document.getElementById('monthly_time_remote');
+    const hourlyFreq = document.getElementById('hourly_frequency_remote');
+    const dailyTime = document.getElementById('daily_time_remote');
+    const weeklyDay = document.getElementById('weekly_day_remote');
+    const weeklyTime = document.getElementById('weekly_time_remote');
+    const monthlyDay = document.getElementById('monthly_day_remote');
+    const monthlyTime = document.getElementById('monthly_time_remote');
     function toggleCronOptions(value) {
-      hourlyOptions.style.display  = (value === 'hourly')  ? 'block' : 'none';
-      dailyOptions.style.display   = (value === 'daily')   ? 'block' : 'none';
-      weeklyOptions.style.display  = (value === 'weekly')  ? 'block' : 'none';
+      hourlyOptions.style.display = (value === 'hourly') ? 'block' : 'none';
+      dailyOptions.style.display = (value === 'daily') ? 'block' : 'none';
+      weeklyOptions.style.display = (value === 'weekly') ? 'block' : 'none';
       monthlyOptions.style.display = (value === 'monthly') ? 'block' : 'none';
       updateCronExpressionRemote();
     }
     function updateCronExpressionRemote() {
       let cronString = '';
-      if      (cronModeSelect.value === 'hourly'  && hourlyFreq)  cronString = `0 */${parseInt(hourlyFreq.value, 10)} * * *`;
-      else if (cronModeSelect.value === 'daily'   && dailyTime)   cronString = `${parseInt(document.getElementById('daily_minute_remote').value, 10)} ${parseInt(dailyTime.value, 10)} * * *`;
-      else if (cronModeSelect.value === 'weekly'  && weeklyDay && weeklyTime) { const dm = {Sunday:0,Monday:1,Tuesday:2,Wednesday:3,Thursday:4,Friday:5,Saturday:6}; cronString = `${parseInt(document.getElementById('weekly_minute_remote').value, 10)} ${parseInt(weeklyTime.value, 10)} * * ${dm[weeklyDay.value]}`; }
+      if (cronModeSelect.value === 'hourly' && hourlyFreq) cronString = `0 */${parseInt(hourlyFreq.value, 10)} * * *`;
+      else if (cronModeSelect.value === 'daily' && dailyTime) cronString = `${parseInt(document.getElementById('daily_minute_remote').value, 10)} ${parseInt(dailyTime.value, 10)} * * *`;
+      else if (cronModeSelect.value === 'weekly' && weeklyDay && weeklyTime) { const dm = { Sunday: 0, Monday: 1, Tuesday: 2, Wednesday: 3, Thursday: 4, Friday: 5, Saturday: 6 }; cronString = `${parseInt(document.getElementById('weekly_minute_remote').value, 10)} ${parseInt(weeklyTime.value, 10)} * * ${dm[weeklyDay.value]}`; }
       else if (cronModeSelect.value === 'monthly' && monthlyDay && monthlyTime) cronString = `${parseInt(document.getElementById('monthly_minute_remote').value, 10)} ${parseInt(monthlyTime.value, 10)} ${parseInt(monthlyDay.value, 10)} * *`;
       let hidden = document.getElementById('cron_expression_hidden_remote');
       if (!hidden) { hidden = document.createElement('input'); hidden.type = 'hidden'; hidden.id = 'cron_expression_hidden_remote'; hidden.name = 'CRON_EXPRESSION_REMOTE'; cronModeSelect.closest('.form-pair').appendChild(hidden); }
@@ -494,23 +494,23 @@ updateRestoreStatus(); setInterval(updateRestoreStatus, 1000);
     document.getElementById('monthly_minute_remote')?.addEventListener('change', updateCronExpressionRemote);
     return true;
   }
-  if (!initSchedulingToggleRemote()) { const obs = new MutationObserver(() => { if (initSchedulingToggleRemote()) obs.disconnect(); }); obs.observe(document.body, { childList:true, subtree:true }); }
+  if (!initSchedulingToggleRemote()) { const obs = new MutationObserver(() => { if (initSchedulingToggleRemote()) obs.disconnect(); }); obs.observe(document.body, { childList: true, subtree: true }); }
 })();
 
 // ── Activity log ──────────────────────────────────────────────────────────────
 var logAutoScroll = false; var logDebugMode = false; var _logRawSnapshot = '';
 
 function applyLogSearch() {
-  const logEl   = document.getElementById('last-run-log');
+  const logEl = document.getElementById('last-run-log');
   const countEl = document.getElementById('log-search-count');
-  const term    = (document.getElementById('log-search').value || '').trim();
-  const raw     = logEl.dataset.raw || '';
+  const term = (document.getElementById('log-search').value || '').trim();
+  const raw = logEl.dataset.raw || '';
   if (!term) { logEl.textContent = raw || 'Flash backup log not found'; countEl.classList.remove('visible'); return; }
   const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const re      = new RegExp('(' + escaped + ')', 'gi');
-  const parts   = raw.split(re); let matches = 0;
+  const re = new RegExp('(' + escaped + ')', 'gi');
+  const parts = raw.split(re); let matches = 0;
   logEl.innerHTML = '';
-  parts.forEach(function(part) {
+  parts.forEach(function (part) {
     if (re.test(part)) { matches++; const mark = document.createElement('mark'); mark.className = 'log-highlight'; mark.textContent = part; logEl.appendChild(mark); re.lastIndex = 0; }
     else { logEl.appendChild(document.createTextNode(part)); }
   });
@@ -526,9 +526,9 @@ function fbbSwitchLog(isDebug) {
 function loadLastRunLog() {
   fetch('/plugins/flash-backup/helpers/fetch_last_run_log.php?debug=' + (logDebugMode ? '1' : '0'))
     .then(res => res.text()).then(data => {
-      const logEl    = document.getElementById('last-run-log');
+      const logEl = document.getElementById('last-run-log');
       const emptyMsg = logDebugMode ? 'Flash backup debug log not found' : 'Flash backup log not found';
-      const raw  = data ? data.split('\n').filter(l => l.trim()).reverse().join('\n') : '';
+      const raw = data ? data.split('\n').filter(l => l.trim()).reverse().join('\n') : '';
       const text = raw || emptyMsg;
       if (text === _logRawSnapshot) return;
       _logRawSnapshot = text; logEl.dataset.raw = text; applyLogSearch();
@@ -552,30 +552,30 @@ function fbbTimeAgo(date) {
   const hr = Math.floor(min / 60); if (hr < 24) return hr + 'h ago';
   return Math.floor(hr / 24) + 'd ago';
 }
-setInterval(function() {
+setInterval(function () {
   const el = document.getElementById('fbb-log-last-run'); if (!el) return;
   const ts = el.dataset.ts; el.textContent = ts ? 'Last Run: ' + fbbTimeAgo(new Date(ts)) : 'No last run available';
 }, 1000);
 
-const logSearchEl    = document.getElementById('log-search');
+const logSearchEl = document.getElementById('log-search');
 const logSearchClear = document.getElementById('log-search-clear');
 function fbbUpdateSearchClear() { logSearchClear.style.display = logSearchEl.value ? 'flex' : 'none'; }
-logSearchEl.addEventListener('input', function() { applyLogSearch(); fbbUpdateSearchClear(); });
-logSearchClear.addEventListener('mousedown', function(e) {
+logSearchEl.addEventListener('input', function () { applyLogSearch(); fbbUpdateSearchClear(); });
+logSearchClear.addEventListener('mousedown', function (e) {
   e.preventDefault(); logSearchEl.value = ''; applyLogSearch(); fbbUpdateSearchClear(); logSearchEl.focus();
 });
 
-document.getElementById('log-autoscroll-btn').addEventListener('click', function() {
+document.getElementById('log-autoscroll-btn').addEventListener('click', function () {
   logAutoScroll = !logAutoScroll; if (logAutoScroll) { const logEl = document.getElementById('last-run-log'); logEl.scrollTop = logEl.scrollHeight; }
 });
-document.getElementById('log-scroll-top-btn').addEventListener('click', function() { logAutoScroll = false; document.getElementById('last-run-log').scrollTop = 0; });
-document.getElementById('last-run-log').addEventListener('scroll', function() { if (this.scrollHeight - this.scrollTop - this.clientHeight < 8) return; logAutoScroll = false; });
+document.getElementById('log-scroll-top-btn').addEventListener('click', function () { logAutoScroll = false; document.getElementById('last-run-log').scrollTop = 0; });
+document.getElementById('last-run-log').addEventListener('scroll', function () { if (this.scrollHeight - this.scrollTop - this.clientHeight < 8) return; logAutoScroll = false; });
 
 const clearLastRunBtn = document.getElementById('clear-last-run-log');
 if (clearLastRunBtn) {
-  clearLastRunBtn.addEventListener('click', function() {
+  clearLastRunBtn.addEventListener('click', function () {
     const label = logDebugMode ? 'debug log' : 'flash backup log';
-    fbbConfirm('Clear the ' + label + '?', function() {
+    fbbConfirm('Clear the ' + label + '?', function () {
       fetch('/plugins/flash-backup/helpers/clear_log.php', {
         method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRF-TOKEN': csrfToken },
         body: 'log=last&debug=' + (logDebugMode ? '1' : '0') + '&csrf_token=' + encodeURIComponent(csrfToken)
@@ -594,8 +594,7 @@ if (clearLastRunBtn) {
 
 // ── Select wrapper ────────────────────────────────────────────────────────────
 function fbbWrapSelects() {
-  document.querySelectorAll('#fbb-mode-row select').forEach(function(el) { el.classList.add('fbb-wrapped'); });
-  document.querySelectorAll('#fbb-page select:not(.fbb-wrapped)').forEach(function(sel) {
+  document.querySelectorAll('#fbb-page select:not(.fbb-wrapped)').forEach(function (sel) {
     if (sel.closest('.fbb-select-wrap')) return; if (sel.closest('.vm-multiselect')) return;
     if (sel.style.display === 'none' || sel.hasAttribute('multiple') && sel.style.display === 'none') return;
     if (getComputedStyle(sel).display === 'none') return;
@@ -609,26 +608,26 @@ function fbbWrapSelects() {
   }
 }
 
-$(document).ready(function() {
+$(document).ready(function () {
   const select = $('#backup_owner'); const selected = select.data('selected') || 'nobody';
-  $.getJSON('/plugins/flash-backup/helpers/list_users_group100.php', function(data) {
+  $.getJSON('/plugins/flash-backup/helpers/list_users_group100.php', function (data) {
     select.empty();
     data.users.forEach(user => { const opt = $('<option>', { value: user, text: user }); if (user === selected) opt.prop('selected', true); select.append(opt); });
   });
 });
 
 // ── Inline help system ────────────────────────────────────────────────────────
-$(document).ready(function() {
+$(document).ready(function () {
   let _fbbLastClick = 0; let _fbbF1Open = false;
   function attachHelp($trigger, helpText, $insertAfter) {
-    const helpId   = 'fbb-help-' + Math.random().toString(36).substr(2, 9);
+    const helpId = 'fbb-help-' + Math.random().toString(36).substr(2, 9);
     const $helpDiv = $('<div class="fbb-help-text" id="' + helpId + '" style="display:none;">' + helpText + '</div>');
     $insertAfter.after($helpDiv); $helpDiv.data('fbb-guard', $insertAfter); $trigger.addClass('fbb-has-help');
-    $trigger.on('click', function() { _fbbLastClick = Date.now(); const $help = $('#' + helpId); if ($help.is(':visible')) $help.slideUp(150); else $help.slideDown(150); });
+    $trigger.on('click', function () { _fbbLastClick = Date.now(); const $help = $('#' + helpId); if ($help.is(':visible')) $help.slideUp(150); else $help.slideDown(150); });
   }
   window._fbbAttachHelp = attachHelp;
   function processHelpLabels($scope) {
-    $scope.find('label > span[class*="betatip"][title]').each(function() {
+    $scope.find('label > span[class*="betatip"][title]').each(function () {
       const $span = $(this); const helpText = $span.attr('title'); if (!helpText) return;
       $span.removeAttr('title').attr('class', ''); const $label = $span.closest('label');
       if ($label.hasClass('fbb-has-help')) return;
@@ -641,20 +640,20 @@ $(document).ready(function() {
   if ($('#fbb-plugin-label').length) attachHelp($('#fbb-plugin-label'), 'Easily switch between your installed jcofer555 plugins', $modeRow);
   attachHelp($('#fbb-mode-label'), 'Switch between modes', $modeRow);
   attachHelp($('#fbb-debug-log-label'), 'Enable to view the debug log', $('#fbb-debug-log-label').closest('.fbb-log-toolbar'));
-  $('span.status-label.flash-backuptip[title], span.remote-status-label.flash-backuptip[title]').each(function() {
+  $('span.status-label.flash-backuptip[title], span.remote-status-label.flash-backuptip[title]').each(function () {
     const $span = $(this); const helpText = $span.attr('title'); if (!helpText) return;
     $span.removeAttr('title').removeClass('flash-backuptip');
     const $statusRow = $span.closest('.status-row, .remote-status-row'); const $insertAfter = $statusRow.length ? $statusRow : $span;
     attachHelp($span, helpText, $insertAfter);
   });
-  $('span.flash-backuptip').each(function() { if ($(this).children('button').length > 0) return; if ($(this).closest('table').length > 0) return; $(this).removeAttr('title').removeClass('flash-backuptip'); });
-  $('div.flash-backuptip').each(function() { if ($(this).closest('table').length > 0) return; $(this).removeAttr('title').removeClass('flash-backuptip'); });
-  $(document).on('keydown', function(e) {
+  $('span.flash-backuptip').each(function () { if ($(this).children('button').length > 0) return; if ($(this).closest('table').length > 0) return; $(this).removeAttr('title').removeClass('flash-backuptip'); });
+  $('div.flash-backuptip').each(function () { if ($(this).closest('table').length > 0) return; $(this).removeAttr('title').removeClass('flash-backuptip'); });
+  $(document).on('keydown', function (e) {
     if (e.key !== 'F1') return; e.preventDefault();
     if (_fbbF1Open) { $('.fbb-help-text').slideUp(150); _fbbF1Open = false; }
-    else { $('.fbb-help-text').each(function() { const $g = $(this).data('fbb-guard'); if ($g && !$g.is(':visible')) return; $(this).slideDown(150); }); _fbbF1Open = true; }
+    else { $('.fbb-help-text').each(function () { const $g = $(this).data('fbb-guard'); if ($g && !$g.is(':visible')) return; $(this).slideDown(150); }); _fbbF1Open = true; }
   });
-  $(document).on('click', function() { if (Date.now() - _fbbLastClick < 150) return; $('.fbb-help-text').slideUp(150); _fbbF1Open = false; });
+  $(document).on('click', function () { if (Date.now() - _fbbLastClick < 150) return; $('.fbb-help-text').slideUp(150); _fbbF1Open = false; });
 });
 
 function closeTooltips() { $('.flash-backuptip').trigger('mouseleave'); }
@@ -663,9 +662,9 @@ $('select').on('click', closeTooltips);
 // ── Cron valid / backup running state ─────────────────────────────────────────
 let cronValid = true, backupRunning = false;
 let cronValidRemote = true, backupRunningRemote = false;
-const backupbtn       = document.getElementById('backupbtn');
+const backupbtn = document.getElementById('backupbtn');
 const backupbtnRemote = document.getElementById('backupbtn_remote');
-function updateBackupButtonState()       { if (backupbtn)       backupbtn.disabled       = !(cronValid       && !backupRunning); }
+function updateBackupButtonState() { if (backupbtn) backupbtn.disabled = !(cronValid && !backupRunning); }
 function updateBackupButtonStateRemote() { if (backupbtnRemote) backupbtnRemote.disabled = !(cronValidRemote && !backupRunningRemote); }
 updateBackupButtonState(); updateBackupButtonStateRemote();
 
@@ -682,14 +681,14 @@ function hideBanner() {
 function stopFromBanner() {
   const url = bannerStopTarget === 'remote' ? '/plugins/flash-backup/helpers/stop_remote.php' : '/plugins/flash-backup/helpers/stop_backup.php';
   $.post(url, { csrf_token: csrfToken })
-    .done(function() { const which = (bannerStopTarget === 'remote') ? 'remote' : 'local'; $('#stop-toast-banner-' + which).addClass('visible'); setTimeout(function() { $('#stop-toast-banner-' + which).removeClass('visible'); }, 3000); })
-    .fail(function() { fbbAlert('Error sending stop request'); });
+    .done(function () { const which = (bannerStopTarget === 'remote') ? 'remote' : 'local'; $('#stop-toast-banner-' + which).addClass('visible'); setTimeout(function () { $('#stop-toast-banner-' + which).removeClass('visible'); }, 3000); })
+    .fail(function () { fbbAlert('Error sending stop request'); });
 }
 function setAllBackupButtonsDisabled(disabled) {
   $('#backupbtn, #backupbtn_remote').prop('disabled', disabled);
   document.querySelectorAll('.schedule-run-btn').forEach(b => { b.disabled = disabled; });
 }
-function updateBackupUI(running)       { backupRunning       = running; syncBannerState(); }
+function updateBackupUI(running) { backupRunning = running; syncBannerState(); }
 function updateBackupUIRemote(running) { backupRunningRemote = running; syncBannerState(); }
 function syncBannerState() {
   const anyRunning = backupRunning || backupRunningRemote;
@@ -700,14 +699,14 @@ function syncBannerState() {
   } else if (!anyRunning && prevAnyRunning) { hideBanner(); setAllBackupButtonsDisabled(false); }
   prevAnyRunning = anyRunning;
 }
-function pollBackupStatus()       { $.getJSON('/plugins/flash-backup/helpers/backup_status.php',  function(res) { updateBackupButtonState();       updateBackupUI(res.running === true); }); }
-function pollBackupStatusRemote() { $.getJSON('/plugins/flash-backup/helpers/remote_status.php',  function(res) { updateBackupButtonStateRemote(); updateBackupUIRemote(res.running === true); }); }
-$(document).ready(function() { pollBackupStatus(); pollBackupStatusRemote(); setInterval(pollBackupStatus, 1000); setInterval(pollBackupStatusRemote, 1000); });
+function pollBackupStatus() { $.getJSON('/plugins/flash-backup/helpers/backup_status.php', function (res) { updateBackupButtonState(); updateBackupUI(res.running === true); }); }
+function pollBackupStatusRemote() { $.getJSON('/plugins/flash-backup/helpers/remote_status.php', function (res) { updateBackupButtonStateRemote(); updateBackupUIRemote(res.running === true); }); }
+$(document).ready(function () { pollBackupStatus(); pollBackupStatusRemote(); setInterval(pollBackupStatus, 1000); setInterval(pollBackupStatusRemote, 1000); });
 
 // ── Collect webhook params (DOM-absent fallback to saved state) ───────────────
 function collectWebhookParams() {
   const params = {}; const services = ['DISCORD', 'GOTIFY', 'NTFY', 'PUSHOVER', 'SLACK'];
-  services.forEach(function(svc) {
+  services.forEach(function (svc) {
     const svcLower = svc.charAt(0) + svc.slice(1).toLowerCase();
     const inputVal = $('#webhook-fields-container .webhook-url-input[data-service="' + svcLower + '"]').val();
     params['WEBHOOK_' + svc] = (inputVal !== undefined) ? inputVal.trim() : (SAVED_WEBHOOKS[svc] || '');
@@ -716,7 +715,7 @@ function collectWebhookParams() {
 }
 function collectWebhookParamsRemote() {
   const params = {}; const services = ['DISCORD', 'GOTIFY', 'NTFY', 'PUSHOVER', 'SLACK'];
-  services.forEach(function(svc) {
+  services.forEach(function (svc) {
     const svcLower = svc.charAt(0) + svc.slice(1).toLowerCase();
     const inputVal = $('#webhook-fields-container-remote .webhook-url-input[data-service="' + svcLower + '"]').val();
     params['WEBHOOK_' + svc + '_REMOTE'] = (inputVal !== undefined) ? inputVal.trim() : (SAVED_WEBHOOKS_REMOTE[svc] || '');
@@ -727,7 +726,7 @@ function collectWebhookParamsRemote() {
 // ── Backup Now — local ────────────────────────────────────────────────────────
 // _editModeLocal flag is checked first — routes to cancelEditLocal() during edit.
 let backupRequestInProgress = false;
-$('#backupbtn').on('click', async function() {
+$('#backupbtn').on('click', async function () {
   if (_editModeLocal) { scheduleJob('local-backup'); return; }
   if (backupRequestInProgress) return;
   const dest = $('#backup_destination').val().trim();
@@ -738,42 +737,42 @@ $('#backupbtn').on('click', async function() {
   backupRequestInProgress = true;
   const webhookParams = collectWebhookParams();
   $.post('/plugins/flash-backup/helpers/save_settings.php', {
-    BACKUP_DESTINATION:   dest,
-    BACKUP_OWNER:         $('#backup_owner').val(),
-    BACKUPS_TO_KEEP:      $('#backups_to_keep').val(),
-    DRY_RUN:              $('#dry_run').val(),
-    MINIMAL_BACKUP:       $('#minimal_backup').is(':checked') ? 'yes' : 'no',
+    BACKUP_DESTINATION: dest,
+    BACKUP_OWNER: $('#backup_owner').val(),
+    BACKUPS_TO_KEEP: $('#backups_to_keep').val(),
+    DRY_RUN: $('#dry_run').val(),
+    MINIMAL_BACKUP: $('#minimal_backup').is(':checked') ? 'yes' : 'no',
     NOTIFICATION_SERVICE: getSelectedServices('').join(','),
-    NOTIFICATIONS:        $('#notifications').val(),
-    PUSHOVER_USER_KEY:    $('#pushover_user_key').val() || '',
-    WEBHOOK_DISCORD:      webhookParams['WEBHOOK_DISCORD']  || '',
-    WEBHOOK_GOTIFY:       webhookParams['WEBHOOK_GOTIFY']   || '',
-    WEBHOOK_NTFY:         webhookParams['WEBHOOK_NTFY']     || '',
-    WEBHOOK_PUSHOVER:     webhookParams['WEBHOOK_PUSHOVER'] || '',
-    WEBHOOK_SLACK:        webhookParams['WEBHOOK_SLACK']    || '',
+    NOTIFICATIONS: $('#notifications').val(),
+    PUSHOVER_USER_KEY: $('#pushover_user_key').val() || '',
+    WEBHOOK_DISCORD: webhookParams['WEBHOOK_DISCORD'] || '',
+    WEBHOOK_GOTIFY: webhookParams['WEBHOOK_GOTIFY'] || '',
+    WEBHOOK_NTFY: webhookParams['WEBHOOK_NTFY'] || '',
+    WEBHOOK_PUSHOVER: webhookParams['WEBHOOK_PUSHOVER'] || '',
+    WEBHOOK_SLACK: webhookParams['WEBHOOK_SLACK'] || '',
     csrf_token: csrfToken
   })
-    .done(function(res) {
+    .done(function (res) {
       if (res && res.status === 'ok') {
-        ['DISCORD','GOTIFY','NTFY','PUSHOVER','SLACK'].forEach(function(svc) { SAVED_WEBHOOKS[svc] = webhookParams['WEBHOOK_' + svc] || ''; });
+        ['DISCORD', 'GOTIFY', 'NTFY', 'PUSHOVER', 'SLACK'].forEach(function (svc) { SAVED_WEBHOOKS[svc] = webhookParams['WEBHOOK_' + svc] || ''; });
         startBackup();
       } else { fbbAlert('Failed to save settings'); }
     })
-    .fail(function() { fbbAlert('Error saving settings'); })
-    .always(function() { backupRequestInProgress = false; });
+    .fail(function () { fbbAlert('Error saving settings'); })
+    .always(function () { backupRequestInProgress = false; });
 });
 
 // ── Backup Now — remote ───────────────────────────────────────────────────────
 // _editModeRemote flag is checked first — routes to cancelEditRemote() during edit.
 let backupRequestInProgressRemote = false;
-$('#backupbtn_remote').on('click', async function() {
+$('#backupbtn_remote').on('click', async function () {
   if (_editModeRemote) { scheduleJobremote('remote-backup'); return; }
   if (backupRequestInProgressRemote) return;
   const selectedRemotes = $('#rclone_config_remote_hidden').val() || [];
   if (!selectedRemotes.length) { fbbAlert('Please select at least one rclone config'); return; }
   const remotePath = $('#remote_path_in_config').val().trim();
   if (remotePath !== '' && !remotePath.startsWith('/')) { fbbAlert('Path In Config must start with a "/"'); return; }
-  if (remotePath !== '' && !remotePath.endsWith('/'))   { fbbAlert('Path In Config must end with a "/"');   return; }
+  if (remotePath !== '' && !remotePath.endsWith('/')) { fbbAlert('Path In Config must end with a "/"'); return; }
   if (remotePath !== '') {
     const inner = remotePath.replace(/^\/+|\/+$/g, ''); const parts = inner.split('/');
     const validName = /^[A-Za-z0-9._+\-@ ]+$/;
@@ -793,97 +792,97 @@ $('#backupbtn_remote').on('click', async function() {
   const finalPath = remotePath === '' ? '/Flash_Backups/' : remotePath;
   const bucketNamesMap = collectBucketNames(); const webhookParamsRem = collectWebhookParamsRemote();
   $.post('/plugins/flash-backup/helpers/save_settings_remote.php', {
-    BUCKET_NAMES:                JSON.stringify(bucketNamesMap),
-    BACKUPS_TO_KEEP_REMOTE:      $('#backups_to_keep_remote').val(),
-    DRY_RUN_REMOTE:              $('#dry_run_remote').val(),
-    MINIMAL_BACKUP_REMOTE:       $('#minimal_backup_remote').is(':checked') ? 'yes' : 'no',
+    BUCKET_NAMES: JSON.stringify(bucketNamesMap),
+    BACKUPS_TO_KEEP_REMOTE: $('#backups_to_keep_remote').val(),
+    DRY_RUN_REMOTE: $('#dry_run_remote').val(),
+    MINIMAL_BACKUP_REMOTE: $('#minimal_backup_remote').is(':checked') ? 'yes' : 'no',
     NOTIFICATION_SERVICE_REMOTE: getSelectedServices('remote').join(','),
-    NOTIFICATIONS_REMOTE:        $('#notifications_remote').val(),
-    PUSHOVER_USER_KEY_REMOTE:    $('#pushover_user_key_remote').val() || '',
-    RCLONE_CONFIG_REMOTE:        selectedRemotes,
-    REMOTE_PATH_IN_CONFIG:       finalPath,
-    WEBHOOK_DISCORD_REMOTE:      webhookParamsRem['WEBHOOK_DISCORD_REMOTE']  || '',
-    WEBHOOK_GOTIFY_REMOTE:       webhookParamsRem['WEBHOOK_GOTIFY_REMOTE']   || '',
-    WEBHOOK_NTFY_REMOTE:         webhookParamsRem['WEBHOOK_NTFY_REMOTE']     || '',
-    WEBHOOK_PUSHOVER_REMOTE:     webhookParamsRem['WEBHOOK_PUSHOVER_REMOTE'] || '',
-    WEBHOOK_SLACK_REMOTE:        webhookParamsRem['WEBHOOK_SLACK_REMOTE']    || '',
+    NOTIFICATIONS_REMOTE: $('#notifications_remote').val(),
+    PUSHOVER_USER_KEY_REMOTE: $('#pushover_user_key_remote').val() || '',
+    RCLONE_CONFIG_REMOTE: selectedRemotes,
+    REMOTE_PATH_IN_CONFIG: finalPath,
+    WEBHOOK_DISCORD_REMOTE: webhookParamsRem['WEBHOOK_DISCORD_REMOTE'] || '',
+    WEBHOOK_GOTIFY_REMOTE: webhookParamsRem['WEBHOOK_GOTIFY_REMOTE'] || '',
+    WEBHOOK_NTFY_REMOTE: webhookParamsRem['WEBHOOK_NTFY_REMOTE'] || '',
+    WEBHOOK_PUSHOVER_REMOTE: webhookParamsRem['WEBHOOK_PUSHOVER_REMOTE'] || '',
+    WEBHOOK_SLACK_REMOTE: webhookParamsRem['WEBHOOK_SLACK_REMOTE'] || '',
     csrf_token: csrfToken
   })
-    .done(function(res) {
+    .done(function (res) {
       if (res && res.status === 'ok') {
-        ['DISCORD','GOTIFY','NTFY','PUSHOVER','SLACK'].forEach(function(svc) { SAVED_WEBHOOKS_REMOTE[svc] = webhookParamsRem['WEBHOOK_' + svc + '_REMOTE'] || ''; });
+        ['DISCORD', 'GOTIFY', 'NTFY', 'PUSHOVER', 'SLACK'].forEach(function (svc) { SAVED_WEBHOOKS_REMOTE[svc] = webhookParamsRem['WEBHOOK_' + svc + '_REMOTE'] || ''; });
         startBackupRemote();
       } else { fbbAlert('Failed to save remote settings'); }
     })
-    .fail(function() { fbbAlert('Error saving remote settings'); })
-    .always(function() { backupRequestInProgressRemote = false; });
+    .fail(function () { fbbAlert('Error saving remote settings'); })
+    .always(function () { backupRequestInProgressRemote = false; });
 });
 
 // ── Apply Changes (save without running backup) ───────────────────────────────
-$('#apply-settings-btn').on('click', function() {
+$('#apply-settings-btn').on('click', function () {
   const dest = $('#backup_destination').val().trim(); const webhookParams = collectWebhookParams();
   $.post('/plugins/flash-backup/helpers/save_settings.php', {
-    BACKUP_DESTINATION:   dest, BACKUP_OWNER: $('#backup_owner').val(), BACKUPS_TO_KEEP: $('#backups_to_keep').val(),
+    BACKUP_DESTINATION: dest, BACKUP_OWNER: $('#backup_owner').val(), BACKUPS_TO_KEEP: $('#backups_to_keep').val(),
     DRY_RUN: $('#dry_run').val(), MINIMAL_BACKUP: $('#minimal_backup').is(':checked') ? 'yes' : 'no',
     NOTIFICATION_SERVICE: getSelectedServices('').join(','), NOTIFICATIONS: $('#notifications').val(),
     PUSHOVER_USER_KEY: $('#pushover_user_key').val() || '',
-    WEBHOOK_DISCORD:  webhookParams['WEBHOOK_DISCORD']  || '', WEBHOOK_GOTIFY:   webhookParams['WEBHOOK_GOTIFY']   || '',
-    WEBHOOK_NTFY:     webhookParams['WEBHOOK_NTFY']     || '', WEBHOOK_PUSHOVER: webhookParams['WEBHOOK_PUSHOVER'] || '',
-    WEBHOOK_SLACK:    webhookParams['WEBHOOK_SLACK']    || '', csrf_token: csrfToken
+    WEBHOOK_DISCORD: webhookParams['WEBHOOK_DISCORD'] || '', WEBHOOK_GOTIFY: webhookParams['WEBHOOK_GOTIFY'] || '',
+    WEBHOOK_NTFY: webhookParams['WEBHOOK_NTFY'] || '', WEBHOOK_PUSHOVER: webhookParams['WEBHOOK_PUSHOVER'] || '',
+    WEBHOOK_SLACK: webhookParams['WEBHOOK_SLACK'] || '', csrf_token: csrfToken
   })
-    .done(function(res) {
+    .done(function (res) {
       if (res && res.status === 'ok') {
-        ['DISCORD','GOTIFY','NTFY','PUSHOVER','SLACK'].forEach(function(svc) { SAVED_WEBHOOKS[svc] = webhookParams['WEBHOOK_' + svc] || ''; });
+        ['DISCORD', 'GOTIFY', 'NTFY', 'PUSHOVER', 'SLACK'].forEach(function (svc) { SAVED_WEBHOOKS[svc] = webhookParams['WEBHOOK_' + svc] || ''; });
         showLogToast('Settings saved');
       } else { fbbAlert('Failed to save settings'); }
     })
-    .fail(function() { fbbAlert('Error saving settings'); });
+    .fail(function () { fbbAlert('Error saving settings'); });
 });
 
 // ── Apply Changes — remote (save without running backup) ─────────────────────
-$('#apply-settings-btn-remote').on('click', function() {
+$('#apply-settings-btn-remote').on('click', function () {
   const selectedRemotes = $('#rclone_config_remote_hidden').val() || [];
-  const remotePath      = $('#remote_path_in_config').val().trim();
-  const finalPath       = remotePath === '' ? '/Flash_Backups/' : remotePath;
-  const bucketNamesMap  = collectBucketNames();
+  const remotePath = $('#remote_path_in_config').val().trim();
+  const finalPath = remotePath === '' ? '/Flash_Backups/' : remotePath;
+  const bucketNamesMap = collectBucketNames();
   const webhookParamsRem = collectWebhookParamsRemote();
   $.post('/plugins/flash-backup/helpers/save_settings_remote.php', {
-    BUCKET_NAMES:                JSON.stringify(bucketNamesMap),
-    BACKUPS_TO_KEEP_REMOTE:      $('#backups_to_keep_remote').val(),
-    DRY_RUN_REMOTE:              $('#dry_run_remote').val(),
-    MINIMAL_BACKUP_REMOTE:       $('#minimal_backup_remote').is(':checked') ? 'yes' : 'no',
+    BUCKET_NAMES: JSON.stringify(bucketNamesMap),
+    BACKUPS_TO_KEEP_REMOTE: $('#backups_to_keep_remote').val(),
+    DRY_RUN_REMOTE: $('#dry_run_remote').val(),
+    MINIMAL_BACKUP_REMOTE: $('#minimal_backup_remote').is(':checked') ? 'yes' : 'no',
     NOTIFICATION_SERVICE_REMOTE: getSelectedServices('remote').join(','),
-    NOTIFICATIONS_REMOTE:        $('#notifications_remote').val(),
-    PUSHOVER_USER_KEY_REMOTE:    $('#pushover_user_key_remote').val() || '',
-    RCLONE_CONFIG_REMOTE:        selectedRemotes,
-    REMOTE_PATH_IN_CONFIG:       finalPath,
-    WEBHOOK_DISCORD_REMOTE:      webhookParamsRem['WEBHOOK_DISCORD_REMOTE']  || '',
-    WEBHOOK_GOTIFY_REMOTE:       webhookParamsRem['WEBHOOK_GOTIFY_REMOTE']   || '',
-    WEBHOOK_NTFY_REMOTE:         webhookParamsRem['WEBHOOK_NTFY_REMOTE']     || '',
-    WEBHOOK_PUSHOVER_REMOTE:     webhookParamsRem['WEBHOOK_PUSHOVER_REMOTE'] || '',
-    WEBHOOK_SLACK_REMOTE:        webhookParamsRem['WEBHOOK_SLACK_REMOTE']    || '',
+    NOTIFICATIONS_REMOTE: $('#notifications_remote').val(),
+    PUSHOVER_USER_KEY_REMOTE: $('#pushover_user_key_remote').val() || '',
+    RCLONE_CONFIG_REMOTE: selectedRemotes,
+    REMOTE_PATH_IN_CONFIG: finalPath,
+    WEBHOOK_DISCORD_REMOTE: webhookParamsRem['WEBHOOK_DISCORD_REMOTE'] || '',
+    WEBHOOK_GOTIFY_REMOTE: webhookParamsRem['WEBHOOK_GOTIFY_REMOTE'] || '',
+    WEBHOOK_NTFY_REMOTE: webhookParamsRem['WEBHOOK_NTFY_REMOTE'] || '',
+    WEBHOOK_PUSHOVER_REMOTE: webhookParamsRem['WEBHOOK_PUSHOVER_REMOTE'] || '',
+    WEBHOOK_SLACK_REMOTE: webhookParamsRem['WEBHOOK_SLACK_REMOTE'] || '',
     csrf_token: csrfToken
   })
-    .done(function(res) {
+    .done(function (res) {
       if (res && res.status === 'ok') {
-        ['DISCORD','GOTIFY','NTFY','PUSHOVER','SLACK'].forEach(function(svc) { SAVED_WEBHOOKS_REMOTE[svc] = webhookParamsRem['WEBHOOK_' + svc + '_REMOTE'] || ''; });
+        ['DISCORD', 'GOTIFY', 'NTFY', 'PUSHOVER', 'SLACK'].forEach(function (svc) { SAVED_WEBHOOKS_REMOTE[svc] = webhookParamsRem['WEBHOOK_' + svc + '_REMOTE'] || ''; });
         showLogToast('Settings saved');
       } else { fbbAlert('Failed to save remote settings'); }
     })
-    .fail(function() { fbbAlert('Error saving remote settings'); });
+    .fail(function () { fbbAlert('Error saving remote settings'); });
 });
 
 function startBackup() {
   bannerStopTarget = 'local';
   $.get('/plugins/flash-backup/helpers/backup.php', { csrf_token: csrfToken })
-    .done(function(res) { if (res && res.status === 'ok') console.log('Backup started, PID:', res.pid); else { bannerStopTarget = null; fbbAlert(res.message || 'Failed to start backup'); } })
-    .fail(function() { bannerStopTarget = null; fbbAlert('Error starting backup'); });
+    .done(function (res) { if (res && res.status === 'ok') console.log('Backup started, PID:', res.pid); else { bannerStopTarget = null; fbbAlert(res.message || 'Failed to start backup'); } })
+    .fail(function () { bannerStopTarget = null; fbbAlert('Error starting backup'); });
 }
 function startBackupRemote() {
   bannerStopTarget = 'remote';
   $.get('/plugins/flash-backup/helpers/remote_backup.php', { csrf_token: csrfToken })
-    .done(function(res) { if (res && res.status === 'ok') console.log('Remote backup started, PID:', res.pid); else { bannerStopTarget = null; fbbAlert(res.message || 'Failed to start remote backup'); } })
-    .fail(function() { bannerStopTarget = null; fbbAlert('Error starting remote backup'); });
+    .done(function (res) { if (res && res.status === 'ok') console.log('Remote backup started, PID:', res.pid); else { bannerStopTarget = null; fbbAlert(res.message || 'Failed to start remote backup'); } })
+    .fail(function () { bannerStopTarget = null; fbbAlert('Error starting remote backup'); });
 }
 
 // ── Cron conflict helpers ─────────────────────────────────────────────────────
@@ -924,18 +923,18 @@ async function fetchExistingCrons() { return $.getJSON('/plugins/flash-backup/he
 window.editingScheduleId = null;
 
 function loadSchedules() {
-  return $.get('/plugins/flash-backup/helpers/schedule_list.php', function(html) {
+  return $.get('/plugins/flash-backup/helpers/schedule_list.php', function (html) {
     $('#schedule-list').html(html); $('#fbb-sched-title-local').toggle($('#schedule-list .TableContainer').length > 0);
   }).always(() => unlockScheduleUI());
 }
 function buildCronFromUI() {
   const mode = $('#cron_mode').val();
   switch (mode) {
-    case 'hourly':  return { valid:true, expression:`0 */${parseInt($('#hourly_frequency').val(), 10)} * * *` };
-    case 'daily':   return { valid:true, expression:`${parseInt($('#daily_minute').val(), 10)} ${parseInt($('#daily_time').val(), 10)} * * *` };
-    case 'weekly':  { const dm={Sunday:0,Monday:1,Tuesday:2,Wednesday:3,Thursday:4,Friday:5,Saturday:6}; return { valid:true, expression:`${parseInt($('#weekly_minute').val(), 10)} ${parseInt($('#weekly_time').val(), 10)} * * ${dm[$('#weekly_day').val()]}` }; }
-    case 'monthly': return { valid:true, expression:`${parseInt($('#monthly_minute').val(), 10)} ${parseInt($('#monthly_time').val(), 10)} ${parseInt($('#monthly_day').val(), 10)} * *` };
-    default: return { valid:false };
+    case 'hourly': return { valid: true, expression: `0 */${parseInt($('#hourly_frequency').val(), 10)} * * *` };
+    case 'daily': return { valid: true, expression: `${parseInt($('#daily_minute').val(), 10)} ${parseInt($('#daily_time').val(), 10)} * * *` };
+    case 'weekly': { const dm = { Sunday: 0, Monday: 1, Tuesday: 2, Wednesday: 3, Thursday: 4, Friday: 5, Saturday: 6 }; return { valid: true, expression: `${parseInt($('#weekly_minute').val(), 10)} ${parseInt($('#weekly_time').val(), 10)} * * ${dm[$('#weekly_day').val()]}` }; }
+    case 'monthly': return { valid: true, expression: `${parseInt($('#monthly_minute').val(), 10)} ${parseInt($('#monthly_time').val(), 10)} ${parseInt($('#monthly_day').val(), 10)} * *` };
+    default: return { valid: false };
   }
 }
 async function scheduleJob(type) {
@@ -946,16 +945,16 @@ async function scheduleJob(type) {
   const conflict = checkCronConflicts(cron.expression, existingCrons, window.editingScheduleId);
   if (conflict) { unlockScheduleUI(); fbbAlert('This schedule is within 15 minutes of an existing schedule (' + conflict + '). Please choose a different time.'); return; }
   const settings = {};
-  $('input[name], select[name]').each(function() {
+  $('input[name], select[name]').each(function () {
     if ($(this).is(':checkbox')) { settings[this.name] = $(this).is(':checked') ? 'yes' : 'no'; }
     else { const val = $(this).val(); settings[this.name] = Array.isArray(val) ? val.join(',') : val; }
   });
   const url = window.editingScheduleId ? 'schedule_update.php' : 'schedule_create.php';
   $.ajax({
-    type:'POST', url:`/plugins/flash-backup/helpers/${url}`,
-    data:{ id:window.editingScheduleId, type, cron:cron.expression, settings },
-    success: function() { resetScheduleUI(); window.editingScheduleId = null; loadSchedules(); showPopup('Schedule saved!'); },
-    error:   function(xhr) { unlockScheduleUI(); if (xhr.status === 409) fbbAlert('Duplicate schedule detected!'); else fbbAlert('Error creating/updating schedule: ' + xhr.responseText); }
+    type: 'POST', url: `/plugins/flash-backup/helpers/${url}`,
+    data: { id: window.editingScheduleId, type, cron: cron.expression, settings },
+    success: function () { resetScheduleUI(); window.editingScheduleId = null; loadSchedules(); showPopup('Schedule saved!'); },
+    error: function (xhr) { unlockScheduleUI(); if (xhr.status === 409) fbbAlert('Duplicate schedule detected!'); else fbbAlert('Error creating/updating schedule: ' + xhr.responseText); }
   });
 }
 
@@ -975,7 +974,7 @@ function cancelEditLocal() {
 function editSchedule(id) {
   fbbSwitchMode('local'); $('#fbb-mode-switcher').val('local');
   if (scheduleUILocked) return; lockScheduleUI();
-  $.getJSON('/plugins/flash-backup/helpers/schedule_load.php', { id }, function(s) {
+  $.getJSON('/plugins/flash-backup/helpers/schedule_load.php', { id }, function (s) {
     const settings = s.SETTINGS || {};
     if (s.TYPE) $('[name="type"]').val(s.TYPE).trigger('change');
     applyCronToUI(s.CRON, '');
@@ -988,7 +987,7 @@ function editSchedule(id) {
     // Restore notification service checkboxes from saved schedule
     if (settings.NOTIFICATION_SERVICE !== undefined) {
       const svcs = String(settings.NOTIFICATION_SERVICE).split(',').map(v => v.trim()).filter(Boolean);
-      $('#notification-service-list input[type=checkbox]').each(function() { $(this).prop('checked', svcs.includes($(this).val())); });
+      $('#notification-service-list input[type=checkbox]').each(function () { $(this).prop('checked', svcs.includes($(this).val())); });
       updateServiceLabel('');
       toggleNotificationRows('');
     }
@@ -1010,32 +1009,32 @@ function resetScheduleUI() { cancelEditLocal(); $('#popupMessage').stop(true, tr
 
 function deleteSchedule(id) {
   if (scheduleUILocked) return;
-  fbbConfirm('Delete this schedule?', function() { lockScheduleUI(); $.post('/plugins/flash-backup/helpers/schedule_delete.php', { id }).always(() => loadSchedules()); });
+  fbbConfirm('Delete this schedule?', function () { lockScheduleUI(); $.post('/plugins/flash-backup/helpers/schedule_delete.php', { id }).always(() => loadSchedules()); });
 }
 function runScheduleBackup(id, btn) {
   fbbSwitchMode('local'); $('#fbb-mode-switcher').val('local'); if (scheduleUILocked) return;
-  fbbConfirm('Run this backup now?', function() {
+  fbbConfirm('Run this backup now?', function () {
     lockScheduleUI(); btn.disabled = true;
     $.post('/plugins/flash-backup/helpers/run_schedule.php', { id })
-      .done(function(res) {
+      .done(function (res) {
         if (!res.started) { fbbAlert('Failed to start backup'); btn.disabled = false; unlockScheduleUI(); return; }
         showBanner('⚠ Scheduled local backup in progress...', 'local'); setAllBackupButtonsDisabled(true);
-        const poll = setInterval(function() { $.getJSON('/plugins/flash-backup/helpers/check_lock.php', function(res) { if (!res.locked) { clearInterval(poll); btn.disabled = false; setAllBackupButtonsDisabled(false); unlockScheduleUI(); } }); }, 1000);
+        const poll = setInterval(function () { $.getJSON('/plugins/flash-backup/helpers/check_lock.php', function (res) { if (!res.locked) { clearInterval(poll); btn.disabled = false; setAllBackupButtonsDisabled(false); unlockScheduleUI(); } }); }, 1000);
       })
-      .fail(function(xhr, status, err) { fbbAlert('Failed to start backup: ' + (xhr.responseJSON?.error || err)); btn.disabled = false; unlockScheduleUI(); });
+      .fail(function (xhr, status, err) { fbbAlert('Failed to start backup: ' + (xhr.responseJSON?.error || err)); btn.disabled = false; unlockScheduleUI(); });
   });
 }
 function toggleSchedule(id, isEnabled) {
   if (scheduleUILocked) return;
-  fbbConfirm(isEnabled ? 'Disable this schedule?' : 'Enable this schedule?', function() { lockScheduleUI(); $.post('/plugins/flash-backup/helpers/schedule_toggle.php', { id }).always(() => loadSchedules()); });
+  fbbConfirm(isEnabled ? 'Disable this schedule?' : 'Enable this schedule?', function () { lockScheduleUI(); $.post('/plugins/flash-backup/helpers/schedule_toggle.php', { id }).always(() => loadSchedules()); });
 }
-$(document).ready(function() { loadSchedules(); $(document).on('click', '#schedule-local-backup', function() { if (_editModeLocal) { cancelEditLocal(); return; } scheduleJob('local-backup'); }); });
+$(document).ready(function () { loadSchedules(); $(document).on('click', '#schedule-local-backup', function () { if (_editModeLocal) { cancelEditLocal(); return; } scheduleJob('local-backup'); }); });
 
 // ── Remote schedule CRUD ──────────────────────────────────────────────────────
 window.editingScheduleIdremote = null;
 
 function loadSchedulesremote() {
-  return $.get('/plugins/flash-backup/helpers/schedule_list_remote.php', function(html) {
+  return $.get('/plugins/flash-backup/helpers/schedule_list_remote.php', function (html) {
     $('#schedule-list-remote').html(html);
     if ($('#schedule-list-remote .TableContainer').length > 0) { const localVisible = $('#fbb-sched-title-local').is(':visible'); $('#fbb-sched-title-remote').css('margin-top', localVisible ? '12px' : '0').show(); }
     else { $('#fbb-sched-title-remote').hide(); }
@@ -1044,11 +1043,11 @@ function loadSchedulesremote() {
 function buildCronFromUIremote() {
   const mode = $('#cron_mode_remote').val();
   switch (mode) {
-    case 'hourly':  return { valid:true, expression:`0 */${parseInt($('#hourly_frequency_remote').val(), 10)} * * *` };
-    case 'daily':   return { valid:true, expression:`${parseInt($('#daily_minute_remote').val(), 10)} ${parseInt($('#daily_time_remote').val(), 10)} * * *` };
-    case 'weekly':  { const dm={Sunday:0,Monday:1,Tuesday:2,Wednesday:3,Thursday:4,Friday:5,Saturday:6}; return { valid:true, expression:`${parseInt($('#weekly_minute_remote').val(), 10)} ${parseInt($('#weekly_time_remote').val(), 10)} * * ${dm[$('#weekly_day_remote').val()]}` }; }
-    case 'monthly': return { valid:true, expression:`${parseInt($('#monthly_minute_remote').val(), 10)} ${parseInt($('#monthly_time_remote').val(), 10)} ${parseInt($('#monthly_day_remote').val(), 10)} * *` };
-    default: return { valid:false };
+    case 'hourly': return { valid: true, expression: `0 */${parseInt($('#hourly_frequency_remote').val(), 10)} * * *` };
+    case 'daily': return { valid: true, expression: `${parseInt($('#daily_minute_remote').val(), 10)} ${parseInt($('#daily_time_remote').val(), 10)} * * *` };
+    case 'weekly': { const dm = { Sunday: 0, Monday: 1, Tuesday: 2, Wednesday: 3, Thursday: 4, Friday: 5, Saturday: 6 }; return { valid: true, expression: `${parseInt($('#weekly_minute_remote').val(), 10)} ${parseInt($('#weekly_time_remote').val(), 10)} * * ${dm[$('#weekly_day_remote').val()]}` }; }
+    case 'monthly': return { valid: true, expression: `${parseInt($('#monthly_minute_remote').val(), 10)} ${parseInt($('#monthly_time_remote').val(), 10)} ${parseInt($('#monthly_day_remote').val(), 10)} * *` };
+    default: return { valid: false };
   }
 }
 async function scheduleJobremote(type) {
@@ -1059,17 +1058,17 @@ async function scheduleJobremote(type) {
   const conflict = checkCronConflicts(cron.expression, existingCrons, window.editingScheduleIdremote);
   if (conflict) { unlockScheduleUIremote(); fbbAlert('This remote schedule conflicts with an existing schedule (' + conflict + '). Please choose a different time.'); return; }
   const settings = {};
-  $('input[name], select[name]').each(function() {
+  $('input[name], select[name]').each(function () {
     const key = this.name.replace(/\[\]$/, '');
     if ($(this).is(':checkbox')) { settings[key] = $(this).is(':checked') ? 'yes' : 'no'; }
     else { const val = $(this).val(); settings[key] = Array.isArray(val) ? val.join(',') : val; }
   });
   const url = window.editingScheduleIdremote ? 'schedule_update_remote.php' : 'schedule_create_remote.php';
   $.ajax({
-    type:'POST', url:`/plugins/flash-backup/helpers/${url}`,
-    data:{ id:window.editingScheduleIdremote, type, cron:cron.expression, settings },
-    success: function() { resetScheduleUIremote(); window.editingScheduleIdremote = null; loadSchedulesremote(); showPopupremote('Schedule saved!'); },
-    error:   function(xhr) { unlockScheduleUIremote(); if (xhr.status === 409) fbbAlert('Duplicate remote schedule!'); else fbbAlert('Error creating/updating remote schedule: ' + xhr.responseText); }
+    type: 'POST', url: `/plugins/flash-backup/helpers/${url}`,
+    data: { id: window.editingScheduleIdremote, type, cron: cron.expression, settings },
+    success: function () { resetScheduleUIremote(); window.editingScheduleIdremote = null; loadSchedulesremote(); showPopupremote('Schedule saved!'); },
+    error: function (xhr) { unlockScheduleUIremote(); if (xhr.status === 409) fbbAlert('Duplicate remote schedule!'); else fbbAlert('Error creating/updating remote schedule: ' + xhr.responseText); }
   });
 }
 
@@ -1090,7 +1089,7 @@ function cancelEditRemote() {
 function editScheduleremote(id) {
   fbbSwitchMode('remote'); $('#fbb-mode-switcher').val('remote');
   if (scheduleUILockedremote) return; lockScheduleUIremote();
-  $.getJSON('/plugins/flash-backup/helpers/schedule_load_remote.php', { id }, function(s) {
+  $.getJSON('/plugins/flash-backup/helpers/schedule_load_remote.php', { id }, function (s) {
     const settings = s.SETTINGS || {};
     if (s.TYPE) $('[name="type_remote"]').val(s.TYPE).trigger('change');
     applyCronToUI(s.CRON, 'remote');
@@ -1102,14 +1101,14 @@ function editScheduleremote(id) {
     }
     if (settings.RCLONE_CONFIG_REMOTE !== undefined) {
       const vals = String(settings.RCLONE_CONFIG_REMOTE).split(',').map(v => v.trim()).filter(Boolean);
-      $('#rclone-config-list-remote input[type=checkbox]').each(function() { $(this).prop('checked', vals.includes($(this).val())); });
+      $('#rclone-config-list-remote input[type=checkbox]').each(function () { $(this).prop('checked', vals.includes($(this).val())); });
       $('#rclone-config-label-remote').text(vals.length ? vals.join(', ') : 'Select config(s)');
-      $('#rclone_config_remote_hidden option').each(function() { $(this).prop('selected', vals.includes($(this).val())); });
+      $('#rclone_config_remote_hidden option').each(function () { $(this).prop('selected', vals.includes($(this).val())); });
       updateBucketVisibility();
       let savedBuckets = {};
-      try { const b64 = settings.BUCKET_NAMES || ''; if (b64) savedBuckets = JSON.parse(atob(b64)) || {}; } catch(e) {}
+      try { const b64 = settings.BUCKET_NAMES || ''; if (b64) savedBuckets = JSON.parse(atob(b64)) || {}; } catch (e) { }
       const legacyBucket = settings.B2_BUCKET_NAME || '';
-      $('#bucket-fields-container .bucket-name-input').each(function() {
+      $('#bucket-fields-container .bucket-name-input').each(function () {
         const remote = $(this).data('remote'); let val = savedBuckets[remote] || '';
         if (!val && legacyBucket) val = legacyBucket; if (val) $(this).val(val);
       });
@@ -1117,7 +1116,7 @@ function editScheduleremote(id) {
     // Restore notification service checkboxes from saved schedule
     if (settings.NOTIFICATION_SERVICE_REMOTE !== undefined) {
       const svcs = String(settings.NOTIFICATION_SERVICE_REMOTE).split(',').map(v => v.trim()).filter(Boolean);
-      $('#notification-service-list-remote input[type=checkbox]').each(function() { $(this).prop('checked', svcs.includes($(this).val())); });
+      $('#notification-service-list-remote input[type=checkbox]').each(function () { $(this).prop('checked', svcs.includes($(this).val())); });
       updateServiceLabel('remote');
       toggleNotificationRows('remote');
     }
@@ -1140,32 +1139,32 @@ function resetScheduleUIremote() { cancelEditRemote(); $('#popupMessageremote').
 
 function deleteScheduleremote(id) {
   if (scheduleUILockedremote) return;
-  fbbConfirm('Delete this remote schedule?', function() { lockScheduleUIremote(); $.post('/plugins/flash-backup/helpers/schedule_delete_remote.php', { id }).always(() => loadSchedulesremote()); });
+  fbbConfirm('Delete this remote schedule?', function () { lockScheduleUIremote(); $.post('/plugins/flash-backup/helpers/schedule_delete_remote.php', { id }).always(() => loadSchedulesremote()); });
 }
 function runScheduleBackupremote(id, btn) {
   fbbSwitchMode('remote'); $('#fbb-mode-switcher').val('remote'); if (scheduleUILockedremote) return;
-  fbbConfirm('Run this remote backup now?', function() {
+  fbbConfirm('Run this remote backup now?', function () {
     lockScheduleUIremote(); btn.disabled = true;
     $.post('/plugins/flash-backup/helpers/run_schedule_remote.php', { id })
-      .done(function(res) {
+      .done(function (res) {
         if (!res.started) { fbbAlert('Failed to start remote backup'); btn.disabled = false; unlockScheduleUIremote(); return; }
         showBanner('⚠ Scheduled remote backup in progress...', 'remote'); setAllBackupButtonsDisabled(true);
-        const poll = setInterval(function() { $.getJSON('/plugins/flash-backup/helpers/check_lock.php', function(res) { if (!res.locked) { clearInterval(poll); btn.disabled = false; setAllBackupButtonsDisabled(false); unlockScheduleUIremote(); } }); }, 1000);
+        const poll = setInterval(function () { $.getJSON('/plugins/flash-backup/helpers/check_lock.php', function (res) { if (!res.locked) { clearInterval(poll); btn.disabled = false; setAllBackupButtonsDisabled(false); unlockScheduleUIremote(); } }); }, 1000);
       })
-      .fail(function(xhr, status, err) { fbbAlert('Failed to start remote backup: ' + (xhr.responseJSON?.error || err)); btn.disabled = false; unlockScheduleUIremote(); });
+      .fail(function (xhr, status, err) { fbbAlert('Failed to start remote backup: ' + (xhr.responseJSON?.error || err)); btn.disabled = false; unlockScheduleUIremote(); });
   });
 }
 function toggleScheduleremote(id, isEnabled) {
   if (scheduleUILockedremote) return;
-  fbbConfirm(isEnabled ? 'Disable this remote schedule?' : 'Enable this remote schedule?', function() { lockScheduleUIremote(); $.post('/plugins/flash-backup/helpers/schedule_toggle_remote.php', { id }).always(() => loadSchedulesremote()); });
+  fbbConfirm(isEnabled ? 'Disable this remote schedule?' : 'Enable this remote schedule?', function () { lockScheduleUIremote(); $.post('/plugins/flash-backup/helpers/schedule_toggle_remote.php', { id }).always(() => loadSchedulesremote()); });
 }
-$(document).ready(function() { loadSchedulesremote(); $(document).on('click', '#schedule-remote-backup', function() { if (_editModeRemote) { cancelEditRemote(); return; } scheduleJobremote('remote-backup'); }); });
+$(document).ready(function () { loadSchedulesremote(); $(document).on('click', '#schedule-remote-backup', function () { if (_editModeRemote) { cancelEditRemote(); return; } scheduleJobremote('remote-backup'); }); });
 
 // ── Parse cron expression back into scheduling UI fields ──────────────────────
 // Used when loading a saved schedule for editing — populates the hour/minute/day
 // selects and shows the correct sub-panel based on the stored cron expression.
 function applyCronToUI(cron, suffix) {
-  const s   = suffix || '';
+  const s = suffix || '';
   const sid = s ? '_' + s : '';
 
   const parts = (cron || '').trim().split(/\s+/);
@@ -1187,22 +1186,22 @@ function applyCronToUI(cron, suffix) {
     if (typeof togFn === 'function') togFn(mode);
   }
 
-  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
   if (mode === 'hourly') {
     const m = hour.match(/^\*\/(\d+)$/);
     if (m) { const el = document.getElementById('hourly_frequency' + sid); if (el) el.value = m[1]; }
   } else if (mode === 'daily') {
-    const hEl = document.getElementById('daily_time'   + sid); if (hEl) hEl.value = String(parseInt(hour, 10)).padStart(2, '0');
-    const mEl = document.getElementById('daily_minute' + sid); if (mEl) mEl.value = String(parseInt(min,  10)).padStart(2, '0');
+    const hEl = document.getElementById('daily_time' + sid); if (hEl) hEl.value = String(parseInt(hour, 10)).padStart(2, '0');
+    const mEl = document.getElementById('daily_minute' + sid); if (mEl) mEl.value = String(parseInt(min, 10)).padStart(2, '0');
   } else if (mode === 'weekly') {
-    const dEl = document.getElementById('weekly_day'    + sid); if (dEl) dEl.value = days[parseInt(dow, 10)] || 'Sunday';
-    const hEl = document.getElementById('weekly_time'   + sid); if (hEl) hEl.value = String(parseInt(hour, 10)).padStart(2, '0');
-    const mEl = document.getElementById('weekly_minute' + sid); if (mEl) mEl.value = String(parseInt(min,  10)).padStart(2, '0');
+    const dEl = document.getElementById('weekly_day' + sid); if (dEl) dEl.value = days[parseInt(dow, 10)] || 'Sunday';
+    const hEl = document.getElementById('weekly_time' + sid); if (hEl) hEl.value = String(parseInt(hour, 10)).padStart(2, '0');
+    const mEl = document.getElementById('weekly_minute' + sid); if (mEl) mEl.value = String(parseInt(min, 10)).padStart(2, '0');
   } else if (mode === 'monthly') {
-    const dEl = document.getElementById('monthly_day'    + sid); if (dEl) dEl.value = String(parseInt(dom,  10)).padStart(2, '0');
-    const hEl = document.getElementById('monthly_time'   + sid); if (hEl) hEl.value = String(parseInt(hour, 10)).padStart(2, '0');
-    const mEl = document.getElementById('monthly_minute' + sid); if (mEl) mEl.value = String(parseInt(min,  10)).padStart(2, '0');
+    const dEl = document.getElementById('monthly_day' + sid); if (dEl) dEl.value = String(parseInt(dom, 10)).padStart(2, '0');
+    const hEl = document.getElementById('monthly_time' + sid); if (hEl) hEl.value = String(parseInt(hour, 10)).padStart(2, '0');
+    const mEl = document.getElementById('monthly_minute' + sid); if (mEl) mEl.value = String(parseInt(min, 10)).padStart(2, '0');
   }
 }
 
@@ -1210,9 +1209,9 @@ function applyCronToUI(cron, suffix) {
 function detectCronMode(cron) {
   if (!cron) return 'daily';
   if (/^0 \*\/(4|6|8) \* \* \*$/.test(cron)) return 'hourly';
-  if (/^\d+ \d+ \* \* \*$/.test(cron))        return 'daily';
-  if (/^\d+ \d+ \* \* [0-6]$/.test(cron))     return 'weekly';
-  if (/^\d+ \d+ \d+ \* \*$/.test(cron))       return 'monthly';
+  if (/^\d+ \d+ \* \* \*$/.test(cron)) return 'daily';
+  if (/^\d+ \d+ \* \* [0-6]$/.test(cron)) return 'weekly';
+  if (/^\d+ \d+ \d+ \* \*$/.test(cron)) return 'monthly';
   return 'daily';
 }
 
@@ -1223,7 +1222,7 @@ if (typeof caPluginUpdateCheck === 'function') { caPluginUpdateCheck('flash-back
 let currentPath = '/mnt'; let selectedFolders = [], accumulatedFolders = [], persistentFolders = []; let activeInputFieldId = null;
 function loadFolders(path) {
   document.getElementById('fbb-create-folder-bar').style.display = 'none'; document.getElementById('newFolderName').value = '';
-  $.getJSON('/plugins/flash-backup/helpers/list_folders.php', { path, field: activeInputFieldId }, function(data) {
+  $.getJSON('/plugins/flash-backup/helpers/list_folders.php', { path, field: activeInputFieldId }, function (data) {
     currentPath = data.current;
     const parts = currentPath.split('/').filter(p => p !== ''); let breadcrumbHTML = '', buildPath = '';
     parts.forEach((part, index) => { buildPath += '/' + part; breadcrumbHTML += `<span class="breadcrumb-part" data-path="${buildPath}" style="cursor:pointer;">${part}</span>`; if (index < parts.length - 1) breadcrumbHTML += ' / '; });
@@ -1235,20 +1234,20 @@ function loadFolders(path) {
       html += `<div class="vm-folder-item browse-row" data-path="${folder.path}" style="display:flex;align-items:center;gap:0px;"><label class="folder-check-label" style="display:flex;align-items:center;cursor:pointer;padding:9px 2px 4px 4px;"><input type="checkbox" class="folder-checkbox" value="${folder.path}" ${isChecked} ${disabledAttr}></label><span class="folder-name-label" style="flex:1;cursor:pointer;">${folder.name}</span></div>`;
     });
     $('#folderList').html(html);
-    $('.breadcrumb-part').off('click').on('click', function() { loadFolders($(this).data('path')); });
-    $('.browse-row').off('click').on('click', function(e) { if ($(e.target).closest('.folder-check-label').length || $(e.target).closest('.folder-name-label').length) return; loadFolders($(this).data('path')); });
-    $('.folder-name-label').off('click').on('click', function() { loadFolders($(this).closest('.browse-row').data('path')); });
-    $('.folder-check-label').off('click').on('click', function(e) { e.stopPropagation(); });
-    $('.folder-checkbox').off('change').on('change', function(e) {
+    $('.breadcrumb-part').off('click').on('click', function () { loadFolders($(this).data('path')); });
+    $('.browse-row').off('click').on('click', function (e) { if ($(e.target).closest('.folder-check-label').length || $(e.target).closest('.folder-name-label').length) return; loadFolders($(this).data('path')); });
+    $('.folder-name-label').off('click').on('click', function () { loadFolders($(this).closest('.browse-row').data('path')); });
+    $('.folder-check-label').off('click').on('click', function (e) { e.stopPropagation(); });
+    $('.folder-checkbox').off('change').on('change', function (e) {
       if (this.disabled) return; const path = $(this).val();
       if (this.checked) { if (!persistentFolders.includes(path)) { persistentFolders.push(path); showFolderToast('Folder selected'); } }
       else { persistentFolders = persistentFolders.filter(p => p !== path); showFolderToast('Removed'); }
       e.stopPropagation();
     });
-    $('#clearSelectedFolders').off('click').on('click', function() { persistentFolders = []; selectedFolders = []; accumulatedFolders = []; $('.folder-checkbox').prop('checked', false); showFolderToast('Selections cleared'); });
+    $('#clearSelectedFolders').off('click').on('click', function () { persistentFolders = []; selectedFolders = []; accumulatedFolders = []; $('.folder-checkbox').prop('checked', false); showFolderToast('Selections cleared'); });
   });
 }
-$('input[data-picker-title]').on('click', function() {
+$('input[data-picker-title]').on('click', function () {
   activeInputFieldId = $(this).attr('id'); const existing = $(this).val().trim();
   persistentFolders = existing.length > 0 ? existing.split(',').map(s => s.trim()) : [];
   selectedFolders = []; accumulatedFolders = [];
@@ -1256,31 +1255,31 @@ $('input[data-picker-title]').on('click', function() {
   $('#folderPickerModal').css('display', 'flex').css('align-items', 'center').css('justify-content', 'center');
   const savedPath = $(this).val(); loadFolders(savedPath && savedPath.startsWith('/mnt') ? savedPath : '/mnt');
 });
-$('#closeFolderPicker').on('click', function() { document.getElementById('fbb-create-folder-bar').style.display = 'none'; document.getElementById('newFolderName').value = ''; $('#folderPickerModal').hide(); });
-$('#confirmFolderSelection').off('click').on('click', function(e) { e.preventDefault(); if (!activeInputFieldId) return; $('#' + activeInputFieldId).val(persistentFolders.join(',')).trigger('change'); $('#folderPickerModal').hide(); });
-$('#createFolderBtn').on('click', function() { const bar = document.getElementById('fbb-create-folder-bar'); bar.style.display = 'flex'; document.getElementById('newFolderName').value = ''; document.getElementById('newFolderName').focus(); });
-$('#newFolderCancel').on('click', function() { document.getElementById('fbb-create-folder-bar').style.display = 'none'; document.getElementById('newFolderName').value = ''; });
-$('#newFolderOk').on('click', function() {
+$('#closeFolderPicker').on('click', function () { document.getElementById('fbb-create-folder-bar').style.display = 'none'; document.getElementById('newFolderName').value = ''; $('#folderPickerModal').hide(); });
+$('#confirmFolderSelection').off('click').on('click', function (e) { e.preventDefault(); if (!activeInputFieldId) return; $('#' + activeInputFieldId).val(persistentFolders.join(',')).trigger('change'); $('#folderPickerModal').hide(); });
+$('#createFolderBtn').on('click', function () { const bar = document.getElementById('fbb-create-folder-bar'); bar.style.display = 'flex'; document.getElementById('newFolderName').value = ''; document.getElementById('newFolderName').focus(); });
+$('#newFolderCancel').on('click', function () { document.getElementById('fbb-create-folder-bar').style.display = 'none'; document.getElementById('newFolderName').value = ''; });
+$('#newFolderOk').on('click', function () {
   const name = document.getElementById('newFolderName').value.trim(); if (!name) return;
-  $.post('/plugins/flash-backup/helpers/create_folder.php', { path: currentPath, name, csrf_token: csrfToken }, function(res) {
+  $.post('/plugins/flash-backup/helpers/create_folder.php', { path: currentPath, name, csrf_token: csrfToken }, function (res) {
     if (res.success) { document.getElementById('fbb-create-folder-bar').style.display = 'none'; document.getElementById('newFolderName').value = ''; showFolderToast('✅ Folder created'); loadFolders(currentPath); }
     else fbbAlert(res.error || 'Failed to create folder');
   }, 'json');
 });
-document.getElementById('newFolderName')?.addEventListener('keydown', function(e) { if (e.key === 'Enter') document.getElementById('newFolderOk').click(); if (e.key === 'Escape') document.getElementById('newFolderCancel').click(); });
+document.getElementById('newFolderName')?.addEventListener('keydown', function (e) { if (e.key === 'Enter') document.getElementById('newFolderOk').click(); if (e.key === 'Escape') document.getElementById('newFolderCancel').click(); });
 
 // ── Remote path normalizer ────────────────────────────────────────────────────
 let remotePathTimer = null;
-$('#remote_path_in_config').on('input', function() {
+$('#remote_path_in_config').on('input', function () {
   let val = $(this).val(); if (val.trim() === '') { clearTimeout(remotePathTimer); return; }
   val = val.replace(/\/+/g, '/'); if (!val.startsWith('/')) val = '/' + val; $(this).val(val); clearTimeout(remotePathTimer);
   remotePathTimer = setTimeout(() => { let v = $('#remote_path_in_config').val().trim(); if (v && !v.endsWith('/')) $('#remote_path_in_config').val(v + '/'); }, 2000);
 });
-$('#remote_path_in_config').on('blur', function() { let val = $(this).val().trim(); if (!val) return; val = val.replace(/\/+/g, '/'); if (!val.startsWith('/')) val = '/' + val; if (!val.endsWith('/')) val += '/'; $(this).val(val); });
-$(function() { let val = $('#remote_path_in_config').val().trim(); if (!val) return; val = val.replace(/\/+/g, '/'); if (!val.startsWith('/')) val = '/' + val; if (!val.endsWith('/')) val += '/'; $('#remote_path_in_config').val(val); });
+$('#remote_path_in_config').on('blur', function () { let val = $(this).val().trim(); if (!val) return; val = val.replace(/\/+/g, '/'); if (!val.startsWith('/')) val = '/' + val; if (!val.endsWith('/')) val += '/'; $(this).val(val); });
+$(function () { let val = $('#remote_path_in_config').val().trim(); if (!val) return; val = val.replace(/\/+/g, '/'); if (!val.startsWith('/')) val = '/' + val; if (!val.endsWith('/')) val += '/'; $('#remote_path_in_config').val(val); });
 
 // ── Copy log button ───────────────────────────────────────────────────────────
-document.getElementById('copy-last-run-log').addEventListener('click', function() {
+document.getElementById('copy-last-run-log').addEventListener('click', function () {
   const logEl = document.getElementById('last-run-log'); const text = logEl.dataset.raw || logEl.textContent || '';
   if (!text.trim() || text.includes('Flash backup log not found')) return;
   if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(text).then(() => showCopiedFeedback(this)).catch(() => { fallbackCopyText(text, this); }); }
@@ -1288,7 +1287,7 @@ document.getElementById('copy-last-run-log').addEventListener('click', function(
 });
 function fallbackCopyText(text, btn) {
   const textarea = document.createElement('textarea'); textarea.value = text; document.body.appendChild(textarea); textarea.select();
-  try { document.execCommand('copy'); showCopiedFeedback(btn); } catch(err) { fbbAlert('Failed to copy log'); }
+  try { document.execCommand('copy'); showCopiedFeedback(btn); } catch (err) { fbbAlert('Failed to copy log'); }
   document.body.removeChild(textarea);
 }
 function showLogToast(message) {
@@ -1299,19 +1298,19 @@ function showLogToast(message) {
 function showCopiedFeedback(btn) { showLogToast(logDebugMode ? 'Debug log copied' : 'Log copied'); }
 
 // ── Lock poller for run buttons ───────────────────────────────────────────────
-(function() {
+(function () {
   const CHECK_INTERVAL = 1000;
   function updateRunButtons(locked) { document.querySelectorAll('.run-schedule-btn').forEach(btn => { btn.disabled = locked; if (locked) btn.classList.add('disabled'); else btn.classList.remove('disabled'); }); }
-  async function pollLock() { try { const res = await fetch('/plugins/flash-backup/helpers/check_lock.php'); const data = await res.json(); updateRunButtons(Boolean(data.locked)); } catch(e) {} }
+  async function pollLock() { try { const res = await fetch('/plugins/flash-backup/helpers/check_lock.php'); const data = await res.json(); updateRunButtons(Boolean(data.locked)); } catch (e) { } }
   pollLock(); setInterval(pollLock, CHECK_INTERVAL);
 })();
 
 // ── Debounce helper ───────────────────────────────────────────────────────────
 function debounceButton(btn, delay) {
   delay = delay || 1000; let cooling = false;
-  btn.addEventListener('click', function() { if (cooling) return; cooling = true; setTimeout(() => cooling = false, delay); });
+  btn.addEventListener('click', function () { if (cooling) return; cooling = true; setTimeout(() => cooling = false, delay); });
 }
-['backupbtn','restorebtn','schedule-backup','clear-last-run-log','copy-last-run-log',
- 'confirmFolderSelection','closeFolderPicker','backupbtn_remote','schedule-local-backup',
- 'schedule-remote-backup','clearSelectedFolders','apply-settings-btn','apply-settings-btn-remote'
+['backupbtn', 'restorebtn', 'schedule-backup', 'clear-last-run-log', 'copy-last-run-log',
+  'confirmFolderSelection', 'closeFolderPicker', 'backupbtn_remote', 'schedule-local-backup',
+  'schedule-remote-backup', 'clearSelectedFolders', 'apply-settings-btn', 'apply-settings-btn-remote'
 ].forEach(id => { const btn = document.getElementById(id); if (btn) debounceButton(btn); });

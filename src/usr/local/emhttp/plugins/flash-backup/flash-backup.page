@@ -161,12 +161,20 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
       <div class="fbb-card">
 
         <div id="fbb-mode-row">
-          <!-- Plugin group — left -->
-          <?php if ($has_siblings_bool): ?>
+          <!-- Mode group — left -->
           <div class="fbb-topbar-group">
+            <span class="fbb-topbar-label" id="fbb-mode-label">Mode:</span>
+            <select id="fbb-mode-switcher" onchange="fbbSwitchMode(this.value)">
+              <option value="local">Local Backup</option>
+              <option value="remote">Remote Backup</option>
+            </select>
+          </div>
+          <!-- Plugin group — right -->
+          <?php if ($has_siblings_bool): ?>
+          <div class="fbb-topbar-group" style="margin-left:auto;">
             <span class="fbb-topbar-label" id="fbb-plugin-label">Plugin:</span>
             <select onchange="if(this.value)window.location=this.value">
-              <option value="" disabled selected>Switch plugin…</option>
+              <option value="" disabled selected>Switch plugin</option>
               <?php foreach ($all_plugin_options_arr as $info_arr): ?>
               <option value="<?= htmlspecialchars($info_arr['url']) ?>">
                 <?= htmlspecialchars($info_arr['label']) ?>
@@ -175,14 +183,6 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
             </select>
           </div>
           <?php endif; ?>
-          <!-- Mode group — right -->
-          <div class="fbb-topbar-group" style="margin-left:auto;">
-            <span class="fbb-topbar-label" id="fbb-mode-label">Mode:</span>
-            <select id="fbb-mode-switcher" onchange="fbbSwitchMode(this.value)">
-              <option value="local">Local Backup</option>
-              <option value="remote">Remote Backup</option>
-            </select>
-          </div>
         </div>
 
         <div class="fbb-card-header">

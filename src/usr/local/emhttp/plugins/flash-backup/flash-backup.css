@@ -20,7 +20,6 @@
   --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.5);
   --input-w: 210px;
   --label-w: 158px;
-  /* chevron arrow for select fields */
   --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%234ade80'/%3E%3C/svg%3E");
 }
 
@@ -34,7 +33,7 @@
   margin-top: -31px;
 }
 
-/* ── 2-column grid (settings card + log panel) ───────────────────────────  */
+/* ── 2-column grid ───────────────────────────────────────────────────────── */
 #fbb-layout {
   display: grid;
   grid-template-columns: minmax(340px, 0.85fr) minmax(300px, 2.4fr);
@@ -152,7 +151,8 @@
 }
 
 #fbb-mode-row .fbb-topbar-group:first-child {
-  padding-left: 3px;
+  padding-left: 0;
+  margin-left: -1px;
 }
 
 .fbb-topbar-label {
@@ -173,11 +173,11 @@
   padding-right: 26px !important;
 }
 
-/* -- Mode row selects: native appearance, narrower, no custom arrow --------- */
+/* -- Mode row selects: appearance:none so padding-left is fully controllable */
 #fbb-mode-row select {
-  -webkit-appearance: auto !important;
-  -moz-appearance: auto !important;
-  appearance: auto !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
   background-image: none !important;
   height: 26px !important;
   font-size: 12px !important;
@@ -185,7 +185,7 @@
   color: var(--c-text) !important;
   border: 1px solid var(--c-border-strong) !important;
   border-radius: var(--radius-input) !important;
-  padding: 2px 7px 3px 6px !important;
+  padding: 2px 18px 2px 2px !important;
   cursor: pointer !important;
   width: 20px !important;
   max-width: 20px !important;
@@ -193,6 +193,8 @@
   box-sizing: border-box !important;
   flex-shrink: 1 !important;
   line-height: 1.4 !important;
+  text-overflow: ellipsis !important;
+  overflow: hidden !important;
 }
 
 #fbb-mode-row select:focus {
@@ -200,8 +202,19 @@
   box-shadow: 0 0 0 2px var(--c-accent-glow) !important;
 }
 
+/* Mode row select-wraps: fixed equal width, trimmed to fit the card          */
+#fbb-mode-row .fbb-select-wrap {
+  width: 175px !important;
+  max-width: 175px !important;
+  flex: none;
+}
+
+#fbb-mode-row .fbb-select-wrap select {
+  width: 175px !important;
+  max-width: 175px !important;
+}
+
 /* -- .fbb-select-wrap: JS injects this around every form select ------------- */
-/* The ::after draws the solid triangle on all wrapped fields                 */
 .fbb-select-wrap {
   position: relative;
   display: inline-block;
@@ -231,7 +244,6 @@
   pointer-events: none;
 }
 
-/* Multiselects: position:relative for ::after, clear bg-image */
 .vm-multiselect {
   position: relative !important;
   background-image: none !important;
@@ -371,6 +383,8 @@
 }
 
 /* ── Inputs & selects ────────────────────────────────────────────────────── */
+/* padding-right:26px reserves space for the custom arrow so text never runs  */
+/* underneath it. text-overflow:ellipsis clips long values cleanly.           */
 #fbb-page input[type="text"],
 #fbb-page input[type="password"],
 #fbb-page input[type="number"],
@@ -379,12 +393,15 @@
   border: 1px solid var(--c-border-strong) !important;
   border-radius: var(--radius-input) !important;
   color: var(--c-text) !important;
-  padding: 5px 8px !important;
+  padding: 5px 26px 5px 8px !important;
   font-size: 12px !important;
   transition: border-color .15s, box-shadow .15s;
   width: var(--input-w) !important;
   max-width: var(--input-w) !important;
   box-sizing: border-box !important;
+  text-overflow: ellipsis !important;
+  overflow: hidden !important;
+  white-space: nowrap !important;
 }
 
 #fbb-page input:focus,
@@ -413,6 +430,14 @@
 #fbb-page input[type="checkbox"] {
   accent-color: var(--c-accent);
   cursor: pointer;
+}
+
+/* Log search overrides — it's a free-text input with no arrow, let text flow */
+#log-search {
+  text-overflow: clip !important;
+  white-space: normal !important;
+  overflow: visible !important;
+  padding-right: 24px !important;
 }
 
 /* ── Buttons ─────────────────────────────────────────────────────────────── */
@@ -592,14 +617,12 @@ div.vm-multiselect.short-input {
   -webkit-appearance: none !important;
   display: block !important;
   height: auto !important;
-  /* padding intentionally not set here — inherited from .vm-multiselect */
 }
 
 .vm-multiselect:hover {
   border-color: var(--c-accent-light) !important;
 }
 
-/* Disabled state — no rclone configs found */
 .vm-multiselect.fbb-rclone-disabled {
   opacity: .55 !important;
   cursor: not-allowed !important;
@@ -757,7 +780,6 @@ div.vm-multiselect.short-input {
   padding: 4px 24px 4px 8px !important;
   width: 150px;
   outline: none;
-  /* override the universal select-arrow rule — this is an input, not a select */
   background-image: none !important;
 }
 
@@ -1041,8 +1063,7 @@ div.vm-multiselect.short-input {
   border-left: 1px solid var(--c-border) !important;
 }
 
-/* -- Picker input: wrapped by JS, clear bg-image --------------------------- */
-/* #rclone_config_remote is a .vm-multiselect div, handled separately        */
+/* -- Picker input ---------------------------------------------------------- */
 #backup_destination {
   background-image: none !important;
   padding-right: 26px !important;
@@ -1119,7 +1140,6 @@ div.vm-multiselect.short-input {
   background: var(--c-surface);
 }
 
-/* Inline create-folder row — sits above the file list */
 #fbb-create-folder-bar {
   display: none;
   align-items: center;
@@ -1141,7 +1161,6 @@ div.vm-multiselect.short-input {
   padding: 0 8px !important;
   outline: none !important;
   box-sizing: border-box !important;
-  /* no arrow on this plain text input */
   background-image: none !important;
   width: auto !important;
   max-width: none !important;
@@ -1257,7 +1276,7 @@ div.vm-multiselect.short-input {
   visibility: visible;
 }
 
-/* ── Custom confirm/alert dialogs (replaces native alert/confirm) ────────── */
+/* ── Custom confirm/alert dialogs ────────────────────────────────────────── */
 .fbb-dialog-overlay {
   display: none;
   position: fixed;
