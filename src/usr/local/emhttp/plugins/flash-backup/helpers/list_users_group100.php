@@ -12,7 +12,8 @@ define('ALWAYS_INCLUDE', 'nobody');
 // ------------------------------------------------------------------------------
 // respond() — JSON response with explicit HTTP code, then exit
 // ------------------------------------------------------------------------------
-function respond(int $code, array $payload): void {
+function respond(int $code, array $payload): void
+{
     http_response_code($code);
     header('Content-Type: application/json');
     echo json_encode($payload, JSON_UNESCAPED_SLASHES);
@@ -22,7 +23,8 @@ function respond(int $code, array $payload): void {
 // ------------------------------------------------------------------------------
 // is_in_users_group()
 // ------------------------------------------------------------------------------
-function is_in_users_group(string $username): bool {
+function is_in_users_group(string $username): bool
+{
     $output = [];
     exec('id -G ' . escapeshellarg($username) . ' 2>/dev/null', $output);
     if (empty($output)) {
@@ -36,7 +38,8 @@ function is_in_users_group(string $username): bool {
 // ------------------------------------------------------------------------------
 // main()
 // ------------------------------------------------------------------------------
-function main(): void {
+function main(): void
+{
     $lines = file(PASSWD_FILE, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
     if (!is_array($lines)) {
         respond(500, ['error' => 'Failed to read passwd file']);

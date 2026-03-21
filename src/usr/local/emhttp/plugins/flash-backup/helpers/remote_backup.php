@@ -12,7 +12,8 @@ define('REMOTE_BACKUP_SCRIPT', '/usr/local/emhttp/plugins/flash-backup/helpers/r
 // ------------------------------------------------------------------------------
 // respond() — JSON response with explicit HTTP code, then exit
 // ------------------------------------------------------------------------------
-function respond(int $code, array $payload): void {
+function respond(int $code, array $payload): void
+{
     http_response_code($code);
     header('Content-Type: application/json');
     echo json_encode($payload, JSON_UNESCAPED_SLASHES);
@@ -22,7 +23,8 @@ function respond(int $code, array $payload): void {
 // ------------------------------------------------------------------------------
 // load_and_export_settings()
 // ------------------------------------------------------------------------------
-function load_and_export_settings(string $settings_file): void {
+function load_and_export_settings(string $settings_file): void
+{
     // Skip silently if the settings file does not exist yet
     if (!is_file($settings_file)) {
         return;
@@ -44,7 +46,8 @@ function load_and_export_settings(string $settings_file): void {
 // ------------------------------------------------------------------------------
 // acquire_lock() — Non blocking
 // ------------------------------------------------------------------------------
-function acquire_lock(): mixed {
+function acquire_lock(): mixed
+{
     // Create the lock directory if it does not exist
     if (!is_dir(LOCK_DIR)) {
         if (!mkdir(LOCK_DIR, 0777, true)) {
@@ -68,7 +71,8 @@ function acquire_lock(): mixed {
 // ------------------------------------------------------------------------------
 // write_lock_meta() — write metadata into open lock file handle
 // ------------------------------------------------------------------------------
-function write_lock_meta(mixed $fp, string $pid): void {
+function write_lock_meta(mixed $fp, string $pid): void
+{
     $meta = implode("\n", [
         "PID={$pid}",
         "MODE=remote",
@@ -84,7 +88,8 @@ function write_lock_meta(mixed $fp, string $pid): void {
 // ------------------------------------------------------------------------------
 // main()
 // ------------------------------------------------------------------------------
-function main(): void {
+function main(): void
+{
     // Verify backup script before acquiring lock
     if (!is_file(REMOTE_BACKUP_SCRIPT) || !is_executable(REMOTE_BACKUP_SCRIPT)) {
         respond(500, ['status' => 'error', 'message' => 'Remote backup script missing or not executable']);

@@ -10,7 +10,8 @@ define('RUN_SCHEDULE_PHP', '/usr/local/emhttp/plugins/flash-backup/helpers/run_s
 // ------------------------------------------------------------------------------
 // rebuild_cron() — cron file rebuild, atomic write
 // ------------------------------------------------------------------------------
-function rebuild_cron(): void {
+function rebuild_cron(): void
+{
     // Write an empty cron file if there are no schedules
     if (!file_exists(SCHEDULES_CFG)) {
         file_put_contents(CRON_FILE, '');

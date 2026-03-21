@@ -8,7 +8,8 @@ define('MIN_SELECTABLE_DEPTH', 3);
 // ------------------------------------------------------------------------------
 // respond() — JSON response with explicit HTTP code, then exit
 // ------------------------------------------------------------------------------
-function respond(int $code, array $payload): void {
+function respond(int $code, array $payload): void
+{
     http_response_code($code);
     header('Content-Type: application/json');
     echo json_encode($payload, JSON_UNESCAPED_SLASHES);
@@ -21,7 +22,8 @@ function respond(int $code, array $payload): void {
 // The selected path written to the input field bypasses this via resolveAndApplyPath()
 // in the JS, which sets the raw path directly without calling this file.
 // ------------------------------------------------------------------------------
-function resolve_path(string $path): string {
+function resolve_path(string $path): string
+{
     $resolved = realpath($path);
     if ($resolved === false || strpos($resolved, PICKER_BASE) !== 0) {
         return PICKER_BASE;
@@ -32,7 +34,8 @@ function resolve_path(string $path): string {
 // ------------------------------------------------------------------------------
 // get_depth() — deterministic depth relative to base
 // ------------------------------------------------------------------------------
-function get_depth(string $full_path): int {
+function get_depth(string $full_path): int
+{
     $relative = trim(str_replace(PICKER_BASE, '', $full_path), '/');
     if ($relative === '') return 0;
     return count(explode('/', $relative));
@@ -41,14 +44,16 @@ function get_depth(string $full_path): int {
 // ------------------------------------------------------------------------------
 // is_selectable() — depth >= 3 required for all fields in this plugin
 // ------------------------------------------------------------------------------
-function is_selectable(int $depth, string $field): bool {
+function is_selectable(int $depth, string $field): bool
+{
     return $depth >= MIN_SELECTABLE_DEPTH;
 }
 
 // ------------------------------------------------------------------------------
 // scan_folders() — returns folder list
 // ------------------------------------------------------------------------------
-function scan_folders(string $path, string $field): array {
+function scan_folders(string $path, string $field): array
+{
     if (!is_dir($path)) return [];
     $items = scandir($path);
     if (!is_array($items)) return [];
@@ -70,7 +75,8 @@ function scan_folders(string $path, string $field): array {
 // ------------------------------------------------------------------------------
 // main()
 // ------------------------------------------------------------------------------
-function main(): void {
+function main(): void
+{
     $path  = resolve_path($_GET['path'] ?? PICKER_BASE);
     $field = trim($_GET['field'] ?? '');
     $folders = scan_folders($path, $field);

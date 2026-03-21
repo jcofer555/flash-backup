@@ -3,7 +3,8 @@
 // ------------------------------------------------------------------------------
 // respond() — JSON response with explicit HTTP code, then exit
 // ------------------------------------------------------------------------------
-function respond(int $code, array $payload): void {
+function respond(int $code, array $payload): void
+{
     http_response_code($code);
     header('Content-Type: application/json');
     echo json_encode($payload, JSON_UNESCAPED_SLASHES);
@@ -13,7 +14,8 @@ function respond(int $code, array $payload): void {
 // ------------------------------------------------------------------------------
 // validate_csrf() — explicit CSRF check, must be POST with matching tokens
 // ------------------------------------------------------------------------------
-function validate_csrf(): void {
+function validate_csrf(): void
+{
     $cookie = $_COOKIE['csrf_token'] ?? '';
     $posted = $_POST['csrf_token']   ?? '';
 
@@ -25,7 +27,8 @@ function validate_csrf(): void {
 // ------------------------------------------------------------------------------
 // main()
 // ------------------------------------------------------------------------------
-function main(): void {
+function main(): void
+{
     validate_csrf();
 
     // Resolve the parent path and strip any directory component from the new folder name

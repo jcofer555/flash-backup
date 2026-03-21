@@ -9,7 +9,8 @@ define('CRON_PATTERN',  '/^([\*\/0-9,-]+\s+){4}[\*\/0-9,-]+$/');
 // ------------------------------------------------------------------------------
 // respond() — JSON response with explicit HTTP code, then exit
 // ------------------------------------------------------------------------------
-function respond(int $code, array $payload): void {
+function respond(int $code, array $payload): void
+{
     http_response_code($code);
     header('Content-Type: application/json');
     echo json_encode($payload, JSON_UNESCAPED_SLASHES);
@@ -19,7 +20,8 @@ function respond(int $code, array $payload): void {
 // ------------------------------------------------------------------------------
 // load_schedules()
 // ------------------------------------------------------------------------------
-function load_schedules(string $cfg): array {
+function load_schedules(string $cfg): array
+{
     $real = realpath($cfg);
     if ($real === false || !file_exists($real)) {
         respond(404, ['error' => 'Schedules file not found']);
@@ -34,7 +36,8 @@ function load_schedules(string $cfg): array {
 // ------------------------------------------------------------------------------
 // write_schedules() — tmp then rename
 // ------------------------------------------------------------------------------
-function write_schedules(string $cfg, array $schedules): void {
+function write_schedules(string $cfg, array $schedules): void
+{
     $real = realpath($cfg);
     if ($real === false) {
         respond(500, ['error' => 'Cannot resolve schedules file path']);
@@ -64,7 +67,8 @@ function write_schedules(string $cfg, array $schedules): void {
 // ------------------------------------------------------------------------------
 // fingerprint() — duplicate detection key
 // ------------------------------------------------------------------------------
-function fingerprint(array $settings): string {
+function fingerprint(array $settings): string
+{
     // Key on backup destination only — this is the field that must be unique per schedule
     $key = ['BACKUP_DESTINATION' => $settings['BACKUP_DESTINATION'] ?? ''];
     ksort($key);
@@ -74,7 +78,8 @@ function fingerprint(array $settings): string {
 // ------------------------------------------------------------------------------
 // check_duplicate() — conflict detection, excludes current ID
 // ------------------------------------------------------------------------------
-function check_duplicate(array $schedules, string $exclude_id, string $new_hash): void {
+function check_duplicate(array $schedules, string $exclude_id, string $new_hash): void
+{
     foreach ($schedules as $existing_id => $s) {
         // Skip the schedule being updated to avoid a false self-conflict
         if ($existing_id === $exclude_id) continue;
@@ -95,7 +100,8 @@ function check_duplicate(array $schedules, string $exclude_id, string $new_hash)
 // ------------------------------------------------------------------------------
 // main()
 // ------------------------------------------------------------------------------
-function main(): void {
+function main(): void
+{
     $id       = trim($_POST['id']    ?? '');
     $cron     = trim($_POST['cron']  ?? '');
     $settings = $_POST['settings']   ?? [];

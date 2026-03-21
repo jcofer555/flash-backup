@@ -6,7 +6,8 @@ define('REMOTE_SCHEDULES_CFG', '/boot/config/plugins/flash-backup/schedules-remo
 // ------------------------------------------------------------------------------
 // respond() — JSON response with explicit HTTP code, then exit
 // ------------------------------------------------------------------------------
-function respond(int $code, array $payload): void {
+function respond(int $code, array $payload): void
+{
     http_response_code($code);
     header('Content-Type: application/json');
     echo json_encode($payload, JSON_UNESCAPED_SLASHES);
@@ -16,7 +17,8 @@ function respond(int $code, array $payload): void {
 // ------------------------------------------------------------------------------
 // load_schedules()
 // ------------------------------------------------------------------------------
-function load_schedules(string $cfg): array {
+function load_schedules(string $cfg): array
+{
     $real = realpath($cfg);
     if ($real === false || !file_exists($real)) {
         respond(404, ['error' => 'Remote schedules file not found']);
@@ -31,7 +33,8 @@ function load_schedules(string $cfg): array {
 // ------------------------------------------------------------------------------
 // main()
 // ------------------------------------------------------------------------------
-function main(): void {
+function main(): void
+{
     $id = trim($_GET['id'] ?? '');
 
     if ($id === '') {

@@ -12,7 +12,8 @@ define('REMOTE_BACKUP_SCRIPT', '/usr/local/emhttp/plugins/flash-backup/helpers/b
 // ------------------------------------------------------------------------------
 // respond() — JSON response with explicit HTTP code, then exit
 // ------------------------------------------------------------------------------
-function respond(int $code, array $payload): void {
+function respond(int $code, array $payload): void
+{
     http_response_code($code);
     header('Content-Type: application/json');
     echo json_encode($payload, JSON_UNESCAPED_SLASHES);
@@ -22,7 +23,8 @@ function respond(int $code, array $payload): void {
 // ------------------------------------------------------------------------------
 // load_schedules()
 // ------------------------------------------------------------------------------
-function load_schedules(string $cfg): array {
+function load_schedules(string $cfg): array
+{
     $real = realpath($cfg);
     if ($real === false || !file_exists($real)) {
         respond(404, ['status' => 'error', 'message' => 'Remote schedules file not found']);
@@ -37,7 +39,8 @@ function load_schedules(string $cfg): array {
 // ------------------------------------------------------------------------------
 // acquire_lock() — Non blocking
 // ------------------------------------------------------------------------------
-function acquire_lock(): mixed {
+function acquire_lock(): mixed
+{
     // Create the lock directory if it does not exist
     if (!is_dir(LOCK_DIR)) {
         if (!mkdir(LOCK_DIR, 0777, true)) {
@@ -61,7 +64,8 @@ function acquire_lock(): mixed {
 // ------------------------------------------------------------------------------
 // build_env()
 // ------------------------------------------------------------------------------
-function build_env(array $settings, string $id): string {
+function build_env(array $settings, string $id): string
+{
     $env = '';
     foreach ($settings as $key => $val) {
         // Flatten array values (e.g., multi-select rclone configs) to a comma-separated string
@@ -78,7 +82,8 @@ function build_env(array $settings, string $id): string {
 // ------------------------------------------------------------------------------
 // write_lock_meta() — write metadata into open lock file handle
 // ------------------------------------------------------------------------------
-function write_lock_meta(mixed $fp, string $pid, string $id): void {
+function write_lock_meta(mixed $fp, string $pid, string $id): void
+{
     $meta = implode("\n", [
         "PID={$pid}",
         "MODE=schedule-remote-manual",
@@ -95,7 +100,8 @@ function write_lock_meta(mixed $fp, string $pid, string $id): void {
 // ------------------------------------------------------------------------------
 // main()
 // ------------------------------------------------------------------------------
-function main(): void {
+function main(): void
+{
     $id = trim($_POST['id'] ?? '');
 
     if ($id === '') {

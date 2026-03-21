@@ -8,7 +8,8 @@ define('REMOTE_STATUS_DEFAULT', 'Remote Backup Not Running');
 // ------------------------------------------------------------------------------
 // respond() — JSON response with explicit HTTP code, then exit
 // ------------------------------------------------------------------------------
-function respond(int $code, array $payload): void {
+function respond(int $code, array $payload): void
+{
     http_response_code($code);
     header('Content-Type: application/json');
     echo json_encode($payload, JSON_UNESCAPED_SLASHES);
@@ -18,7 +19,8 @@ function respond(int $code, array $payload): void {
 // ------------------------------------------------------------------------------
 // main()
 // ------------------------------------------------------------------------------
-function main(): void {
+function main(): void
+{
     $status = REMOTE_STATUS_DEFAULT;
 
     // Read the status file if it exists and is not empty

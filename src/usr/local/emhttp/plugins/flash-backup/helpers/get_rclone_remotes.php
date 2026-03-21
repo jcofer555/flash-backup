@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 // Returns the current list of rclone remotes from all known config file locations.
 // Used by the 1-second JS poller to keep the Rclone Config multiselect up to date.

@@ -9,7 +9,8 @@ define('REMOTE_CRON_PATTERN',  '/^([\*\/0-9,-]+\s+){4}[\*\/0-9,-]+$/');
 // ------------------------------------------------------------------------------
 // respond() — JSON response with explicit HTTP code, then exit
 // ------------------------------------------------------------------------------
-function respond(int $code, array $payload): void {
+function respond(int $code, array $payload): void
+{
     http_response_code($code);
     header('Content-Type: application/json');
     echo json_encode($payload, JSON_UNESCAPED_SLASHES);
@@ -19,7 +20,8 @@ function respond(int $code, array $payload): void {
 // ------------------------------------------------------------------------------
 // load_schedules()
 // ------------------------------------------------------------------------------
-function load_schedules(string $cfg): array {
+function load_schedules(string $cfg): array
+{
     $real = realpath($cfg);
     if ($real === false || !file_exists($real)) {
         return [];
@@ -31,7 +33,8 @@ function load_schedules(string $cfg): array {
 // ------------------------------------------------------------------------------
 // check_duplicate() — rclone config conflict detection
 // ------------------------------------------------------------------------------
-function check_duplicate(array $schedules, string $new_remote): void {
+function check_duplicate(array $schedules, string $new_remote): void
+{
     foreach ($schedules as $existing_id => $s) {
         if (empty($s['SETTINGS'])) continue;
 
@@ -52,7 +55,8 @@ function check_duplicate(array $schedules, string $new_remote): void {
 // ------------------------------------------------------------------------------
 // append_schedule() — append new INI block
 // ------------------------------------------------------------------------------
-function append_schedule(string $cfg, string $id, string $type, string $cron, string $settings_json): void {
+function append_schedule(string $cfg, string $id, string $type, string $cron, string $settings_json): void
+{
     $real   = realpath($cfg);
     // If file does not exist yet, use the raw path for the first write
     $target = ($real !== false) ? $real : $cfg;
@@ -71,7 +75,8 @@ function append_schedule(string $cfg, string $id, string $type, string $cron, st
 // ------------------------------------------------------------------------------
 // main()
 // ------------------------------------------------------------------------------
-function main(): void {
+function main(): void
+{
     $type     = trim($_POST['type']    ?? '');
     $cron     = trim($_POST['cron']    ?? '');
     $settings = $_POST['settings']     ?? [];

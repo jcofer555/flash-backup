@@ -23,7 +23,8 @@ foreach ($services as $svc) {
 }
 
 // Strip quotes and newlines to prevent config file injection
-function sanitize(string $val): string {
+function sanitize(string $val): string
+{
     return str_replace(['"', "'", "\n", "\r"], '', $val);
 }
 

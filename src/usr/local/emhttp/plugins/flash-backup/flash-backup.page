@@ -117,414 +117,506 @@ $saved = $remotesettings['RCLONE_CONFIG_REMOTE'] ?? '';
 $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
 ?>
 
-<link rel="stylesheet" href="/plugins/flash-backup/flash-backup.css?v=<?=filemtime('/usr/local/emhttp/plugins/flash-backup/flash-backup.css')?>">
+<link rel="stylesheet"
+  href="/plugins/flash-backup/flash-backup.css?v=<?=filemtime('/usr/local/emhttp/plugins/flash-backup/flash-backup.css')?>">
 
 <script>
-'use strict';
-let csrfToken = "<?= $_GET['csrf_token'] ?? ($_COOKIE['csrf_token'] ?? '') ?>";
-if (!csrfToken || csrfToken === 'undefined' || csrfToken === '') {
-  try {
-    if (typeof window.csrf_token !== 'undefined' && window.csrf_token) csrfToken = window.csrf_token;
-    if (!csrfToken && document.querySelector("meta[name='csrf_token']")) csrfToken = document.querySelector("meta[name='csrf_token']").getAttribute('content');
-    if (!csrfToken && document.cookie.includes('csrf_token=')) { const m = document.cookie.match(/csrf_token=([^;]+)/); if (m) csrfToken = decodeURIComponent(m[1]); }
-    if (!csrfToken && window.parent) { try { if (window.parent.csrf_token) csrfToken = window.parent.csrf_token; } catch(e){} }
-  } catch(err) { console.warn('CSRF token discovery failed:', err); }
-}
-const SAVED_WEBHOOKS = {
-  DISCORD:  "<?= htmlspecialchars($settings['WEBHOOK_DISCORD']  ?? '') ?>",
-  GOTIFY:   "<?= htmlspecialchars($settings['WEBHOOK_GOTIFY']   ?? '') ?>",
-  NTFY:     "<?= htmlspecialchars($settings['WEBHOOK_NTFY']     ?? '') ?>",
-  PUSHOVER: "<?= htmlspecialchars($settings['WEBHOOK_PUSHOVER'] ?? '') ?>",
-  SLACK:    "<?= htmlspecialchars($settings['WEBHOOK_SLACK']    ?? '') ?>"
-};
-const SAVED_WEBHOOKS_REMOTE = {
-  DISCORD:  "<?= htmlspecialchars($remotesettings['WEBHOOK_DISCORD_REMOTE']  ?? '') ?>",
-  GOTIFY:   "<?= htmlspecialchars($remotesettings['WEBHOOK_GOTIFY_REMOTE']   ?? '') ?>",
-  NTFY:     "<?= htmlspecialchars($remotesettings['WEBHOOK_NTFY_REMOTE']     ?? '') ?>",
-  PUSHOVER: "<?= htmlspecialchars($remotesettings['WEBHOOK_PUSHOVER_REMOTE'] ?? '') ?>",
-  SLACK:    "<?= htmlspecialchars($remotesettings['WEBHOOK_SLACK_REMOTE']    ?? '') ?>"
-};
-const SAVED_PUSHOVER_USER_KEY        = "<?= htmlspecialchars($settings['PUSHOVER_USER_KEY']              ?? '') ?>";
-const SAVED_PUSHOVER_USER_KEY_REMOTE = "<?= htmlspecialchars($remotesettings['PUSHOVER_USER_KEY_REMOTE'] ?? '') ?>";
-const SAVED_BUCKET_NAMES = (function() {
-  try { const b64 = "<?= addslashes($remotesettings['BUCKET_NAMES'] ?? '') ?>"; if (!b64) return {}; return JSON.parse(atob(b64)) || {}; } catch(e) { return {}; }
-})();
-const SAVED_B2_BUCKET_NAME_LEGACY = "<?= htmlspecialchars($remotesettings['B2_BUCKET_NAME'] ?? '') ?>";
-const remoteTypes = JSON.parse('<?= addslashes(json_encode($remoteTypes)) ?>');
+  'use strict';
+  let csrfToken = "<?= $_GET['csrf_token'] ?? ($_COOKIE['csrf_token'] ?? '') ?>";
+  if (!csrfToken || csrfToken === 'undefined' || csrfToken === '') {
+    try {
+      if (typeof window.csrf_token !== 'undefined' && window.csrf_token) csrfToken = window.csrf_token;
+      if (!csrfToken && document.querySelector("meta[name='csrf_token']")) csrfToken = document.querySelector("meta[name='csrf_token']").getAttribute('content');
+      if (!csrfToken && document.cookie.includes('csrf_token=')) { const m = document.cookie.match(/csrf_token=([^;]+)/); if (m) csrfToken = decodeURIComponent(m[1]); }
+      if (!csrfToken && window.parent) { try { if (window.parent.csrf_token) csrfToken = window.parent.csrf_token; } catch (e) { } }
+    } catch (err) { console.warn('CSRF token discovery failed:', err); }
+  }
+  const SAVED_WEBHOOKS = {
+    DISCORD: "<?= htmlspecialchars($settings['WEBHOOK_DISCORD']  ?? '') ?>",
+    GOTIFY: "<?= htmlspecialchars($settings['WEBHOOK_GOTIFY']   ?? '') ?>",
+    NTFY: "<?= htmlspecialchars($settings['WEBHOOK_NTFY']     ?? '') ?>",
+    PUSHOVER: "<?= htmlspecialchars($settings['WEBHOOK_PUSHOVER'] ?? '') ?>",
+    SLACK: "<?= htmlspecialchars($settings['WEBHOOK_SLACK']    ?? '') ?>"
+  };
+  const SAVED_WEBHOOKS_REMOTE = {
+    DISCORD: "<?= htmlspecialchars($remotesettings['WEBHOOK_DISCORD_REMOTE']  ?? '') ?>",
+    GOTIFY: "<?= htmlspecialchars($remotesettings['WEBHOOK_GOTIFY_REMOTE']   ?? '') ?>",
+    NTFY: "<?= htmlspecialchars($remotesettings['WEBHOOK_NTFY_REMOTE']     ?? '') ?>",
+    PUSHOVER: "<?= htmlspecialchars($remotesettings['WEBHOOK_PUSHOVER_REMOTE'] ?? '') ?>",
+    SLACK: "<?= htmlspecialchars($remotesettings['WEBHOOK_SLACK_REMOTE']    ?? '') ?>"
+  };
+  const SAVED_PUSHOVER_USER_KEY = "<?= htmlspecialchars($settings['PUSHOVER_USER_KEY']              ?? '') ?>";
+  const SAVED_PUSHOVER_USER_KEY_REMOTE = "<?= htmlspecialchars($remotesettings['PUSHOVER_USER_KEY_REMOTE'] ?? '') ?>";
+  const SAVED_BUCKET_NAMES = (function () {
+    try { const b64 = "<?= addslashes($remotesettings['BUCKET_NAMES'] ?? '') ?>"; if (!b64) return {}; return JSON.parse(atob(b64)) || {}; } catch (e) { return {}; }
+  })();
+  const SAVED_B2_BUCKET_NAME_LEGACY = "<?= htmlspecialchars($remotesettings['B2_BUCKET_NAME'] ?? '') ?>";
+  const remoteTypes = JSON.parse('<?= addslashes(json_encode($remoteTypes)) ?>');
 </script>
 
 <div id="fbb-page">
-<div id="fbb-layout">
+  <div id="fbb-layout">
 
-  <div class="fbb-panel-wrap">
-    <div class="fbb-card">
+    <div class="fbb-panel-wrap">
+      <div class="fbb-card">
 
-      <div id="fbb-mode-row">
-        <!-- Plugin group — left -->
-        <?php if ($has_siblings_bool): ?>
-        <div class="fbb-topbar-group">
-          <span class="fbb-topbar-label" id="fbb-plugin-label">Plugin:</span>
-          <select onchange="if(this.value)window.location=this.value">
-            <option value="" disabled selected>Switch plugin…</option>
-            <?php foreach ($all_plugin_options_arr as $info_arr): ?>
-            <option value="<?= htmlspecialchars($info_arr['url']) ?>"><?= htmlspecialchars($info_arr['label']) ?></option>
-            <?php endforeach; ?>
-          </select>
-        </div>
-        <?php endif; ?>
-        <!-- Mode group — right -->
-        <div class="fbb-topbar-group" style="margin-left:auto;">
-          <span class="fbb-topbar-label" id="fbb-mode-label">Mode:</span>
-          <select id="fbb-mode-switcher" onchange="fbbSwitchMode(this.value)">
-            <option value="local">Local Backup</option>
-            <option value="remote">Remote Backup</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="fbb-card-header">
-        <span id="fbb-active-card-title" class="fbb-card-title">Local Backup</span>
-        <div id="fbb-local-status-wrap" class="fbb-card-status">
-          <div class="fbb-status-dot" id="fbb-local-dot"></div>
-          <span id="status-text">Idle</span>
-        </div>
-        <div id="fbb-remote-status-wrap" class="fbb-card-status" style="display:none;">
-          <div class="fbb-status-dot" id="fbb-remote-dot"></div>
-          <span id="status-text-remote">Idle</span>
-        </div>
-      </div>
-
-      <form id="flash-backup-settings" class="fbb-card-body">
-        <div class="fbb-section-label">Configuration</div>
-        <div class="form-pair">
-          <label><span class="flash-backuptip" title="Choose destination for local backup">Backup Destination:</span></label>
-          <span><input type="text" id="backup_destination" name="BACKUP_DESTINATION" data-picker-title="Select Backup Destination" placeholder="Click to browse…" readonly style="cursor:pointer;height:29px !important;box-sizing:border-box !important;" value="<?= htmlspecialchars($settings['BACKUP_DESTINATION'] ?? '') ?>"></span>
-        </div>
-        <div class="form-pair">
-          <label for="backups_to_keep"><span class="flash-backuptip" title="Choose the amount of backups to keep for your local backups">Backups To Keep:</span></label>
-          <span><select id="backups_to_keep" class="short-input" name="BACKUPS_TO_KEEP">
-            <?php $cur=$settings['BACKUPS_TO_KEEP']??0; for($i=0;$i<=99;$i++){$s=((int)$cur===$i)?'selected':''; if($i===0)echo"<option value=\"0\" $s>Unlimited</option>"; elseif($i===1)echo"<option value=\"1\" $s>Only Latest</option>"; else echo"<option value=\"$i\" $s>$i</option>"; } ?>
-          </select></span>
-        </div>
-        <div class="form-pair">
-          <label><span class="flash-backuptip" title="Choose the owner for the local backup">Backup Owner:</span></label>
-          <span><select id="backup_owner" name="BACKUP_OWNER" data-selected="<?= htmlspecialchars($settings['BACKUP_OWNER'] ?? 'nobody') ?>"></select></span>
-        </div>
-        <div class="form-pair">
-          <label for="dry_run"><span class="flash-backuptip" title="Enable to simulate the local backup">Dry Run:</span></label>
-          <span><select id="dry_run" class="short-input" name="DRY_RUN">
-            <option value="yes" <?=(($settings['DRY_RUN']??'no')==='yes')?'selected':''?>>Yes</option>
-            <option value="no"  <?=(($settings['DRY_RUN']??'no')==='no' )?'selected':''?>>No</option>
-          </select></span>
-        </div>
-        <div class="fbb-section-label" style="margin-top:8px;">Notifications</div>
-        <div class="form-pair">
-          <label for="notifications"><span class="flash-backuptip" title="Send notifications when flash backup starts and finishes">Notifications:</span></label>
-          <span><select id="notifications" class="short-input" name="NOTIFICATIONS">
-            <option value="yes" <?=(($settings['NOTIFICATIONS']??'no')==='yes')?'selected':''?>>Yes</option>
-            <option value="no"  <?=(($settings['NOTIFICATIONS']??'no')==='no' )?'selected':''?>>No</option>
-          </select></span>
-        </div>
-        <div class="form-pair fbb-row-hidden" id="notification-service-row">
-          <label><span class="flash-backuptip" title="Choose which notification service(s) to use">Service:</span></label>
-          <span class="fbb-field-wrap">
-            <select id="notification_service_hidden" name="NOTIFICATION_SERVICE" multiple style="display:none;">
-              <?php $selSvcs=array_filter(explode(',',$settings['NOTIFICATION_SERVICE']??'')); foreach(['Discord','Gotify','Ntfy','Pushover','Slack','Unraid'] as $svc): ?>
-              <option value="<?=$svc?>" <?=in_array($svc,$selSvcs)?'selected':''?>><?=$svc?></option>
+        <div id="fbb-mode-row">
+          <!-- Plugin group — left -->
+          <?php if ($has_siblings_bool): ?>
+          <div class="fbb-topbar-group">
+            <span class="fbb-topbar-label" id="fbb-plugin-label">Plugin:</span>
+            <select onchange="if(this.value)window.location=this.value">
+              <option value="" disabled selected>Switch plugin…</option>
+              <?php foreach ($all_plugin_options_arr as $info_arr): ?>
+              <option value="<?= htmlspecialchars($info_arr['url']) ?>">
+                <?= htmlspecialchars($info_arr['label']) ?>
+              </option>
               <?php endforeach; ?>
             </select>
-            <div id="notification_service" class="vm-multiselect short-input flash-backuptip" title="Choose which notification service(s) to use" style="width:var(--input-w);max-width:var(--input-w);flex:none;box-sizing:border-box;">
-              <div class="vm-dropdown-label" id="notification-service-label">Select service(s)</div>
-              <div class="vm-dropdown-list" id="notification-service-list" style="display:none;">
-                <?php foreach(['Discord','Gotify','Ntfy','Pushover','Slack','Unraid'] as $svc): ?>
-                <div><label><input type="checkbox" value="<?=$svc?>" <?=in_array($svc,$selSvcs)?'checked':''?>><?=$svc?></label></div>
+          </div>
+          <?php endif; ?>
+          <!-- Mode group — right -->
+          <div class="fbb-topbar-group" style="margin-left:auto;">
+            <span class="fbb-topbar-label" id="fbb-mode-label">Mode:</span>
+            <select id="fbb-mode-switcher" onchange="fbbSwitchMode(this.value)">
+              <option value="local">Local Backup</option>
+              <option value="remote">Remote Backup</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="fbb-card-header">
+          <span id="fbb-active-card-title" class="fbb-card-title">Local Backup</span>
+          <div id="fbb-local-status-wrap" class="fbb-card-status">
+            <div class="fbb-status-dot" id="fbb-local-dot"></div>
+            <span id="status-text">Idle</span>
+          </div>
+          <div id="fbb-remote-status-wrap" class="fbb-card-status" style="display:none;">
+            <div class="fbb-status-dot" id="fbb-remote-dot"></div>
+            <span id="status-text-remote">Idle</span>
+          </div>
+        </div>
+
+        <form id="flash-backup-settings" class="fbb-card-body">
+          <div class="fbb-section-label">Configuration</div>
+          <div class="form-pair">
+            <label><span class="flash-backuptip" title="Choose destination for local backup">Backup
+                Destination:</span></label>
+            <span><input type="text" id="backup_destination" name="BACKUP_DESTINATION"
+                data-picker-title="Select Backup Destination" placeholder="Click to browse…" readonly
+                style="cursor:pointer;height:29px !important;box-sizing:border-box !important;"
+                value="<?= htmlspecialchars($settings['BACKUP_DESTINATION'] ?? '') ?>"></span>
+          </div>
+          <div class="form-pair">
+            <label for="backups_to_keep"><span class="flash-backuptip"
+                title="Choose the amount of backups to keep for your local backups">Backups To Keep:</span></label>
+            <span><select id="backups_to_keep" class="short-input" name="BACKUPS_TO_KEEP">
+                <?php $cur=$settings['BACKUPS_TO_KEEP']??0; for($i=0;$i<=99;$i++){$s=((int)$cur===$i)?'selected':''; if($i===0)echo"<option value=\"0\" $s>Unlimited</option>"; elseif($i===1)echo"<option value=\"1\" $s>Only Latest</option>"; else echo"<option value=\"$i\" $s>$i</option>"; } ?>
+              </select></span>
+          </div>
+          <div class="form-pair">
+            <label><span class="flash-backuptip" title="Choose the owner for the local backup">Backup
+                Owner:</span></label>
+            <span><select id="backup_owner" name="BACKUP_OWNER"
+                data-selected="<?= htmlspecialchars($settings['BACKUP_OWNER'] ?? 'nobody') ?>"></select></span>
+          </div>
+          <div class="form-pair">
+            <label for="dry_run"><span class="flash-backuptip" title="Enable to simulate the local backup">Dry
+                Run:</span></label>
+            <span><select id="dry_run" class="short-input" name="DRY_RUN">
+                <option value="yes" <?=(($settings['DRY_RUN']??'no')==='yes' )?'selected':''?>>Yes</option>
+                <option value="no" <?=(($settings['DRY_RUN']??'no')==='no' )?'selected':''?>>No</option>
+              </select></span>
+          </div>
+          <div class="fbb-section-label" style="margin-top:8px;">Notifications</div>
+          <div class="form-pair">
+            <label for="notifications"><span class="flash-backuptip"
+                title="Send notifications when flash backup starts and finishes">Notifications:</span></label>
+            <span><select id="notifications" class="short-input" name="NOTIFICATIONS">
+                <option value="yes" <?=(($settings['NOTIFICATIONS']??'no')==='yes' )?'selected':''?>>Yes</option>
+                <option value="no" <?=(($settings['NOTIFICATIONS']??'no')==='no' )?'selected':''?>>No</option>
+              </select></span>
+          </div>
+          <div class="form-pair fbb-row-hidden" id="notification-service-row">
+            <label><span class="flash-backuptip"
+                title="Choose which notification service(s) to use">Service:</span></label>
+            <span class="fbb-field-wrap">
+              <select id="notification_service_hidden" name="NOTIFICATION_SERVICE" multiple style="display:none;">
+                <?php $selSvcs=array_filter(explode(',',$settings['NOTIFICATION_SERVICE']??'')); foreach(['Discord','Gotify','Ntfy','Pushover','Slack','Unraid'] as $svc): ?>
+                <option value="<?=$svc?>" <?=in_array($svc,$selSvcs)?'selected':''?>>
+                  <?=$svc?>
+                </option>
                 <?php endforeach; ?>
+              </select>
+              <div id="notification_service" class="vm-multiselect short-input flash-backuptip"
+                title="Choose which notification service(s) to use"
+                style="width:var(--input-w);max-width:var(--input-w);flex:none;box-sizing:border-box;">
+                <div class="vm-dropdown-label" id="notification-service-label">Select service(s)</div>
+                <div class="vm-dropdown-list" id="notification-service-list" style="display:none;">
+                  <?php foreach(['Discord','Gotify','Ntfy','Pushover','Slack','Unraid'] as $svc): ?>
+                  <div><label><input type="checkbox" value="<?=$svc?>" <?=in_array($svc,$selSvcs)?'checked':''?>>
+                      <?=$svc?>
+                    </label></div>
+                  <?php endforeach; ?>
+                </div>
               </div>
-            </div>
-          </span>
-        </div>
-        <div id="webhook-fields-container"></div>
-        <div class="fbb-section-label" style="margin-top:8px;">Scheduling</div>
-        <div class="form-pair" id="cron-expression-row">
-          <label for="cron_mode"><span class="flash-backuptip" title="Select scheduling type">Scheduling:</span></label>
-          <span><select id="cron_mode" name="CRON_MODE" class="short-input">
-            <option value="hourly">Hourly</option>
-            <option value="daily" selected>Daily</option>
-            <option value="weekly">Weekly</option>
-            <option value="monthly">Monthly</option>
-          </select></span>
-        </div>
-        <div id="hourly-options" style="display:none;">
-          <div class="form-pair"><label for="hourly_frequency"><span class="flash-backuptip" title="Select hourly frequency">Frequency:</span></label>
-            <span><select id="hourly_frequency" name="HOURLY_FREQUENCY" class="short-input">
-              <?php foreach([4,6,8] as $i){$s=(($settings['HOURLY_FREQUENCY']??'4')===(string)$i)?'selected':'';echo"<option value=\"$i\" $s>Every $i Hours</option>";}?>
-            </select></span>
-          </div>
-        </div>
-        <div id="daily-options" style="display:none;">
-          <div class="form-pair"><label for="daily_time"><span class="flash-backuptip" title="Select the hour">Hour:</span></label>
-            <span><select id="daily_time" name="DAILY_TIME" class="short-input">
-              <?php for($h=0;$h<24;$h++){$hr=str_pad($h,2,'0',STR_PAD_LEFT);echo"<option value=\"$hr\"".((($settings['DAILY_TIME']??'00')===$hr)?' selected':'').">$hr</option>";}?>
-            </select></span>
-          </div>
-          <div class="form-pair"><label for="daily_minute"><span class="flash-backuptip" title="Select the minute">Minute:</span></label>
-            <span><select id="daily_minute" name="DAILY_MINUTE" class="short-input">
-              <?php for($m=0;$m<60;$m++){$mn=str_pad($m,2,'0',STR_PAD_LEFT);echo"<option value=\"$mn\"".((($settings['DAILY_MINUTE']??'00')===$mn)?' selected':'').">$mn</option>";}?>
-            </select></span>
-          </div>
-        </div>
-        <div id="weekly-options" style="display:none;">
-          <div class="form-pair"><label for="weekly_day"><span class="flash-backuptip" title="Select day of the week">Day Of Week:</span></label>
-            <span><select id="weekly_day" name="WEEKLY_DAY" class="short-input">
-              <?php foreach(['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'] as $day){echo"<option value=\"$day\"".((($settings['WEEKLY_DAY']??'')===$day)?' selected':'').">$day</option>";}?>
-            </select></span>
-          </div>
-          <div class="form-pair"><label for="weekly_time"><span class="flash-backuptip" title="Select the hour">Hour:</span></label>
-            <span><select id="weekly_time" name="WEEKLY_TIME" class="short-input">
-              <?php for($h=0;$h<24;$h++){$hr=str_pad($h,2,'0',STR_PAD_LEFT);echo"<option value=\"$hr\"".((($settings['WEEKLY_TIME']??'00')===$hr)?' selected':'').">$hr</option>";}?>
-            </select></span>
-          </div>
-          <div class="form-pair"><label for="weekly_minute"><span class="flash-backuptip" title="Select the minute">Minute:</span></label>
-            <span><select id="weekly_minute" name="WEEKLY_MINUTE" class="short-input">
-              <?php for($m=0;$m<60;$m++){$mn=str_pad($m,2,'0',STR_PAD_LEFT);echo"<option value=\"$mn\"".((($settings['WEEKLY_MINUTE']??'00')===$mn)?' selected':'').">$mn</option>";}?>
-            </select></span>
-          </div>
-        </div>
-        <div id="monthly-options" style="display:none;">
-          <div class="form-pair"><label for="monthly_day"><span class="flash-backuptip" title="Select day of the month">Day Of Month:</span></label>
-            <span><select id="monthly_day" name="MONTHLY_DAY" class="short-input">
-              <?php for($d=1;$d<=31;$d++){$dy=str_pad($d,2,'0',STR_PAD_LEFT);echo"<option value=\"$dy\"".((($settings['MONTHLY_DAY']??'')===$dy)?' selected':'').">$dy</option>";}?>
-            </select></span>
-          </div>
-          <div class="form-pair"><label for="monthly_time"><span class="flash-backuptip" title="Select the hour">Hour:</span></label>
-            <span><select id="monthly_time" name="MONTHLY_TIME" class="short-input">
-              <?php for($h=0;$h<24;$h++){$hr=str_pad($h,2,'0',STR_PAD_LEFT);echo"<option value=\"$hr\"".((($settings['MONTHLY_TIME']??'00')===$hr)?' selected':'').">$hr</option>";}?>
-            </select></span>
-          </div>
-          <div class="form-pair"><label for="monthly_minute"><span class="flash-backuptip" title="Select the minute">Minute:</span></label>
-            <span><select id="monthly_minute" name="MONTHLY_MINUTE" class="short-input">
-              <?php for($m=0;$m<60;$m++){$mn=str_pad($m,2,'0',STR_PAD_LEFT);echo"<option value=\"$mn\"".((($settings['MONTHLY_MINUTE']??'00')===$mn)?' selected':'').">$mn</option>";}?>
-            </select></span>
-          </div>
-        </div>
-        <div id="backup-banner-local" class="fbb-banner">
-          <div class="fbb-banner-inner">
-            <span id="backup-banner-text-local" class="fbb-banner-text"></span>
-            <button type="button" id="stop-banner-btn-local" onclick="stopFromBanner()">Stop</button>
-            <span id="stop-toast-banner-local" class="stop-toast">Stop requested</span>
-          </div>
-        </div>
-        <div class="backup-actions">
-          <span title="Run backup of flash drive to local storage" class="flash-backuptip"><button type="button" id="backupbtn">Backup Now</button></span>
-          <span class="flash-backuptip" data-tooltip="Create a local backup schedule using the settings shown in the fields above"><button type="button" id="schedule-local-backup" class="button schedule-button">Schedule It</button></span>
-          <span title="Cancel editing of schedule" class="flash-backuptip"><button type="button" id="cancelEditBtn" style="display:none;">Cancel</button></span>
-          <span class="flash-backuptip" title="Enable to have the local backup only include the config and extra folders, and the syslinux.cfg file" style="display:inline-flex;align-items:center;gap:6px;">
-            <span style="font-size:12px;font-weight:600;color:var(--c-label);">Minimal Backup:</span>
-            <span class="fbb-toggle-wrap">
-              <label class="fbb-toggle">
-                <input type="checkbox" id="minimal_backup" name="MINIMAL_BACKUP" value="yes" <?=(($settings['MINIMAL_BACKUP']??'no')==='yes')?'checked':''?>>
-                <span class="fbb-toggle-slider"></span>
-              </label>
             </span>
-          </span>
-        </div>
-        <div id="popupMessage" class="fbb-popup"></div>
-      </form>
-
-      <form id="flash-backup-settings-remote" class="fbb-card-body" style="display:none;">
-        <div class="fbb-section-label">Rclone Configuration</div>
-        <div class="form-pair" id="rclone-config-row-remote">
-          <label><span class="flash-backuptip" title="Choose which rclone config(s) to use for the remote backup">Rclone Config:</span></label>
-          <span class="fbb-field-wrap">
-            <select id="rclone_config_remote_hidden" name="RCLONE_CONFIG_REMOTE[]" multiple style="display:none;">
-              <?php foreach($rcloneRemotes as $r): ?>
-              <option value="<?=htmlspecialchars($r)?>" <?=in_array($r,$selectedRemotes,true)?'selected':''?>><?=htmlspecialchars($r)?></option>
-              <?php endforeach; ?>
-            </select>
-            <div id="rclone_config_remote" class="vm-multiselect short-input flash-backuptip<?=empty($rcloneRemotes)?' fbb-rclone-disabled':''?>" title="Choose which rclone config(s) to use" style="width:var(--input-w);max-width:var(--input-w);flex:none;box-sizing:border-box;">
-              <div class="vm-dropdown-label" id="rclone-config-label-remote"><?php if(empty($rcloneRemotes)) echo'No rclone configs found'; elseif(!empty($selectedRemotes)) echo implode(', ',$selectedRemotes); else echo'Select config(s)'; ?></div>
-              <div class="vm-dropdown-list" id="rclone-config-list-remote" style="display:none;">
-                <?php foreach($rcloneRemotes as $r): $t=$rcloneIni[$r]['type']??'unknown'; ?>
-                <div><label><input type="checkbox" value="<?=htmlspecialchars($r)?>" <?=in_array($r,$selectedRemotes,true)?'checked':''?>><?=htmlspecialchars("$t - $r")?></label></div>
-                <?php endforeach; ?>
-              </div>
+          </div>
+          <div id="webhook-fields-container"></div>
+          <div class="fbb-section-label" style="margin-top:8px;">Scheduling</div>
+          <div class="form-pair" id="cron-expression-row">
+            <label for="cron_mode"><span class="flash-backuptip"
+                title="Select scheduling type">Scheduling:</span></label>
+            <span><select id="cron_mode" name="CRON_MODE" class="short-input">
+                <option value="hourly">Hourly</option>
+                <option value="daily" selected>Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+              </select></span>
+          </div>
+          <div id="hourly-options" style="display:none;">
+            <div class="form-pair"><label for="hourly_frequency"><span class="flash-backuptip"
+                  title="Select hourly frequency">Frequency:</span></label>
+              <span><select id="hourly_frequency" name="HOURLY_FREQUENCY" class="short-input">
+                  <?php foreach([4,6,8] as $i){$s=(($settings['HOURLY_FREQUENCY']??'4')===(string)$i)?'selected':'';echo"<option value=\"$i\" $s>Every $i Hours</option>";}?>
+                </select></span>
             </div>
-          </span>
-        </div>
-        <div id="bucket-fields-container"></div>
-        <div class="form-pair">
-          <label><span class="flash-backuptip" title="Optional: subfolder where backups will be stored. If left empty /Flash_Backups/ will be used">Folder:</span></label>
-          <span><input type="text" name="REMOTE_PATH_IN_CONFIG" id="remote_path_in_config" placeholder="/folder/subfolder" style="height:29px !important;box-sizing:border-box !important;" value="<?=htmlspecialchars($remotesettings['REMOTE_PATH_IN_CONFIG']??'')?>"></span>
-        </div>
-        <div class="form-pair">
-          <label for="backups_to_keep_remote"><span class="flash-backuptip" title="Choose the amount of backups to keep for your remote backups">Backups To Keep:</span></label>
-          <span><select id="backups_to_keep_remote" class="short-input" name="BACKUPS_TO_KEEP_REMOTE">
-            <?php $cur=$remotesettings['BACKUPS_TO_KEEP_REMOTE']??0; for($i=0;$i<=99;$i++){$s=((int)$cur===$i)?'selected':''; if($i===0)echo"<option value=\"0\" $s>Unlimited</option>"; elseif($i===1)echo"<option value=\"1\" $s>Only Latest</option>"; else echo"<option value=\"$i\" $s>$i</option>"; } ?>
-          </select></span>
-        </div>
-        <div class="form-pair">
-          <label for="dry_run_remote"><span class="flash-backuptip" title="Enable to simulate the remote backup">Dry Run:</span></label>
-          <span><select id="dry_run_remote" class="short-input" name="DRY_RUN_REMOTE">
-            <option value="yes" <?=(($remotesettings['DRY_RUN_REMOTE']??'no')==='yes')?'selected':''?>>Yes</option>
-            <option value="no"  <?=(($remotesettings['DRY_RUN_REMOTE']??'no')==='no' )?'selected':''?>>No</option>
-          </select></span>
-        </div>
-        <div class="fbb-section-label" style="margin-top:8px;">Notifications</div>
-        <div class="form-pair">
-          <label for="notifications_remote"><span class="flash-backuptip" title="Send notifications when flash backup to remote storage starts and finishes">Notifications:</span></label>
-          <span><select id="notifications_remote" class="short-input" name="NOTIFICATIONS_REMOTE">
-            <option value="yes" <?=(($remotesettings['NOTIFICATIONS_REMOTE']??'no')==='yes')?'selected':''?>>Yes</option>
-            <option value="no"  <?=(($remotesettings['NOTIFICATIONS_REMOTE']??'no')==='no' )?'selected':''?>>No</option>
-          </select></span>
-        </div>
-        <div class="form-pair fbb-row-hidden" id="notification-service-row-remote">
-          <label><span class="flash-backuptip" title="Choose which notification service(s) to use">Service:</span></label>
-          <span class="fbb-field-wrap">
-            <select id="notification_service_remote_hidden" name="NOTIFICATION_SERVICE_REMOTE" multiple style="display:none;">
-              <?php $selSvcsR=array_filter(explode(',',$remotesettings['NOTIFICATION_SERVICE_REMOTE']??'')); foreach(['Discord','Gotify','Ntfy','Pushover','Slack','Unraid'] as $svc): ?>
-              <option value="<?=$svc?>" <?=in_array($svc,$selSvcsR)?'selected':''?>><?=$svc?></option>
-              <?php endforeach; ?>
-            </select>
-            <div id="notification_service_remote" class="vm-multiselect short-input flash-backuptip" title="Choose which notification service(s) to use" style="width:var(--input-w);max-width:var(--input-w);flex:none;box-sizing:border-box;">
-              <div class="vm-dropdown-label" id="notification-service-label-remote">Select service(s)</div>
-              <div class="vm-dropdown-list" id="notification-service-list-remote" style="display:none;">
-                <?php foreach(['Discord','Gotify','Ntfy','Pushover','Slack','Unraid'] as $svc): ?>
-                <div><label><input type="checkbox" value="<?=$svc?>" <?=in_array($svc,$selSvcsR)?'checked':''?>><?=$svc?></label></div>
-                <?php endforeach; ?>
-              </div>
+          </div>
+          <div id="daily-options" style="display:none;">
+            <div class="form-pair"><label for="daily_time"><span class="flash-backuptip"
+                  title="Select the hour">Hour:</span></label>
+              <span><select id="daily_time" name="DAILY_TIME" class="short-input">
+                  <?php for($h=0;$h<24;$h++){$hr=str_pad($h,2,'0',STR_PAD_LEFT);echo"<option value=\"$hr\"".((($settings['DAILY_TIME']??'00')===$hr)?' selected':'').">$hr</option>";}?>
+                </select></span>
             </div>
-          </span>
-        </div>
-        <div id="webhook-fields-container-remote"></div>
-        <div class="fbb-section-label" style="margin-top:8px;">Scheduling</div>
-        <div class="form-pair" id="cron-expression-row-remote">
-          <label for="cron_mode_remote"><span class="flash-backuptip" title="Select scheduling type">Scheduling:</span></label>
-          <span><select id="cron_mode_remote" name="CRON_MODE_REMOTE" class="short-input">
-            <option value="hourly">Hourly</option>
-            <option value="daily" selected>Daily</option>
-            <option value="weekly">Weekly</option>
-            <option value="monthly">Monthly</option>
-          </select></span>
-        </div>
-        <div id="hourly-options-remote" style="display:none;">
-          <div class="form-pair"><label for="hourly_frequency_remote"><span class="flash-backuptip" title="Select hourly frequency">Frequency:</span></label>
-            <span><select id="hourly_frequency_remote" name="HOURLY_FREQUENCY_REMOTE" class="short-input">
-              <?php foreach([4,6,8] as $i){$s=(($remotesettings['HOURLY_FREQUENCY_REMOTE']??'4')===(string)$i)?'selected':'';echo"<option value=\"$i\" $s>Every $i Hours</option>";}?>
-            </select></span>
+            <div class="form-pair"><label for="daily_minute"><span class="flash-backuptip"
+                  title="Select the minute">Minute:</span></label>
+              <span><select id="daily_minute" name="DAILY_MINUTE" class="short-input">
+                  <?php for($m=0;$m<60;$m++){$mn=str_pad($m,2,'0',STR_PAD_LEFT);echo"<option value=\"$mn\"".((($settings['DAILY_MINUTE']??'00')===$mn)?' selected':'').">$mn</option>";}?>
+                </select></span>
+            </div>
           </div>
-        </div>
-        <div id="daily-options-remote" style="display:none;">
-          <div class="form-pair"><label for="daily_time_remote"><span class="flash-backuptip" title="Select the hour">Hour:</span></label>
-            <span><select id="daily_time_remote" name="DAILY_TIME_REMOTE" class="short-input">
-              <?php for($h=0;$h<24;$h++){$hr=str_pad($h,2,'0',STR_PAD_LEFT);echo"<option value=\"$hr\"".((($remotesettings['DAILY_TIME_REMOTE']??'00')===$hr)?' selected':'').">$hr</option>";}?>
-            </select></span>
+          <div id="weekly-options" style="display:none;">
+            <div class="form-pair"><label for="weekly_day"><span class="flash-backuptip"
+                  title="Select day of the week">Day Of Week:</span></label>
+              <span><select id="weekly_day" name="WEEKLY_DAY" class="short-input">
+                  <?php foreach(['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'] as $day){echo"<option value=\"$day\"".((($settings['WEEKLY_DAY']??'')===$day)?' selected':'').">$day</option>";}?>
+                </select></span>
+            </div>
+            <div class="form-pair"><label for="weekly_time"><span class="flash-backuptip"
+                  title="Select the hour">Hour:</span></label>
+              <span><select id="weekly_time" name="WEEKLY_TIME" class="short-input">
+                  <?php for($h=0;$h<24;$h++){$hr=str_pad($h,2,'0',STR_PAD_LEFT);echo"<option value=\"$hr\"".((($settings['WEEKLY_TIME']??'00')===$hr)?' selected':'').">$hr</option>";}?>
+                </select></span>
+            </div>
+            <div class="form-pair"><label for="weekly_minute"><span class="flash-backuptip"
+                  title="Select the minute">Minute:</span></label>
+              <span><select id="weekly_minute" name="WEEKLY_MINUTE" class="short-input">
+                  <?php for($m=0;$m<60;$m++){$mn=str_pad($m,2,'0',STR_PAD_LEFT);echo"<option value=\"$mn\"".((($settings['WEEKLY_MINUTE']??'00')===$mn)?' selected':'').">$mn</option>";}?>
+                </select></span>
+            </div>
           </div>
-          <div class="form-pair"><label for="daily_minute_remote"><span class="flash-backuptip" title="Select the minute">Minute:</span></label>
-            <span><select id="daily_minute_remote" name="DAILY_MINUTE_REMOTE" class="short-input">
-              <?php for($m=0;$m<60;$m++){$mn=str_pad($m,2,'0',STR_PAD_LEFT);echo"<option value=\"$mn\"".((($remotesettings['DAILY_MINUTE_REMOTE']??'00')===$mn)?' selected':'').">$mn</option>";}?>
-            </select></span>
+          <div id="monthly-options" style="display:none;">
+            <div class="form-pair"><label for="monthly_day"><span class="flash-backuptip"
+                  title="Select day of the month">Day Of Month:</span></label>
+              <span><select id="monthly_day" name="MONTHLY_DAY" class="short-input">
+                  <?php for($d=1;$d<=31;$d++){$dy=str_pad($d,2,'0',STR_PAD_LEFT);echo"<option value=\"$dy\"".((($settings['MONTHLY_DAY']??'')===$dy)?' selected':'').">$dy</option>";}?>
+                </select></span>
+            </div>
+            <div class="form-pair"><label for="monthly_time"><span class="flash-backuptip"
+                  title="Select the hour">Hour:</span></label>
+              <span><select id="monthly_time" name="MONTHLY_TIME" class="short-input">
+                  <?php for($h=0;$h<24;$h++){$hr=str_pad($h,2,'0',STR_PAD_LEFT);echo"<option value=\"$hr\"".((($settings['MONTHLY_TIME']??'00')===$hr)?' selected':'').">$hr</option>";}?>
+                </select></span>
+            </div>
+            <div class="form-pair"><label for="monthly_minute"><span class="flash-backuptip"
+                  title="Select the minute">Minute:</span></label>
+              <span><select id="monthly_minute" name="MONTHLY_MINUTE" class="short-input">
+                  <?php for($m=0;$m<60;$m++){$mn=str_pad($m,2,'0',STR_PAD_LEFT);echo"<option value=\"$mn\"".((($settings['MONTHLY_MINUTE']??'00')===$mn)?' selected':'').">$mn</option>";}?>
+                </select></span>
+            </div>
           </div>
-        </div>
-        <div id="weekly-options-remote" style="display:none;">
-          <div class="form-pair"><label for="weekly_day_remote"><span class="flash-backuptip" title="Select day of the week">Day Of Week:</span></label>
-            <span><select id="weekly_day_remote" name="WEEKLY_DAY_REMOTE" class="short-input">
-              <?php foreach(['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'] as $day){echo"<option value=\"$day\"".((($remotesettings['WEEKLY_DAY_REMOTE']??'')===$day)?' selected':'').">$day</option>";}?>
-            </select></span>
+          <div id="backup-banner-local" class="fbb-banner">
+            <div class="fbb-banner-inner">
+              <span id="backup-banner-text-local" class="fbb-banner-text"></span>
+              <button type="button" id="stop-banner-btn-local" onclick="stopFromBanner()">Stop</button>
+              <span id="stop-toast-banner-local" class="stop-toast">Stop requested</span>
+            </div>
           </div>
-          <div class="form-pair"><label for="weekly_time_remote"><span class="flash-backuptip" title="Select the hour">Hour:</span></label>
-            <span><select id="weekly_time_remote" name="WEEKLY_TIME_REMOTE" class="short-input">
-              <?php for($h=0;$h<24;$h++){$hr=str_pad($h,2,'0',STR_PAD_LEFT);echo"<option value=\"$hr\"".((($remotesettings['WEEKLY_TIME_REMOTE']??'00')===$hr)?' selected':'').">$hr</option>";}?>
-            </select></span>
+          <div class="backup-actions">
+            <span title="Save settings without running a backup" class="flash-backuptip"><button type="button"
+                id="apply-settings-btn">Save</button></span>
+            <span title="Run backup of flash drive to local storage" class="flash-backuptip"><button type="button"
+                id="backupbtn">Backup Now</button></span>
+            <span class="flash-backuptip"
+              data-tooltip="Create a local backup schedule using the settings shown in the fields above"><button
+                type="button" id="schedule-local-backup" class="button schedule-button">Schedule It</button></span>
           </div>
-          <div class="form-pair"><label for="weekly_minute_remote"><span class="flash-backuptip" title="Select the minute">Minute:</span></label>
-            <span><select id="weekly_minute_remote" name="WEEKLY_MINUTE_REMOTE" class="short-input">
-              <?php for($m=0;$m<60;$m++){$mn=str_pad($m,2,'0',STR_PAD_LEFT);echo"<option value=\"$mn\"".((($remotesettings['WEEKLY_MINUTE_REMOTE']??'00')===$mn)?' selected':'').">$mn</option>";}?>
-            </select></span>
-          </div>
-        </div>
-        <div id="monthly-options-remote" style="display:none;">
-          <div class="form-pair"><label for="monthly_day_remote"><span class="flash-backuptip" title="Select day of the month">Day Of Month:</span></label>
-            <span><select id="monthly_day_remote" name="MONTHLY_DAY_REMOTE" class="short-input">
-              <?php for($d=1;$d<=31;$d++){$dy=str_pad($d,2,'0',STR_PAD_LEFT);echo"<option value=\"$dy\"".((($remotesettings['MONTHLY_DAY_REMOTE']??'')===$dy)?' selected':'').">$dy</option>";}?>
-            </select></span>
-          </div>
-          <div class="form-pair"><label for="monthly_time_remote"><span class="flash-backuptip" title="Select the hour">Hour:</span></label>
-            <span><select id="monthly_time_remote" name="MONTHLY_TIME_REMOTE" class="short-input">
-              <?php for($h=0;$h<24;$h++){$hr=str_pad($h,2,'0',STR_PAD_LEFT);echo"<option value=\"$hr\"".((($remotesettings['MONTHLY_TIME_REMOTE']??'00')===$hr)?' selected':'').">$hr</option>";}?>
-            </select></span>
-          </div>
-          <div class="form-pair"><label for="monthly_minute_remote"><span class="flash-backuptip" title="Select the minute">Minute:</span></label>
-            <span><select id="monthly_minute_remote" name="MONTHLY_MINUTE_REMOTE" class="short-input">
-              <?php for($m=0;$m<60;$m++){$mn=str_pad($m,2,'0',STR_PAD_LEFT);echo"<option value=\"$mn\"".((($remotesettings['MONTHLY_MINUTE_REMOTE']??'00')===$mn)?' selected':'').">$mn</option>";}?>
-            </select></span>
-          </div>
-        </div>
-        <div id="backup-banner-remote" class="fbb-banner">
-          <div class="fbb-banner-inner">
-            <span id="backup-banner-text-remote" class="fbb-banner-text"></span>
-            <button type="button" id="stop-banner-btn-remote" onclick="stopFromBanner()">Stop</button>
-            <span id="stop-toast-banner-remote" class="stop-toast">Stop requested</span>
-          </div>
-        </div>
-        <div class="backup-actions">
-          <span title="Run remote backup" class="flash-backuptip"><button type="button" id="backupbtn_remote">Backup Now</button></span>
-          <span title="Create a remote backup schedule using the settings shown in the fields above" class="flash-backuptip"><button type="button" id="schedule-remote-backup" class="button schedule-button">Schedule It</button></span>
-          <span title="Cancel editing of remote schedule" class="flash-backuptip"><button type="button" id="cancelEditBtnremote" style="display:none;">Cancel</button></span>
-          <span class="flash-backuptip" title="Enable to have the remote backup only include the config and extra folders, and the syslinux.cfg file" style="display:inline-flex;align-items:center;gap:6px;">
-            <span style="font-size:12px;font-weight:600;color:var(--c-label);">Minimal Backup:</span>
-            <span class="fbb-toggle-wrap">
-              <label class="fbb-toggle">
-                <input type="checkbox" id="minimal_backup_remote" name="MINIMAL_BACKUP_REMOTE" value="yes" <?=(($remotesettings['MINIMAL_BACKUP_REMOTE']??'no')==='yes')?'checked':''?>>
-                <span class="fbb-toggle-slider"></span>
-              </label>
+          <div style="margin-top:8px;">
+            <span class="flash-backuptip"
+              title="Enable to have the local backup only include the config and extra folders, and the syslinux.cfg file"
+              style="display:inline-flex;align-items:center;gap:6px;">
+              <span style="font-size:12px;font-weight:600;color:var(--c-label);">Minimal Backup:</span>
+              <span class="fbb-toggle-wrap">
+                <label class="fbb-toggle">
+                  <input type="checkbox" id="minimal_backup" name="MINIMAL_BACKUP" value="yes"
+                    <?=(($settings['MINIMAL_BACKUP']??'no')==='yes' )?'checked':''?>>
+                  <span class="fbb-toggle-slider"></span>
+                </label>
+              </span>
             </span>
-          </span>
-        </div>
-        <div id="popupMessageremote" class="fbb-popup"></div>
-      </form>
+          </div>
+          <div id="popupMessage" class="fbb-popup"></div>
+        </form>
 
-    </div>
-  </div>
+        <form id="flash-backup-settings-remote" class="fbb-card-body" style="display:none;">
+          <div class="fbb-section-label">Rclone Configuration</div>
+          <div class="form-pair" id="rclone-config-row-remote">
+            <label><span class="flash-backuptip"
+                title="Choose which rclone config(s) to use for the remote backup">Rclone Config:</span></label>
+            <span class="fbb-field-wrap">
+              <select id="rclone_config_remote_hidden" name="RCLONE_CONFIG_REMOTE[]" multiple style="display:none;">
+                <?php foreach($rcloneRemotes as $r): ?>
+                <option value="<?=htmlspecialchars($r)?>" <?=in_array($r,$selectedRemotes,true)?'selected':''?>>
+                  <?=htmlspecialchars($r)?>
+                </option>
+                <?php endforeach; ?>
+              </select>
+              <div id="rclone_config_remote"
+                class="vm-multiselect short-input flash-backuptip<?=empty($rcloneRemotes)?' fbb-rclone-disabled':''?>"
+                title="Choose which rclone config(s) to use"
+                style="width:var(--input-w);max-width:var(--input-w);flex:none;box-sizing:border-box;">
+                <div class="vm-dropdown-label" id="rclone-config-label-remote">
+                  <?php if(empty($rcloneRemotes)) echo'No rclone configs found'; elseif(!empty($selectedRemotes)) echo implode(', ',$selectedRemotes); else echo'Select config(s)'; ?>
+                </div>
+                <div class="vm-dropdown-list" id="rclone-config-list-remote" style="display:none;">
+                  <?php foreach($rcloneRemotes as $r): $t=$rcloneIni[$r]['type']??'unknown'; ?>
+                  <div><label><input type="checkbox" value="<?=htmlspecialchars($r)?>"
+                        <?=in_array($r,$selectedRemotes,true)?'checked':''?>>
+                      <?=htmlspecialchars("$t - $r")?>
+                    </label></div>
+                  <?php endforeach; ?>
+                </div>
+              </div>
+            </span>
+          </div>
+          <div id="bucket-fields-container"></div>
+          <div class="form-pair">
+            <label><span class="flash-backuptip"
+                title="Optional: subfolder where backups will be stored. If left empty /Flash_Backups/ will be used">Folder:</span></label>
+            <span><input type="text" name="REMOTE_PATH_IN_CONFIG" id="remote_path_in_config"
+                placeholder="/folder/subfolder" style="height:29px !important;box-sizing:border-box !important;"
+                value="<?=htmlspecialchars($remotesettings['REMOTE_PATH_IN_CONFIG']??'')?>"></span>
+          </div>
+          <div class="form-pair">
+            <label for="backups_to_keep_remote"><span class="flash-backuptip"
+                title="Choose the amount of backups to keep for your remote backups">Backups To Keep:</span></label>
+            <span><select id="backups_to_keep_remote" class="short-input" name="BACKUPS_TO_KEEP_REMOTE">
+                <?php $cur=$remotesettings['BACKUPS_TO_KEEP_REMOTE']??0; for($i=0;$i<=99;$i++){$s=((int)$cur===$i)?'selected':''; if($i===0)echo"<option value=\"0\" $s>Unlimited</option>"; elseif($i===1)echo"<option value=\"1\" $s>Only Latest</option>"; else echo"<option value=\"$i\" $s>$i</option>"; } ?>
+              </select></span>
+          </div>
+          <div class="form-pair">
+            <label for="dry_run_remote"><span class="flash-backuptip"
+                title="Enable to simulate the remote backup">Dry Run:</span></label>
+            <span><select id="dry_run_remote" class="short-input" name="DRY_RUN_REMOTE">
+                <option value="yes" <?=(($remotesettings['DRY_RUN_REMOTE']??'no')==='yes' )?'selected':''?>>Yes</option>
+                <option value="no" <?=(($remotesettings['DRY_RUN_REMOTE']??'no')==='no' )?'selected':''?>>No</option>
+              </select></span>
+          </div>
+          <div class="fbb-section-label" style="margin-top:8px;">Notifications</div>
+          <div class="form-pair">
+            <label for="notifications_remote"><span class="flash-backuptip"
+                title="Send notifications when flash backup to remote storage starts and finishes">Notifications:</span></label>
+            <span><select id="notifications_remote" class="short-input" name="NOTIFICATIONS_REMOTE">
+                <option value="yes" <?=(($remotesettings['NOTIFICATIONS_REMOTE']??'no')==='yes' )?'selected':''?>>Yes
+                </option>
+                <option value="no" <?=(($remotesettings['NOTIFICATIONS_REMOTE']??'no')==='no' )?'selected':''?>>No
+                </option>
+              </select></span>
+          </div>
+          <div class="form-pair fbb-row-hidden" id="notification-service-row-remote">
+            <label><span class="flash-backuptip"
+                title="Choose which notification service(s) to use">Service:</span></label>
+            <span class="fbb-field-wrap">
+              <select id="notification_service_remote_hidden" name="NOTIFICATION_SERVICE_REMOTE" multiple
+                style="display:none;">
+                <?php $selSvcsR=array_filter(explode(',',$remotesettings['NOTIFICATION_SERVICE_REMOTE']??'')); foreach(['Discord','Gotify','Ntfy','Pushover','Slack','Unraid'] as $svc): ?>
+                <option value="<?=$svc?>" <?=in_array($svc,$selSvcsR)?'selected':''?>>
+                  <?=$svc?>
+                </option>
+                <?php endforeach; ?>
+              </select>
+              <div id="notification_service_remote" class="vm-multiselect short-input flash-backuptip"
+                title="Choose which notification service(s) to use"
+                style="width:var(--input-w);max-width:var(--input-w);flex:none;box-sizing:border-box;">
+                <div class="vm-dropdown-label" id="notification-service-label-remote">Select service(s)</div>
+                <div class="vm-dropdown-list" id="notification-service-list-remote" style="display:none;">
+                  <?php foreach(['Discord','Gotify','Ntfy','Pushover','Slack','Unraid'] as $svc): ?>
+                  <div><label><input type="checkbox" value="<?=$svc?>" <?=in_array($svc,$selSvcsR)?'checked':''?>>
+                      <?=$svc?>
+                    </label></div>
+                  <?php endforeach; ?>
+                </div>
+              </div>
+            </span>
+          </div>
+          <div id="webhook-fields-container-remote"></div>
+          <div class="fbb-section-label" style="margin-top:8px;">Scheduling</div>
+          <div class="form-pair" id="cron-expression-row-remote">
+            <label for="cron_mode_remote"><span class="flash-backuptip"
+                title="Select scheduling type">Scheduling:</span></label>
+            <span><select id="cron_mode_remote" name="CRON_MODE_REMOTE" class="short-input">
+                <option value="hourly">Hourly</option>
+                <option value="daily" selected>Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+              </select></span>
+          </div>
+          <div id="hourly-options-remote" style="display:none;">
+            <div class="form-pair"><label for="hourly_frequency_remote"><span class="flash-backuptip"
+                  title="Select hourly frequency">Frequency:</span></label>
+              <span><select id="hourly_frequency_remote" name="HOURLY_FREQUENCY_REMOTE" class="short-input">
+                  <?php foreach([4,6,8] as $i){$s=(($remotesettings['HOURLY_FREQUENCY_REMOTE']??'4')===(string)$i)?'selected':'';echo"<option value=\"$i\" $s>Every $i Hours</option>";}?>
+                </select></span>
+            </div>
+          </div>
+          <div id="daily-options-remote" style="display:none;">
+            <div class="form-pair"><label for="daily_time_remote"><span class="flash-backuptip"
+                  title="Select the hour">Hour:</span></label>
+              <span><select id="daily_time_remote" name="DAILY_TIME_REMOTE" class="short-input">
+                  <?php for($h=0;$h<24;$h++){$hr=str_pad($h,2,'0',STR_PAD_LEFT);echo"<option value=\"$hr\"".((($remotesettings['DAILY_TIME_REMOTE']??'00')===$hr)?' selected':'').">$hr</option>";}?>
+                </select></span>
+            </div>
+            <div class="form-pair"><label for="daily_minute_remote"><span class="flash-backuptip"
+                  title="Select the minute">Minute:</span></label>
+              <span><select id="daily_minute_remote" name="DAILY_MINUTE_REMOTE" class="short-input">
+                  <?php for($m=0;$m<60;$m++){$mn=str_pad($m,2,'0',STR_PAD_LEFT);echo"<option value=\"$mn\"".((($remotesettings['DAILY_MINUTE_REMOTE']??'00')===$mn)?' selected':'').">$mn</option>";}?>
+                </select></span>
+            </div>
+          </div>
+          <div id="weekly-options-remote" style="display:none;">
+            <div class="form-pair"><label for="weekly_day_remote"><span class="flash-backuptip"
+                  title="Select day of the week">Day Of Week:</span></label>
+              <span><select id="weekly_day_remote" name="WEEKLY_DAY_REMOTE" class="short-input">
+                  <?php foreach(['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'] as $day){echo"<option value=\"$day\"".((($remotesettings['WEEKLY_DAY_REMOTE']??'')===$day)?' selected':'').">$day</option>";}?>
+                </select></span>
+            </div>
+            <div class="form-pair"><label for="weekly_time_remote"><span class="flash-backuptip"
+                  title="Select the hour">Hour:</span></label>
+              <span><select id="weekly_time_remote" name="WEEKLY_TIME_REMOTE" class="short-input">
+                  <?php for($h=0;$h<24;$h++){$hr=str_pad($h,2,'0',STR_PAD_LEFT);echo"<option value=\"$hr\"".((($remotesettings['WEEKLY_TIME_REMOTE']??'00')===$hr)?' selected':'').">$hr</option>";}?>
+                </select></span>
+            </div>
+            <div class="form-pair"><label for="weekly_minute_remote"><span class="flash-backuptip"
+                  title="Select the minute">Minute:</span></label>
+              <span><select id="weekly_minute_remote" name="WEEKLY_MINUTE_REMOTE" class="short-input">
+                  <?php for($m=0;$m<60;$m++){$mn=str_pad($m,2,'0',STR_PAD_LEFT);echo"<option value=\"$mn\"".((($remotesettings['WEEKLY_MINUTE_REMOTE']??'00')===$mn)?' selected':'').">$mn</option>";}?>
+                </select></span>
+            </div>
+          </div>
+          <div id="monthly-options-remote" style="display:none;">
+            <div class="form-pair"><label for="monthly_day_remote"><span class="flash-backuptip"
+                  title="Select day of the month">Day Of Month:</span></label>
+              <span><select id="monthly_day_remote" name="MONTHLY_DAY_REMOTE" class="short-input">
+                  <?php for($d=1;$d<=31;$d++){$dy=str_pad($d,2,'0',STR_PAD_LEFT);echo"<option value=\"$dy\"".((($remotesettings['MONTHLY_DAY_REMOTE']??'')===$dy)?' selected':'').">$dy</option>";}?>
+                </select></span>
+            </div>
+            <div class="form-pair"><label for="monthly_time_remote"><span class="flash-backuptip"
+                  title="Select the hour">Hour:</span></label>
+              <span><select id="monthly_time_remote" name="MONTHLY_TIME_REMOTE" class="short-input">
+                  <?php for($h=0;$h<24;$h++){$hr=str_pad($h,2,'0',STR_PAD_LEFT);echo"<option value=\"$hr\"".((($remotesettings['MONTHLY_TIME_REMOTE']??'00')===$hr)?' selected':'').">$hr</option>";}?>
+                </select></span>
+            </div>
+            <div class="form-pair"><label for="monthly_minute_remote"><span class="flash-backuptip"
+                  title="Select the minute">Minute:</span></label>
+              <span><select id="monthly_minute_remote" name="MONTHLY_MINUTE_REMOTE" class="short-input">
+                  <?php for($m=0;$m<60;$m++){$mn=str_pad($m,2,'0',STR_PAD_LEFT);echo"<option value=\"$mn\"".((($remotesettings['MONTHLY_MINUTE_REMOTE']??'00')===$mn)?' selected':'').">$mn</option>";}?>
+                </select></span>
+            </div>
+          </div>
+          <div id="backup-banner-remote" class="fbb-banner">
+            <div class="fbb-banner-inner">
+              <span id="backup-banner-text-remote" class="fbb-banner-text"></span>
+              <button type="button" id="stop-banner-btn-remote" onclick="stopFromBanner()">Stop</button>
+              <span id="stop-toast-banner-remote" class="stop-toast">Stop requested</span>
+            </div>
+          </div>
+          <div class="backup-actions">
+            <span title="Save settings without running a backup" class="flash-backuptip"><button type="button"
+                id="apply-settings-btn-remote">Save</button></span>
+            <span title="Run remote backup" class="flash-backuptip"><button type="button"
+                id="backupbtn_remote">Backup Now</button></span>
+            <span title="Create a remote backup schedule using the settings shown in the fields above"
+              class="flash-backuptip"><button type="button" id="schedule-remote-backup"
+                class="button schedule-button">Schedule It</button></span>
+          </div>
+          <div style="margin-top:8px;">
+            <span class="flash-backuptip"
+              title="Enable to have the remote backup only include the config and extra folders, and the syslinux.cfg file"
+              style="display:inline-flex;align-items:center;gap:6px;">
+              <span style="font-size:12px;font-weight:600;color:var(--c-label);">Minimal Backup:</span>
+              <span class="fbb-toggle-wrap">
+                <label class="fbb-toggle">
+                  <input type="checkbox" id="minimal_backup_remote" name="MINIMAL_BACKUP_REMOTE" value="yes"
+                    <?=(($remotesettings['MINIMAL_BACKUP_REMOTE']??'no')==='yes' )?'checked':''?>>
+                  <span class="fbb-toggle-slider"></span>
+                </label>
+              </span>
+            </span>
+          </div>
+          <div id="popupMessageremote" class="fbb-popup"></div>
+        </form>
 
-  <div id="fbb-log-panel">
-    <div class="fbb-card-header" style="border-radius:var(--radius-card) var(--radius-card) 0 0;">
-      <span class="fbb-card-title">Activity Log</span>
-      <span id="fbb-log-last-run" style="font-size:11px;color:var(--c-text-muted);margin-left:10px;">No last run available</span>
+      </div>
     </div>
-    <div class="fbb-log-toolbar">
-      <span id="fbb-debug-log-label" style="font-size:12px;font-weight:600;color:var(--c-label);white-space:nowrap;cursor:help;">Debug Log:</span>
-      <span class="fbb-toggle-wrap">
-        <label class="fbb-toggle">
-          <input type="checkbox" id="log-debug-toggle" onchange="fbbSwitchLog(this.checked)">
-          <span class="fbb-toggle-slider"></span>
-        </label>
-      </span>
-      <div class="fbb-log-search-wrap">
-        <input type="text" id="log-search" placeholder="Search…" autocomplete="off">
-        <span id="log-search-clear" tabindex="-1" aria-label="Clear search" role="button">
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M1 1L11 11M11 1L1 11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+
+    <div id="fbb-log-panel">
+      <div class="fbb-card-header" style="border-radius:var(--radius-card) var(--radius-card) 0 0;">
+        <span class="fbb-card-title">Activity Log</span>
+        <span id="fbb-log-last-run" style="font-size:11px;color:var(--c-text-muted);margin-left:10px;">No last run
+          available</span>
+      </div>
+      <div class="fbb-log-toolbar">
+        <span id="fbb-debug-log-label"
+          style="font-size:12px;font-weight:600;color:var(--c-label);white-space:nowrap;cursor:help;">Debug Log:</span>
+        <span class="fbb-toggle-wrap">
+          <label class="fbb-toggle">
+            <input type="checkbox" id="log-debug-toggle" onchange="fbbSwitchLog(this.checked)">
+            <span class="fbb-toggle-slider"></span>
+          </label>
         </span>
+        <div class="fbb-log-search-wrap">
+          <input type="text" id="log-search" placeholder="Search…" autocomplete="off">
+          <span id="log-search-clear" tabindex="-1" aria-label="Clear search" role="button">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+              <path d="M1 1L11 11M11 1L1 11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+            </svg>
+          </span>
+        </div>
+        <span id="log-search-count"></span>
+        <div class="fbb-log-toolbar-right">
+          <span id="log-toast"></span>
+          <span title="Clear the flash backup log" class="flash-backuptip"><button type="button"
+              id="clear-last-run-log">Clear Log</button></span>
+          <span title="Copy log to clipboard" class="flash-backuptip"><button type="button"
+              id="copy-last-run-log">Copy Log</button></span>
+          <span title="Scroll to top" class="flash-backuptip"><button type="button"
+              id="log-scroll-top-btn">&#8679;</button></span>
+          <span title="Auto-scroll to bottom (toggles)" class="flash-backuptip"><button type="button"
+              id="log-autoscroll-btn">&#8681;</button></span>
+        </div>
       </div>
-      <span id="log-search-count"></span>
-      <div class="fbb-log-toolbar-right">
-        <span id="log-toast"></span>
-        <span title="Clear the flash backup log" class="flash-backuptip"><button type="button" id="clear-last-run-log">Clear Log</button></span>
-        <span title="Copy log to clipboard" class="flash-backuptip"><button type="button" id="copy-last-run-log">Copy Log</button></span>
-        <span title="Scroll to top" class="flash-backuptip"><button type="button" id="log-scroll-top-btn">&#8679;</button></span>
-        <span title="Auto-scroll to bottom (toggles)" class="flash-backuptip"><button type="button" id="log-autoscroll-btn">&#8681;</button></span>
-      </div>
+      <pre id="last-run-log">Flash backup log not found</pre>
     </div>
-    <pre id="last-run-log">Flash backup log not found</pre>
-  </div>
 
-  <div id="fbb-schedule-section">
-    <div id="fbb-sched-title-local" class="fbb-sched-title" style="display:none;">Scheduled Local Backup Jobs</div>
-    <div id="schedule-list"></div>
-    <div id="fbb-sched-title-remote" class="fbb-sched-title" style="display:none;">Scheduled Remote Backup Jobs</div>
-    <div id="schedule-list-remote"></div>
-  </div>
+    <div id="fbb-schedule-section">
+      <div id="fbb-sched-title-local" class="fbb-sched-title" style="display:none;">Scheduled Local Backup Jobs</div>
+      <div id="schedule-list"></div>
+      <div id="fbb-sched-title-remote" class="fbb-sched-title" style="display:none;">Scheduled Remote Backup Jobs</div>
+      <div id="schedule-list-remote"></div>
+    </div>
 
-</div>
+  </div>
 </div>
 
 <div id="folderPickerModal" class="vm-modal">
@@ -556,7 +648,9 @@ const remoteTypes = JSON.parse('<?= addslashes(json_encode($remoteTypes)) ?>');
 <div class="fbb-dialog-overlay" id="fbb-confirm-overlay">
   <div class="fbb-dialog-box">
     <div class="fbb-dialog-header"><span id="fbb-confirm-title">Confirm</span></div>
-    <div class="fbb-dialog-body"><p id="fbb-confirm-msg"></p></div>
+    <div class="fbb-dialog-body">
+      <p id="fbb-confirm-msg"></p>
+    </div>
     <div class="fbb-dialog-footer">
       <button type="button" id="fbb-confirm-cancel" class="fbb-btn-secondary">Cancel</button>
       <button type="button" id="fbb-confirm-ok">OK</button>
@@ -567,11 +661,14 @@ const remoteTypes = JSON.parse('<?= addslashes(json_encode($remoteTypes)) ?>');
 <div class="fbb-dialog-overlay" id="fbb-alert-overlay">
   <div class="fbb-dialog-box">
     <div class="fbb-dialog-header"><span id="fbb-alert-title">Notice</span></div>
-    <div class="fbb-dialog-body"><p id="fbb-alert-msg"></p></div>
+    <div class="fbb-dialog-body">
+      <p id="fbb-alert-msg"></p>
+    </div>
     <div class="fbb-dialog-footer">
       <button type="button" id="fbb-alert-ok">OK</button>
     </div>
   </div>
 </div>
 
-<script src="/plugins/flash-backup/flash-backup.js?v=<?=filemtime('/usr/local/emhttp/plugins/flash-backup/flash-backup.js')?>"></script>
+<script
+  src="/plugins/flash-backup/flash-backup.js?v=<?=filemtime('/usr/local/emhttp/plugins/flash-backup/flash-backup.js')?>"></script>

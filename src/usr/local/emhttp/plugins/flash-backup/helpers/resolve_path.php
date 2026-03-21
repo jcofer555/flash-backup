@@ -3,7 +3,8 @@
 // ------------------------------------------------------------------------------
 // respond_text() — plain-text response with explicit HTTP code
 // ------------------------------------------------------------------------------
-function respond_text(int $code, string $body): void {
+function respond_text(int $code, string $body): void
+{
     http_response_code($code);
     header('Content-Type: text/plain');
     echo $body;
@@ -13,7 +14,8 @@ function respond_text(int $code, string $body): void {
 // ------------------------------------------------------------------------------
 // main()
 // ------------------------------------------------------------------------------
-function main(): void {
+function main(): void
+{
     $path = $_POST['path'] ?? '';
 
     // Return empty string for an empty input

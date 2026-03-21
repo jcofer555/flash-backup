@@ -10,7 +10,8 @@ define('RUN_SCHEDULE_REMOTE_PHP',    '/usr/local/emhttp/plugins/flash-backup/hel
 // ------------------------------------------------------------------------------
 // rebuild_cron_remote() — remote cron file rebuild, atomic write
 // ------------------------------------------------------------------------------
-function rebuild_cron_remote(): void {
+function rebuild_cron_remote(): void
+{
     // Write an empty cron file if there are no remote schedules
     if (!file_exists(REMOTE_SCHEDULES_CFG)) {
         file_put_contents(REMOTE_CRON_FILE, '');
