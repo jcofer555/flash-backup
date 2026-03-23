@@ -86,18 +86,11 @@ $(document).on('mouseenter', '.flash-backuptip', function () {
 });
 
 // ── Tooltip update helper ─────────────────────────────────────────────────────
-// Updates both the attribute (for uninitialised spans) and the live tooltipster
-// instance (for spans already hovered). Prevents the double-tooltip bug where
-// the native title and the tooltipster bubble both appear at the same time.
 function fbbSetTooltip($span, text, attr) {
   attr = attr || 'title';
   if ($span.hasClass('tooltipstered')) {
-    // Tooltipster has already removed the title attribute and owns the tooltip.
-    // Only update the live instance — do NOT restore the attribute or the
-    // browser will render a native tooltip on top of the tooltipster bubble.
     $span.tooltipster('content', text);
   } else {
-    // Not yet initialised — just set the attribute so tooltipster picks it up on first hover.
     $span.attr(attr, text);
   }
 }
@@ -286,8 +279,6 @@ function lockScheduleUIremote() { scheduleUILockedremote = true; $('.schedule-ac
 function unlockScheduleUIremote() { scheduleUILockedremote = false; $('.schedule-action-btn-remote').prop('disabled', false); }
 
 // ── Edit mode flags ───────────────────────────────────────────────────────────
-// Single flag per panel routes the Backup Now button to cancel during edit
-// without removing or re-adding any event handlers.
 let _editModeLocal = false;
 let _editModeRemote = false;
 
@@ -724,7 +715,6 @@ function collectWebhookParamsRemote() {
 }
 
 // ── Backup Now — local ────────────────────────────────────────────────────────
-// _editModeLocal flag is checked first — routes to cancelEditLocal() during edit.
 let backupRequestInProgress = false;
 $('#backupbtn').on('click', async function () {
   if (_editModeLocal) { scheduleJob('local-backup'); return; }
@@ -763,7 +753,6 @@ $('#backupbtn').on('click', async function () {
 });
 
 // ── Backup Now — remote ───────────────────────────────────────────────────────
-// _editModeRemote flag is checked first — routes to cancelEditRemote() during edit.
 let backupRequestInProgressRemote = false;
 $('#backupbtn_remote').on('click', async function () {
   if (_editModeRemote) { scheduleJobremote('remote-backup'); return; }
@@ -839,7 +828,7 @@ $('#apply-settings-btn').on('click', function () {
     .fail(function () { fbbAlert('Error saving settings'); });
 });
 
-// ── Apply Changes — remote (save without running backup) ─────────────────────
+// ── Apply Changes — remote ────────────────────────────────────────────────────
 $('#apply-settings-btn-remote').on('click', function () {
   const selectedRemotes = $('#rclone_config_remote_hidden').val() || [];
   const remotePath = $('#remote_path_in_config').val().trim();
@@ -962,10 +951,8 @@ async function scheduleJob(type) {
 function cancelEditLocal() {
   _editModeLocal = false;
   window.editingScheduleId = null;
-  // Restore Backup Now button
   $('#backupbtn').text('Backup Now');
   fbbSetTooltip($('#backupbtn').closest('span'), 'Run backup of flash drive to local storage');
-  // Restore Schedule It button
   $('#schedule-local-backup').text('Schedule It');
   fbbSetTooltip($('#schedule-local-backup').closest('span'), 'Create a local backup schedule using the settings shown in the fields above', 'data-tooltip');
   $('#apply-settings-btn').prop('disabled', false).css('opacity', '');
@@ -984,7 +971,6 @@ function editSchedule(id) {
       else if (el.is(':radio')) $('[name="' + k + '"][value="' + settings[k] + '"]').prop('checked', true);
       else el.val(settings[k]).trigger('change');
     }
-    // Restore notification service checkboxes from saved schedule
     if (settings.NOTIFICATION_SERVICE !== undefined) {
       const svcs = String(settings.NOTIFICATION_SERVICE).split(',').map(v => v.trim()).filter(Boolean);
       $('#notification-service-list input[type=checkbox]').each(function () { $(this).prop('checked', svcs.includes($(this).val())); });
@@ -993,10 +979,8 @@ function editSchedule(id) {
     }
     window.editingScheduleId = id;
     _editModeLocal = true;
-    // Backup Now → Update (submits the edited schedule)
     $('#backupbtn').text('Update');
     fbbSetTooltip($('#backupbtn').closest('span'), 'Save changes to this schedule');
-    // Schedule It → Cancel (discards the edit)
     $('#schedule-local-backup').text('Cancel');
     fbbSetTooltip($('#schedule-local-backup').closest('span'), 'Cancel editing this schedule', 'data-tooltip');
     $('#apply-settings-btn').prop('disabled', true).css('opacity', '0.4');
@@ -1076,10 +1060,8 @@ async function scheduleJobremote(type) {
 function cancelEditRemote() {
   _editModeRemote = false;
   window.editingScheduleIdremote = null;
-  // Restore Backup Now button
   $('#backupbtn_remote').text('Backup Now');
   fbbSetTooltip($('#backupbtn_remote').closest('span'), 'Run remote backup');
-  // Restore Schedule It button
   $('#schedule-remote-backup').text('Schedule It');
   fbbSetTooltip($('#schedule-remote-backup').closest('span'), 'Create a remote backup schedule using the settings shown in the fields above');
   $('#apply-settings-btn').prop('disabled', false).css('opacity', '');
@@ -1113,7 +1095,6 @@ function editScheduleremote(id) {
         if (!val && legacyBucket) val = legacyBucket; if (val) $(this).val(val);
       });
     }
-    // Restore notification service checkboxes from saved schedule
     if (settings.NOTIFICATION_SERVICE_REMOTE !== undefined) {
       const svcs = String(settings.NOTIFICATION_SERVICE_REMOTE).split(',').map(v => v.trim()).filter(Boolean);
       $('#notification-service-list-remote input[type=checkbox]').each(function () { $(this).prop('checked', svcs.includes($(this).val())); });
@@ -1122,10 +1103,8 @@ function editScheduleremote(id) {
     }
     window.editingScheduleIdremote = id;
     _editModeRemote = true;
-    // Backup Now → Update (submits the edited schedule)
     $('#backupbtn_remote').text('Update');
     fbbSetTooltip($('#backupbtn_remote').closest('span'), 'Save changes to this schedule');
-    // Schedule It → Cancel (discards the edit)
     $('#schedule-remote-backup').text('Cancel');
     fbbSetTooltip($('#schedule-remote-backup').closest('span'), 'Cancel editing this schedule');
     $('#apply-settings-btn').prop('disabled', true).css('opacity', '0.4');
@@ -1161,8 +1140,6 @@ function toggleScheduleremote(id, isEnabled) {
 $(document).ready(function () { loadSchedulesremote(); $(document).on('click', '#schedule-remote-backup', function () { if (_editModeRemote) { cancelEditRemote(); return; } scheduleJobremote('remote-backup'); }); });
 
 // ── Parse cron expression back into scheduling UI fields ──────────────────────
-// Used when loading a saved schedule for editing — populates the hour/minute/day
-// selects and shows the correct sub-panel based on the stored cron expression.
 function applyCronToUI(cron, suffix) {
   const s = suffix || '';
   const sid = s ? '_' + s : '';
@@ -1171,14 +1148,12 @@ function applyCronToUI(cron, suffix) {
   if (parts.length !== 5) return;
   const [min, hour, dom, month, dow] = parts;
 
-  // Detect mode from expression shape
   let mode = 'daily';
   if (/^0$/.test(min) && /^\*\/\d+$/.test(hour) && dom === '*' && month === '*' && dow === '*') mode = 'hourly';
   else if (/^\d+$/.test(min) && /^\d+$/.test(hour) && dom === '*' && month === '*' && dow === '*') mode = 'daily';
   else if (/^\d+$/.test(min) && /^\d+$/.test(hour) && dom === '*' && month === '*' && /^\d+$/.test(dow)) mode = 'weekly';
   else if (/^\d+$/.test(min) && /^\d+$/.test(hour) && /^\d+$/.test(dom) && month === '*' && dow === '*') mode = 'monthly';
 
-  // Set the mode select and show the correct sub-panel
   const modeEl = document.getElementById('cron_mode' + sid);
   if (modeEl) {
     modeEl.value = mode;

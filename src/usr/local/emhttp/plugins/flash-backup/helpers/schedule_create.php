@@ -18,41 +18,6 @@ function respond(int $code, array $payload): void
 }
 
 // ------------------------------------------------------------------------------
-// load_schedules()
-// ------------------------------------------------------------------------------
-function load_schedules(string $cfg): array
-{
-    $real = realpath($cfg);
-    if ($real === false || !file_exists($real)) {
-        return [];
-    }
-    $schedules = parse_ini_file($real, true, INI_SCANNER_RAW);
-    return is_array($schedules) ? $schedules : [];
-}
-
-// ------------------------------------------------------------------------------
-// check_duplicate() — destination conflict detection
-// ------------------------------------------------------------------------------
-function check_duplicate(array $schedules, string $new_dest): void
-{
-    foreach ($schedules as $existing_id => $s) {
-        if (empty($s['SETTINGS'])) continue;
-
-        $existing_settings = json_decode(stripslashes($s['SETTINGS']), true);
-        if (!is_array($existing_settings)) continue;
-
-        $existing_dest = trim($existing_settings['BACKUP_DESTINATION'] ?? '');
-        // Reject if another schedule already uses this destination
-        if ($existing_dest !== '' && $existing_dest === $new_dest) {
-            respond(409, [
-                'error'       => 'Duplicate schedule detected',
-                'conflict_id' => $existing_id,
-            ]);
-        }
-    }
-}
-
-// ------------------------------------------------------------------------------
 // append_schedule() — append new INI block
 // ------------------------------------------------------------------------------
 function append_schedule(string $cfg, string $id, string $type, string $cron, string $settings_json): void
@@ -117,10 +82,6 @@ function main(): void
     if ($new_dest === '') {
         respond(400, ['error' => 'Backup destination is required']);
     }
-
-    // Load existing schedules and check for destination conflicts
-    $schedules = load_schedules(SCHEDULES_CFG);
-    check_duplicate($schedules, $new_dest);
 
     // Encode settings as escaped JSON for safe INI storage
     $settings_json = addcslashes(

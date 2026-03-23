@@ -18,41 +18,6 @@ function respond(int $code, array $payload): void
 }
 
 // ------------------------------------------------------------------------------
-// load_schedules()
-// ------------------------------------------------------------------------------
-function load_schedules(string $cfg): array
-{
-    $real = realpath($cfg);
-    if ($real === false || !file_exists($real)) {
-        return [];
-    }
-    $schedules = parse_ini_file($real, true, INI_SCANNER_RAW);
-    return is_array($schedules) ? $schedules : [];
-}
-
-// ------------------------------------------------------------------------------
-// check_duplicate() — rclone config conflict detection
-// ------------------------------------------------------------------------------
-function check_duplicate(array $schedules, string $new_remote): void
-{
-    foreach ($schedules as $existing_id => $s) {
-        if (empty($s['SETTINGS'])) continue;
-
-        $existing_settings = json_decode(stripslashes($s['SETTINGS']), true);
-        if (!is_array($existing_settings)) continue;
-
-        $existing_remote = trim($existing_settings['RCLONE_CONFIG_REMOTE'] ?? '');
-        // Reject if another schedule already uses this rclone config
-        if ($existing_remote !== '' && $existing_remote === $new_remote) {
-            respond(409, [
-                'error'       => 'Duplicate remote schedule detected',
-                'conflict_id' => $existing_id,
-            ]);
-        }
-    }
-}
-
-// ------------------------------------------------------------------------------
 // append_schedule() — append new INI block
 // ------------------------------------------------------------------------------
 function append_schedule(string $cfg, string $id, string $type, string $cron, string $settings_json): void
@@ -118,10 +83,6 @@ function main(): void
     if ($new_remote === '') {
         respond(400, ['error' => 'Rclone config is required']);
     }
-
-    // Load existing schedules and check for rclone config conflicts
-    $schedules = load_schedules(REMOTE_SCHEDULES_CFG);
-    check_duplicate($schedules, $new_remote);
 
     // Encode settings as escaped JSON for safe INI storage
     $settings_json = addcslashes(

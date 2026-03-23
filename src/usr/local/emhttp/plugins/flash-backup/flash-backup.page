@@ -54,13 +54,6 @@ $rcfg = ''; foreach ($remoteDefaults as $k => $dv) { $rcfg .= "$k=\"{$existingRe
 $remotesettings = $existingRemote;
 ?>
 <?php
-$unraid_version = '7.2';
-if (file_exists('/etc/unraid-version')) {
-    $d = parse_ini_file('/etc/unraid-version');
-    if (!empty($d['version'])) $unraid_version = $d['version'];
-}
-?>
-<?php
 $sibling_plugin_checks_arr = [
     'automover'                  => ['plg'=>'/boot/config/plugins/automover.plg',                  'page'=>'/usr/local/emhttp/plugins/automover/automover.page',                                     'label'=>'Automover',                    'url'=>'/Settings/automover'],
     'flash-backup_beta'               => ['plg'=>'/boot/config/plugins/flash-backup_beta.plg',               'page'=>'/usr/local/emhttp/plugins/flash-backup_beta/flash-backup_beta.page',                               'label'=>'Flash Backup (Beta)',                 'url'=>'/Settings/flash-backup_beta'],

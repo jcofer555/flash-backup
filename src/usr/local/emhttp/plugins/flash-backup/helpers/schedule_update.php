@@ -65,39 +65,6 @@ function write_schedules(string $cfg, array $schedules): void
 }
 
 // ------------------------------------------------------------------------------
-// fingerprint() — duplicate detection key
-// ------------------------------------------------------------------------------
-function fingerprint(array $settings): string
-{
-    // Key on backup destination only — this is the field that must be unique per schedule
-    $key = ['BACKUP_DESTINATION' => $settings['BACKUP_DESTINATION'] ?? ''];
-    ksort($key);
-    return hash('sha256', json_encode($key));
-}
-
-// ------------------------------------------------------------------------------
-// check_duplicate() — conflict detection, excludes current ID
-// ------------------------------------------------------------------------------
-function check_duplicate(array $schedules, string $exclude_id, string $new_hash): void
-{
-    foreach ($schedules as $existing_id => $s) {
-        // Skip the schedule being updated to avoid a false self-conflict
-        if ($existing_id === $exclude_id) continue;
-        if (empty($s['SETTINGS']))        continue;
-
-        $existing_settings = json_decode(stripslashes($s['SETTINGS']), true);
-        if (!is_array($existing_settings)) continue;
-
-        if (fingerprint($existing_settings) === $new_hash) {
-            respond(409, [
-                'error'       => 'Duplicate schedule detected',
-                'conflict_id' => $existing_id,
-            ]);
-        }
-    }
-}
-
-// ------------------------------------------------------------------------------
 // main()
 // ------------------------------------------------------------------------------
 function main(): void
@@ -147,10 +114,6 @@ function main(): void
     if (!isset($schedules[$id])) {
         respond(404, ['error' => 'Schedule not found']);
     }
-
-    // Duplicate check against all other schedules
-    $new_hash = fingerprint($settings);
-    check_duplicate($schedules, $id, $new_hash);
 
     // Encode settings as escaped JSON for safe INI storage
     $settings_json = addcslashes(
