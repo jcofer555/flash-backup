@@ -144,7 +144,7 @@ $selectedRemotes = array_filter(array_map('trim', explode(',', $saved)));
     try { const b64 = "<?= addslashes($remotesettings['BUCKET_NAMES'] ?? '') ?>"; if (!b64) return {}; return JSON.parse(atob(b64)) || {}; } catch (e) { return {}; }
   })();
   const SAVED_B2_BUCKET_NAME_LEGACY = "<?= htmlspecialchars($remotesettings['B2_BUCKET_NAME'] ?? '') ?>";
-  const remoteTypes = JSON.parse('<?= addslashes(json_encode($remoteTypes)) ?>');
+  let remoteTypes = JSON.parse('<?= addslashes(json_encode($remoteTypes)) ?>');
 </script>
 
 <div id="fbb-page">

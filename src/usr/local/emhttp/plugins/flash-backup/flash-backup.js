@@ -264,6 +264,7 @@ let _fbbRcloneSnapshot = '';
       const $widget = $('#rclone_config_remote');
       if (remotes.length === 0) { $widget.addClass('fbb-rclone-disabled'); $('#rclone-config-label-remote').text('No rclone configs found'); }
       else { $widget.removeClass('fbb-rclone-disabled'); if (!stillSelected.length) $('#rclone-config-label-remote').text('Select config(s)'); }
+      Object.assign(remoteTypes, types);
       updateBucketVisibility();
     })
     .catch(() => { })
@@ -1047,6 +1048,11 @@ async function scheduleJobremote(type) {
     if ($(this).is(':checkbox')) { settings[key] = $(this).is(':checked') ? 'yes' : 'no'; }
     else { const val = $(this).val(); settings[key] = Array.isArray(val) ? val.join(',') : val; }
   });
+  // Collect bucket names and include them in the schedule settings
+  const bucketNamesMap = collectBucketNames();
+  if (Object.keys(bucketNamesMap).length > 0) {
+    settings['BUCKET_NAMES'] = btoa(JSON.stringify(bucketNamesMap));
+  }
   const url = window.editingScheduleIdremote ? 'schedule_update_remote.php' : 'schedule_create_remote.php';
   $.ajax({
     type: 'POST', url: `/plugins/flash-backup/helpers/${url}`,
