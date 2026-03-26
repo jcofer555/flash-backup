@@ -35,7 +35,7 @@ function rebuild_cron_remote(): void
         if ($cron === '') continue;
 
         // Pass the schedule ID via environment variable — redirects remote output to a dedicated log
-        $out .= "{$cron} sh -c 'SCHEDULE_ID={$id} /usr/bin/php -f " . RUN_SCHEDULE_REMOTE_PHP . " >> /tmp/flash-backup_remote.log 2>&1'\n";
+        $out .= "{$cron} sh -c 'SCHEDULE_ID={$id} /usr/bin/php -f " . RUN_SCHEDULE_REMOTE_PHP . " >> /tmp/flash-backup.log 2>&1'\n";
     }
 
     file_put_contents(REMOTE_CRON_FILE, $out);

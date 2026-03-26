@@ -35,7 +35,7 @@ function rebuild_cron(): void
         if ($cron === '') continue;
 
         // Pass the schedule ID via environment variable so cron does not need shell quoting tricks
-        $out .= "{$cron} sh -c 'SCHEDULE_ID={$id} /usr/bin/php -f " . RUN_SCHEDULE_PHP . " '\n";
+        $out .= "{$cron} sh -c 'SCHEDULE_ID={$id} /usr/bin/php -f " . RUN_SCHEDULE_PHP . " >> /tmp/flash-backup.log 2>&1'\n";
     }
 
     file_put_contents(CRON_FILE, $out);
